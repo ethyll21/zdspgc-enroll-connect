@@ -26,16 +26,21 @@ function ApplicationDetail() {
     queryFn: async () => {
       const { data: app, error } = await supabase
         .from("applications")
-        .select("*, program:programs(name, code), profile:profiles!applications_student_id_fkey(full_name, email, contact_number, birthdate, gender, address)")
+        .select("*, program:programs(name, code)")
         .eq("id", appId)
         .single();
       if (error) throw error;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email, contact_number, birthdate, gender, address")
+        .eq("id", app.student_id)
+        .maybeSingle();
       const { data: docs } = await supabase
         .from("application_documents")
         .select("*")
         .eq("application_id", appId)
         .order("uploaded_at");
-      return { app, docs: docs ?? [] };
+      return { app: { ...app, profile }, docs: docs ?? [] };
     },
   });
 
