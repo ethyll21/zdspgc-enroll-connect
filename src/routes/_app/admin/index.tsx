@@ -25,10 +25,15 @@ function AdminDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("applications")
-        .select("id, status, submitted_at, year_level, program:programs(name, code), profile:profiles!applications_student_id_fkey(full_name, email)")
+        .select("id, status, submitted_at, year_level, student_id, program:programs(name, code)")
         .order("submitted_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      const ids = Array.from(new Set((data ?? []).map((a: any) => a.student_id)));
+      const { data: profs } = ids.length
+        ? await supabase.from("profiles").select("id, full_name, email").in("id", ids)
+        : { data: [] as any[] };
+      const pmap = new Map((profs ?? []).map((p: any) => [p.id, p]));
+      return (data ?? []).map((a: any) => ({ ...a, profile: pmap.get(a.student_id) }));
     },
   });
 
