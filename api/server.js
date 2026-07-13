@@ -1,0 +1,83 @@
+'use strict';
+
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+
+// ── Route imports ──────────────────────────────────────────────────────────────
+const authRoutes         = require('./routes/auth');
+const programsRoutes     = require('./routes/programs');
+const profilesRoutes     = require('./routes/profiles');
+const studentsRoutes     = require('./routes/students');
+const enrollmentsRoutes  = require('./routes/enrollments');
+const documentsRoutes    = require('./routes/documents');
+const notificationsRoutes = require('./routes/notifications');
+
+const app  = express();
+const PORT = process.env.PORT || 4000;
+
+// ── CORS ───────────────────────────────────────────────────────────────────────
+app.use(cors({
+  origin: true,
+  credentials: true,
+}));
+
+// ── Body parsers ───────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ── Static uploads ─────────────────────────────────────────────────────────────
+// Note: served via /api/documents/file/:id which enforces auth
+// Raw files should NOT be publicly accessible
+// app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// ── Health check ───────────────────────────────────────────────────────────────
+app.get('/api/health', async (req, res) => {
+  try {
+    const db = require('./db');
+    const { rows } = await db.query('SELECT NOW() AS server_time, current_database() AS db_name');
+    res.json({
+      status: 'ok',
+      database: rows[0].db_name,
+      server_time: rows[0].server_time,
+      api_version: '1.0.0',
+    });
+  } catch (err) {
+    res.status(503).json({ status: 'error', error: err.message });
+  }
+});
+
+// ── API Routes ─────────────────────────────────────────────────────────────────
+app.use('/api/auth',          authRoutes);
+app.use('/api/programs',      programsRoutes);
+app.use('/api/profiles',      profilesRoutes);
+app.use('/api/students',      studentsRoutes);
+app.use('/api/enrollments',   enrollmentsRoutes);
+app.use('/api/documents',     documentsRoutes);
+app.use('/api/notifications', notificationsRoutes);
+
+// ── 404 handler ────────────────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
+});
+
+// ── Global error handler ───────────────────────────────────────────────────────
+app.use((err, req, res, _next) => {
+  console.error('[Server Error]', err);
+  if (err.name === 'MulterError') {
+    return res.status(400).json({ error: err.message });
+  }
+  res.status(500).json({ error: 'Internal server error', details: err.message });
+});
+
+// ── Start ──────────────────────────────────────────────────────────────────────
+app.listen(PORT, () => {
+  console.log(`\n╔══════════════════════════════════════════════╗`);
+  console.log(`║   ZDSPGC Local API Server                  ║`);
+  console.log(`║   Database : PRE-ENROLLMENT_DB             ║`);
+  console.log(`║   Port     : ${PORT}                           ║`);
+  console.log(`║   Health   : http://localhost:${PORT}/api/health ║`);
+  console.log(`╚══════════════════════════════════════════════╝\n`);
+});
+
+module.exports = app;
