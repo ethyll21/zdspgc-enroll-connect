@@ -16,7 +16,7 @@ interface AuthState {
   isAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, full_name?: string) => Promise<void>;
+  signUp: (email: string, password: string, full_name?: string, studentType?: string) => Promise<void>;
   signOut: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email:     res.user.email,
         role:      (res.user.roles?.includes("admin") ? "admin" : "student") as Role,
         full_name: (res.user as any).full_name ?? "",
+        student_type: (res.user as any).student_type ?? "new",
         profile:   (res.user as any).profile ?? null,
       };
       setUser(freshUser);
@@ -69,8 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Sign up ────────────────────────────────────────────────────────────────
-  const signUp = useCallback(async (email: string, password: string, full_name?: string) => {
-    const res = await localAuth.register(email, password, full_name);
+  const signUp = useCallback(async (email: string, password: string, full_name?: string, studentType?: string) => {
+    const res = await localAuth.register(email, password, full_name, studentType);
     setUser(res.user);
   }, []);
 

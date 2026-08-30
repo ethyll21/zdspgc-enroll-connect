@@ -1,10 +1,11 @@
 // Document types must match the PostgreSQL document_type enum in PRE-ENROLLMENT_DB
 export const REQUIRED_DOCUMENTS = [
-  { key: "psa_birth_certificate", label: "PSA Birth Certificate",       required: true },
-  { key: "form_138",              label: "Form 138 (Report Card)",       required: true },
-  { key: "good_moral",            label: "Good Moral Certificate",       required: true },
-  { key: "transfer_certificate",  label: "Transfer Credentials",         required: false },
-  { key: "other",                 label: "Other Supporting Documents",   required: false },
+  { key: "registration_form",     label: "Registration Form",            required: true, for: ["old"] },
+  { key: "psa_birth_certificate", label: "PSA Birth Certificate",        required: true, for: ["new"] },
+  { key: "form_138",              label: "Form 138 (Report Card)",        required: true, for: ["new"] },
+  { key: "good_moral",            label: "Good Moral Certificate",        required: true, for: ["new"] },
+  { key: "transfer_certificate",  label: "Transfer Credentials",          required: false, for: ["new"] },
+  { key: "other",                 label: "Other Supporting Documents",    required: false, for: ["new", "old"] },
 ] as const;
 
 export type DocumentKey = (typeof REQUIRED_DOCUMENTS)[number]["key"];

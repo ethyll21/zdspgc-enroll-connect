@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Upload, X, FileText, User, GraduationCap, School, Paperclip, CheckCircle2, AlertCircle, ShieldCheck, Users, BookOpen } from "lucide-react";
@@ -105,7 +105,7 @@ function ApplyPage() {
     if (!loading && isAdmin) navigate({ to: "/admin", replace: true });
   }, [isAdmin, loading, navigate]);
 
-  // ── Fetch programs ─────────────────────────────────────────────────────────
+  // ΓöÇΓöÇ Fetch programs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const { data: programList = [] } = useQuery({
     queryKey: ["programs"],
     queryFn: () => programsApi.list().then((r) => 
@@ -113,7 +113,7 @@ function ApplyPage() {
     ),
   });
 
-  // ── Fetch existing student record to pre-fill ──────────────────────────────
+  // ΓöÇΓöÇ Fetch existing student record to pre-fill ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const { data: studentRecord } = useQuery({
     queryKey: ["student-me", user?.id],
     enabled: !!user,
@@ -337,7 +337,7 @@ function ApplyPage() {
         </div>
         <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Republic of the Philippines</p>
         <h1 className="font-display text-2xl font-bold tracking-tight text-primary">ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE</h1>
-        <p className="text-sm text-muted-foreground">Dimataling Campus · Dimataling, Zamboanga del Sur</p>
+        <p className="text-sm text-muted-foreground">Dimataling Campus ┬╖ Dimataling, Zamboanga del Sur</p>
         <div className="mt-4 inline-block rounded-md bg-primary/10 px-6 py-2">
           <h2 className="font-display text-lg font-bold text-primary uppercase tracking-wide">College Enrollment Form</h2>
         </div>
@@ -352,7 +352,7 @@ function ApplyPage() {
           toast.error(typeof first === 'string' ? first : "Please check the form for errors.");
         })} className="space-y-8">
 
-          {/* ═══ Course & Major ═══ */}
+          {/* ΓòÉΓòÉΓòÉ Course & Major ΓòÉΓòÉΓòÉ */}
           <Section title="Course & Major" icon={GraduationCap}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
@@ -448,7 +448,7 @@ function ApplyPage() {
             </div>
           </Section>
 
-          {/* ═══ Personal Information ═══ */}
+          {/* ΓòÉΓòÉΓòÉ Personal Information ΓòÉΓòÉΓòÉ */}
           <Section title="Personal Information" icon={User}>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <FormField control={form.control} name="last_name"
@@ -607,7 +607,7 @@ function ApplyPage() {
             </div>
           </Section>
 
-          {/* ═══ Family Background ═══ */}
+          {/* ΓòÉΓòÉΓòÉ Family Background ΓòÉΓòÉΓòÉ */}
           <Section title="Family Background" icon={Users}>
             {/* Father & Mother side-by-side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -766,7 +766,7 @@ function ApplyPage() {
             </div>
           </Section>
 
-          {/* ═══ Educational Background ═══ */}
+          {/* ΓòÉΓòÉΓòÉ Educational Background ΓòÉΓòÉΓòÉ */}
           <Section title="Educational Background" icon={School}>
             <p className="text-sm text-muted-foreground mb-6 italic">Do not abbreviate school names.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -859,7 +859,7 @@ function ApplyPage() {
             </div>
           </Section>
 
-          {/* ═══ Required Documents ═══ */}
+          {/* ΓòÉΓòÉΓòÉ Required Documents ΓòÉΓòÉΓòÉ */}
           <Section title="Required Documents" icon={Paperclip}>
             <p className="text-sm text-muted-foreground mb-6">
               Please provide clear, legible copies of the following documents. Formats accepted: PDF, JPG, PNG (Max 10MB per file).
@@ -877,7 +877,7 @@ function ApplyPage() {
             </div>
           </Section>
 
-          {/* ═══ Student's Pledge ═══ */}
+          {/* ΓòÉΓòÉΓòÉ Student's Pledge ΓòÉΓòÉΓòÉ */}
           <Section title="Student's Pledge" icon={BookOpen}>
             <div className="rounded-lg border bg-muted/20 p-6">
               <p className="text-sm leading-relaxed text-foreground/90 text-justify">
@@ -912,7 +912,7 @@ function ApplyPage() {
               Cancel Application
             </Button>
             <Button type="submit" size="lg" className="w-full sm:w-auto font-semibold px-8" disabled={busy}>
-              {busy ? "Submitting Application…" : "Submit Final Application"}
+              {busy ? "Submitting ApplicationΓÇª" : "Submit Final Application"}
             </Button>
           </div>
         </form>

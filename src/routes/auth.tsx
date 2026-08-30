@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { GraduationCap, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { GraduationCap, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -25,28 +26,43 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-const getAuthSchema = (isSignup: boolean) => z.object({
-  fullName: isSignup 
-    ? z.string().min(1, { message: "Please enter your Full Name" }) 
-    : z.string().optional(),
-  email: z.string().min(1, { message: "Please provide your Email Address" }).email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-});
+const getAuthSchema = (isSignup: boolean) => {
+  const base = z.object({
+    fullName: isSignup 
+      ? z.string().min(1, { message: "Please enter your Full Name" }) 
+      : z.string().optional(),
+    studentType: z.string().optional().default("new"),
+    email: z.string().min(1, { message: "Please provide your Email Address" }).email({ message: "Please enter a valid email address" }),
+    password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+    confirmPassword: z.string().optional(),
+  });
+
+  if (isSignup) {
+    return base.refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords don't match",
+      path: ["confirmPassword"],
+    });
+  }
+  return base;
+};
 
 function AuthPage() {
   const { mode: initialMode } = Route.useSearch();
   const navigate = useNavigate();
   const { user, isAdmin, loading, signIn, signUp } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signin");
-  const [showPw, setShowPw]     = useState(false);
-  const [busy, setBusy]         = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const form = useForm<z.infer<ReturnType<typeof getAuthSchema>>>({
+  const form = useForm<any>({
     resolver: zodResolver(getAuthSchema(mode === "signup")),
     defaultValues: {
       fullName: "",
+      studentType: "new" as any,
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
@@ -62,7 +78,7 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        await signUp(values.email, values.password, values.fullName || "");
+        await signUp(values.email, values.password, values.fullName || "", values.studentType);
         toast.success("Account created! Welcome to ZDSPGC.");
         navigate({ to: "/dashboard", replace: true });
       } else {
@@ -105,15 +121,7 @@ function AuthPage() {
           <p className="mt-6 text-lg max-w-md text-primary-foreground/90 font-medium leading-relaxed">
             Sign in to continue your pre-enrollment application or check your status securely.
           </p>
-          <div className="mt-10 flex items-center gap-4 rounded-xl border border-white/20 bg-black/20 p-4 backdrop-blur-md max-w-sm shadow-xl">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold/20 text-gold border border-gold/30 shadow-inner">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-semibold text-white">Official & Secure</p>
-              <p className="text-sm text-primary-foreground/80">Protected by enterprise-grade encryption.</p>
-            </div>
-          </div>
+
         </div>
         <p className="relative z-10 text-xs font-medium text-primary-foreground/70">© {new Date().getFullYear()} ZDSPGC Dimataling Campus</p>
       </div>
@@ -136,24 +144,84 @@ function AuthPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(submit)} className="mt-8 space-y-5">
               {mode === "signup" && (
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem className="space-y-2.5">
-                      <FormLabel className="font-medium">Full Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Juan Dela Cruz"
-                          className="h-12 rounded-xl transition-shadow focus-visible:shadow-md"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <>
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2.5">
+                        <FormLabel className="font-medium">Full Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Juan Dela Cruz"
+                            className="h-12 rounded-xl transition-shadow focus-visible:shadow-md"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* ── Student Type Picker ── */}
+                  <FormField
+                    control={form.control}
+                    name="studentType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2.5">
+                        <FormLabel className="font-medium">I am a…</FormLabel>
+                        <div className="grid grid-cols-2 gap-3">
+                          {([
+                            {
+                              value: "new",
+                              icon: GraduationCap,
+                              label: "New Student",
+                              sub: "First-time enrollee",
+                            },
+                            {
+                              value: "returning",
+                              icon: RotateCcw,
+                              label: "Returning Student",
+                              sub: "Re-enrolling student",
+                            },
+                          ] as const).map(({ value, icon: Icon, label, sub }) => {
+                            const active = field.value === value;
+                            return (
+                              <button
+                                key={value}
+                                type="button"
+                                id={`student-type-${value}`}
+                                onClick={() => field.onChange(value)}
+                                className={[
+                                  "flex flex-col items-center gap-1.5 rounded-xl border-2 px-3 py-4 text-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                  active
+                                    ? "border-primary bg-primary/8 shadow-sm"
+                                    : "border-slate-200 bg-white hover:border-primary/40 hover:bg-primary/4",
+                                ].join(" ")}
+                              >
+                                <span
+                                  className={[
+                                    "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+                                    active ? "bg-primary text-white" : "bg-slate-100 text-slate-500",
+                                  ].join(" ")}
+                                >
+                                  <Icon className="h-4.5 w-4.5" />
+                                </span>
+                                <span className={`text-[13px] font-semibold leading-snug ${active ? "text-primary" : "text-slate-700"}`}>
+                                  {label}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground leading-none">{sub}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
               )}
+
               <FormField
                 control={form.control}
                 name="email"
@@ -178,7 +246,7 @@ function AuthPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem className="space-y-2.5">
-                    <FormLabel className="font-medium">Password</FormLabel>
+                    <FormLabel className="font-medium">{mode === "signup" ? "New Password" : "Password"}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -194,7 +262,7 @@ function AuthPage() {
                           onClick={() => setShowPw(!showPw)}
                           tabIndex={-1}
                         >
-                          {showPw ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          {showPw ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
                         </button>
                       </div>
                     </FormControl>
@@ -202,6 +270,39 @@ function AuthPage() {
                   </FormItem>
                 )}
               />
+              
+              {mode === "signup" && (
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2.5">
+                      <FormLabel className="font-medium">Confirm New Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showConfirmPw ? "text" : "password"}
+                            placeholder="At least 8 characters"
+                            autoComplete="new-password"
+                            className="h-12 rounded-xl pr-12 transition-shadow focus-visible:shadow-md"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={() => setShowConfirmPw(!showConfirmPw)}
+                            tabIndex={-1}
+                          >
+                            {showConfirmPw ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <Button 
                 type="submit" 
                 className="w-full h-12 mt-4 rounded-xl font-semibold text-[15px] transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]" 

@@ -1,24 +1,34 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, ChevronDown, Download, Trash2 } from "lucide-react";
-import { enrollments as enrollmentsApi } from "@/integrations/localdb/client";
+import { Search, Download, Trash2 } from "lucide-react";
+import { enrollments as enrollmentsApi, profiles } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_app/admin/applications")({
   component: AdminApplications,
 });
 
 const STATUS_META: Record<string, { label: string; tone: string }> = {
-  pending:      { label: "Pending",      tone: "text-warning" },
-  under_review: { label: "Under Review", tone: "text-secondary" },
-  approved:     { label: "Approved",     tone: "text-success" },
-  rejected:     { label: "Rejected",     tone: "text-destructive" },
+  pending:      { label: "Pending",      tone: "text-slate-500" },
+  under_review: { label: "Under Review", tone: "text-blue-600" },
+  approved:     { label: "Approved",     tone: "text-emerald-600" },
+  rejected:     { label: "Rejected",     tone: "text-rose-600" },
 };
 
 const FILTERS = ["all", "pending", "under_review", "approved", "rejected"] as const;
@@ -30,9 +40,6 @@ function AdminApplications() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
-  const [reviewing, setReviewing] = useState<string | null>(null);
-  const [reviewStatus, setReviewStatus] = useState<string>("");
-  const [reviewRemarks, setReviewRemarks] = useState<string>("");
 
   useEffect(() => {
     if (!loading && !isAdmin) navigate({ to: "/dashboard", replace: true });
@@ -56,18 +63,6 @@ function AdminApplications() {
     });
   }, [allEnrollments, filter, q]);
 
-  const reviewMutation = useMutation({
-    mutationFn: ({ id, status, remarks }: { id: string; status: string; remarks: string }) =>
-      enrollmentsApi.review(id, { status, remarks: remarks || undefined }),
-    onSuccess: () => {
-      toast.success("Enrollment status updated");
-      setReviewing(null);
-      setReviewRemarks("");
-      queryClient.invalidateQueries({ queryKey: ["admin-enrollments-all"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-enrollment-stats"] });
-    },
-    onError: (err: any) => toast.error(err.message ?? "Failed to update status"),
-  });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => enrollmentsApi.delete(id),
@@ -80,9 +75,7 @@ function AdminApplications() {
   });
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this enrollment? This action cannot be undone.")) {
-      deleteMutation.mutate(id);
-    }
+    deleteMutation.mutate(id);
   };
 
   const exportToCSV = () => {
@@ -119,7 +112,7 @@ function AdminApplications() {
     <div className="mx-auto max-w-6xl space-y-6 pb-20">
       <header>
         <h1 className="font-display text-3xl font-semibold text-primary">All Enrollments</h1>
-        <p className="text-sm text-muted-foreground">Review and validate student enrollment submissions.</p>
+
       </header>
 
       {/* Filters */}
@@ -152,8 +145,8 @@ function AdminApplications() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+        <table className="w-full text-sm whitespace-nowrap">
           <thead className="bg-muted/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Student</th>
@@ -161,7 +154,7 @@ function AdminApplications() {
               <th className="px-4 py-3 hidden md:table-cell">Period</th>
               <th className="px-4 py-3 hidden lg:table-cell">Submitted</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Action</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -171,13 +164,29 @@ function AdminApplications() {
               <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No enrollments match this filter.</td></tr>
             ) : filtered.map((e) => {
               const meta = STATUS_META[e.status] ?? { label: e.status, tone: "" };
-              const isReviewing = reviewing === e.id;
               return (
                 <>
                   <tr key={e.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
-                      <p className="font-medium">{e.first_name} {e.last_name}</p>
-                      <p className="text-xs text-muted-foreground">{e.student_email ?? e.student_no}</p>
+                      <div className="flex items-center gap-3">
+                        {(e as any).avatar_url ? (
+                          <img
+                            src={profiles.avatarUrl((e as any).avatar_url)}
+                            alt={`${e.first_name} ${e.last_name}`}
+                            className="h-12 w-12 rounded-full object-cover shrink-0 border border-border"
+                          />
+                        ) : (
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-border">
+                            <span className="text-sm font-semibold text-primary">
+                              {(e.first_name?.[0] ?? "").toUpperCase()}{(e.last_name?.[0] ?? "").toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium">{e.first_name} {e.last_name}</p>
+                          <p className="text-xs text-muted-foreground">{e.student_email ?? e.student_no}</p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <p>{e.program_code ?? "—"}</p>
@@ -194,87 +203,37 @@ function AdminApplications() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            if (isReviewing) {
-                              setReviewing(null);
-                            } else {
-                              setReviewing(e.id);
-                              setReviewStatus(e.status);
-                              setReviewRemarks(e.remarks ?? "");
-                            }
-                          }}
-                        >
-                          {isReviewing ? "Cancel" : "Quick Action"}
-                          <ChevronDown className={`ml-1 h-3 w-3 transition-transform ${isReviewing ? "rotate-180" : ""}`} />
-                        </Button>
                         <Button asChild size="sm" variant="secondary">
                           <Link to="/admin/review/$id" params={{ id: e.id }}>Full Details</Link>
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive" 
-                          onClick={() => handleDelete(e.id)}
-                          disabled={deleteMutation.isPending}
-                          className="px-2"
-                          title="Delete Application"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="destructive" 
+                              disabled={deleteMutation.isPending}
+                              className="px-2"
+                              title="Delete Application"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure you want to delete this enrollment?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(e.id)}>Yes</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </td>
                   </tr>
-
-                  {/* Inline review panel */}
-                  {isReviewing && (
-                    <tr key={`${e.id}-review`}>
-                      <td colSpan={6} className="bg-muted/30 px-4 pb-4 pt-2">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-end">
-                          <div className="space-y-1 flex-1">
-                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                              Update Status
-                            </label>
-                            <Select value={reviewStatus} onValueChange={setReviewStatus}>
-                              <SelectTrigger className="w-full md:w-48">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="under_review">Under Review</SelectItem>
-                                <SelectItem value="approved">Approved</SelectItem>
-                                <SelectItem value="rejected">Rejected</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1 flex-[2]">
-                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                              Remarks (optional)
-                            </label>
-                            <Input
-                              value={reviewRemarks}
-                              onChange={(e) => setReviewRemarks(e.target.value)}
-                              placeholder="Add a note for the student…"
-                            />
-                          </div>
-                          <Button
-                            disabled={reviewMutation.isPending}
-                            onClick={() =>
-                              reviewMutation.mutate({ id: e.id, status: reviewStatus, remarks: reviewRemarks })
-                            }
-                          >
-                            {reviewMutation.isPending ? "Saving…" : "Save Decision"}
-                          </Button>
-                        </div>
-                        {e.remarks && (
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            Previous note: <em>{e.remarks}</em>
-                          </p>
-                        )}
-                      </td>
-                    </tr>
-                  )}
                 </>
               );
             })}

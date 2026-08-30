@@ -1,23 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, CheckCircle2, XCircle, AlertCircle, Users, FileSearch, Database, Activity } from "lucide-react";
+import {
+  Clock, CheckCircle2, XCircle, AlertCircle, Users,
+  FileSearch, Activity, TrendingUp,
+} from "lucide-react";
 import { enrollments as enrollmentsApi } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export const Route = createFileRoute("/_app/admin/")({
   component: AdminDashboard,
 });
-
-const STATUS_META: Record<string, { label: string; tone: string }> = {
-  pending:      { label: "Pending",      tone: "text-warning" },
-  under_review: { label: "Under Review", tone: "text-secondary" },
-  approved:     { label: "Approved",     tone: "text-success" },
-  rejected:     { label: "Rejected",     tone: "text-destructive" },
-};
 
 function AdminDashboard() {
   const { isAdmin, loading } = useAuth();
@@ -27,7 +22,6 @@ function AdminDashboard() {
     if (!loading && !isAdmin) navigate({ to: "/dashboard", replace: true });
   }, [isAdmin, loading, navigate]);
 
-  // Stats from the /stats/overview endpoint
   const { data: statsData } = useQuery({
     enabled: isAdmin,
     queryKey: ["admin-enrollment-stats"],
@@ -35,135 +29,174 @@ function AdminDashboard() {
     refetchInterval: 30_000,
   });
 
-  // Recent enrollments
-  const { data: recentData = [] } = useQuery({
-    enabled: isAdmin,
-    queryKey: ["admin-enrollments-recent"],
-    queryFn: () => enrollmentsApi.list({ page: 1, limit: 10 }).then((r) => r.enrollments),
-  });
-
   if (!isAdmin) return null;
 
+  const total = (statsData?.pending ?? 0) + (statsData?.under_review ?? 0) +
+    (statsData?.approved ?? 0) + (statsData?.rejected ?? 0);
+
   const stats = [
-    { label: "Total Students",  value: statsData?.total_students ?? 0, icon: Users,        text: "text-blue-700", bg: "bg-gradient-to-br from-blue-50 to-blue-100", border: "border-blue-200" },
-    { label: "Pending",         value: statsData?.pending ?? 0,         icon: Clock,        text: "text-amber-600", bg: "bg-gradient-to-br from-amber-50 to-amber-100", border: "border-amber-200" },
-    { label: "Under Review",    value: statsData?.under_review ?? 0,    icon: AlertCircle,  text: "text-purple-600", bg: "bg-gradient-to-br from-purple-50 to-purple-100", border: "border-purple-200" },
-    { label: "Approved",        value: statsData?.approved ?? 0,        icon: CheckCircle2, text: "text-emerald-600", bg: "bg-gradient-to-br from-emerald-50 to-emerald-100", border: "border-emerald-200" },
-    { label: "Rejected",        value: statsData?.rejected ?? 0,        icon: XCircle,      text: "text-rose-600", bg: "bg-gradient-to-br from-rose-50 to-rose-100", border: "border-rose-200" },
+    {
+      label: "Total Students",
+      value: total,
+      icon: Users,
+      borderColor: "border-l-[#0A2540]",
+      textColor: "text-[#0A2540]",
+      iconBg: "bg-[#0A2540]/8",
+    },
+    {
+      label: "Pending",
+      value: statsData?.pending ?? 0,
+      icon: Clock,
+      borderColor: "border-l-amber-500",
+      textColor: "text-amber-700",
+      iconBg: "bg-amber-50",
+    },
+    {
+      label: "Under Review",
+      value: statsData?.under_review ?? 0,
+      icon: AlertCircle,
+      borderColor: "border-l-blue-600",
+      textColor: "text-blue-700",
+      iconBg: "bg-blue-50",
+    },
+    {
+      label: "Approved",
+      value: statsData?.approved ?? 0,
+      icon: CheckCircle2,
+      borderColor: "border-l-emerald-600",
+      textColor: "text-emerald-700",
+      iconBg: "bg-emerald-50",
+    },
+    {
+      label: "Rejected",
+      value: statsData?.rejected ?? 0,
+      icon: XCircle,
+      borderColor: "border-l-rose-500",
+      textColor: "text-rose-700",
+      iconBg: "bg-rose-50",
+    },
   ];
 
   const pieData = [
-    { name: "Pending", value: statsData?.pending ?? 0, color: "#f59e0b" },
-    { name: "Under Review", value: statsData?.under_review ?? 0, color: "#a855f7" },
-    { name: "Approved", value: statsData?.approved ?? 0, color: "#10b981" },
-    { name: "Rejected", value: statsData?.rejected ?? 0, color: "#f43f5e" },
+    { name: "Pending",      value: statsData?.pending ?? 0,      color: "#d97706" },
+    { name: "Under Review", value: statsData?.under_review ?? 0, color: "#1d4ed8" },
+    { name: "Approved",     value: statsData?.approved ?? 0,     color: "#059669" },
+    { name: "Rejected",     value: statsData?.rejected ?? 0,     color: "#e11d48" },
   ].filter(d => d.value > 0);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-20">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+      {/* ── Page header ─────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between border-b border-slate-200 pb-6">
         <div>
-          <h1 className="font-display text-3xl font-semibold text-slate-800">Registrar Dashboard</h1>
-          <p className="text-sm text-slate-500">Overview of all pre-enrollment activity & analytics.</p>
+
+          <h1 className="font-display text-3xl font-bold text-[#0A2540]">Dashboard</h1>
+
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/10 px-3 py-1 text-xs font-medium text-success shadow-sm">
-            <Database className="h-3 w-3" /> System Active
-          </span>
-          <Button asChild className="bg-blue-600 hover:bg-blue-700">
-            <Link to="/admin/applications"><FileSearch className="mr-2 h-4 w-4" /> Review Applications</Link>
+
+          <Button asChild className="bg-[#0A2540] hover:bg-[#0c2f58] text-white rounded shadow-sm">
+            <Link to="/admin/applications">
+              <FileSearch className="mr-2 h-4 w-4" />
+              Review Applications
+            </Link>
           </Button>
         </div>
       </div>
 
-      {/* Stats cards */}
+      {/* ── Stats cards ─────────────────────────────────────────────────────── */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-        {stats.map(({ label, value, icon: Icon, text, bg, border }) => (
-          <div key={label} className={`rounded-2xl border ${border} ${bg} p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-1`}>
-            <div className="flex items-center justify-between mb-4">
-              <span className={`text-xs font-bold uppercase tracking-wider ${text}`}>{label}</span>
-              <div className={`p-2 rounded-full bg-white/60 shadow-sm`}>
-                <Icon className={`h-5 w-5 ${text}`} />
+        {stats.map(({ label, value, icon: Icon, borderColor, textColor, iconBg }) => (
+          <div
+            key={label}
+            className={`rounded-lg border border-slate-200 border-l-4 ${borderColor} bg-white p-5 shadow-sm hover:shadow-md transition-shadow`}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className={`p-2 rounded ${iconBg}`}>
+                <Icon className={`h-4 w-4 ${textColor}`} />
               </div>
             </div>
-            <p className={`font-display text-4xl font-extrabold ${text}`}>{value}</p>
+            <p className={`font-display text-3xl font-bold ${textColor}`}>{value}</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-1">{label}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
-        {/* Charts */}
-        <div className="rounded-xl border bg-white shadow-sm p-5 flex flex-col">
-          <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-            <Activity className="h-5 w-5 text-blue-600" />
-            <h2 className="font-display text-lg font-semibold text-slate-800">Status Distribution</h2>
+      {/* ── Charts & summary ────────────────────────────────────────────────── */}
+      <div className="grid gap-6 md:grid-cols-[1fr_1.5fr]">
+
+        {/* Status Distribution */}
+        <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-slate-100 px-5 py-4 flex items-center gap-2">
+            <Activity className="h-4 w-4 text-[#0A2540]" />
+            <h2 className="font-display text-base font-bold text-[#0A2540]">Status Distribution</h2>
           </div>
-          <div className="flex-1 min-h-[250px] relative">
+          <div className="p-5 min-h-[280px] relative">
             {pieData.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-400">
-                No data available
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-sm text-slate-400 gap-2">
+                <Activity className="h-8 w-8 text-slate-200" />
+                No enrollment data yet
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie
                     data={pieData}
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
+                    innerRadius={65}
+                    outerRadius={95}
+                    paddingAngle={3}
                     dataKey="value"
+                    strokeWidth={2}
+                    stroke="#fff"
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "0.375rem",
+                      border: "1px solid #e2e8f0",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                      fontSize: "12px",
+                      fontFamily: "Inter, system-ui, sans-serif",
+                    }}
                   />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: "11px", fontWeight: 600 }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        {/* Recent enrollments table */}
-        <div className="rounded-xl border bg-white shadow-sm flex flex-col">
-          <div className="border-b px-5 py-4 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold text-slate-800">Recent Applications</h2>
-            <Link to="/admin/applications" className="text-sm text-blue-600 hover:underline font-medium">View all</Link>
+        {/* Summary statistics table */}
+        <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-slate-100 px-5 py-4 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-[#0A2540]" />
+            <h2 className="font-display text-base font-bold text-[#0A2540]">Application Summary</h2>
           </div>
-          {recentData.length === 0 ? (
-            <p className="p-6 text-sm text-slate-500 text-center">No enrollment submissions yet.</p>
-          ) : (
-            <ul className="divide-y divide-slate-100 flex-1 overflow-auto max-h-[350px]">
-              {recentData.map((e) => {
-                const meta = STATUS_META[e.status] ?? { label: e.status, tone: "" };
-                return (
-                  <li key={e.id} className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-800 truncate">
-                        {e.first_name} {e.last_name}{" "}
-                        {e.student_no && (
-                          <span className="text-xs font-normal text-slate-500">({e.student_no})</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {e.program_code} · {e.school_year} {e.semester} ·{" "}
-                        {formatDistanceToNow(new Date(e.submitted_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className={`status-pill ${meta.tone}`}>{meta.label}</span>
-                      <Button asChild size="sm" variant="outline" className="h-8">
-                        <Link to="/admin/review/$id" params={{ id: e.id }}>Review</Link>
-                      </Button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <div className="divide-y divide-slate-100">
+            {[
+              { label: "Total Applications", value: total, color: "text-[#0A2540]" },
+              { label: "Pending Review", value: statsData?.pending ?? 0, color: "text-amber-700" },
+              { label: "Under Review", value: statsData?.under_review ?? 0, color: "text-blue-700" },
+              { label: "Approved", value: statsData?.approved ?? 0, color: "text-emerald-700" },
+              { label: "Rejected", value: statsData?.rejected ?? 0, color: "text-rose-700" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors">
+                <span className="text-sm text-slate-600">{label}</span>
+                <span className={`font-display text-xl font-bold ${color}`}>{value}</span>
+              </div>
+            ))}
+          </div>
+
         </div>
       </div>
     </div>

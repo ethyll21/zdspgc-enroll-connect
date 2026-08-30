@@ -14,6 +14,7 @@ import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppProfileRouteImport } from './routes/_app/profile'
+import { Route as AppNotificationsRouteImport } from './routes/_app/notifications'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppApplyRouteImport } from './routes/_app/apply'
 import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
@@ -43,6 +44,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/apply': typeof AppApplyRoute
   '/dashboard': typeof AppDashboardRoute
+  '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
   '/admin/applications': typeof AppAdminApplicationsRoute
   '/applications/$appId': typeof AppApplicationsAppIdRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/apply': typeof AppApplyRoute
   '/dashboard': typeof AppDashboardRoute
+  '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
   '/admin/applications': typeof AppAdminApplicationsRoute
   '/applications/$appId': typeof AppApplicationsAppIdRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_app/apply': typeof AppApplyRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/notifications': typeof AppNotificationsRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/admin/applications': typeof AppAdminApplicationsRoute
   '/_app/applications/$appId': typeof AppApplicationsAppIdRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/apply'
     | '/dashboard'
+    | '/notifications'
     | '/profile'
     | '/admin/applications'
     | '/applications/$appId'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/apply'
     | '/dashboard'
+    | '/notifications'
     | '/profile'
     | '/admin/applications'
     | '/applications/$appId'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_app/apply'
     | '/_app/dashboard'
+    | '/_app/notifications'
     | '/_app/profile'
     | '/_app/admin/applications'
     | '/_app/applications/$appId'
@@ -198,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/notifications': {
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -246,6 +265,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppApplyRoute: typeof AppApplyRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
   AppProfileRoute: typeof AppProfileRoute
   AppAdminApplicationsRoute: typeof AppAdminApplicationsRoute
   AppApplicationsAppIdRoute: typeof AppApplicationsAppIdRoute
@@ -256,6 +276,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppApplyRoute: AppApplyRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
   AppProfileRoute: AppProfileRoute,
   AppAdminApplicationsRoute: AppAdminApplicationsRoute,
   AppApplicationsAppIdRoute: AppApplicationsAppIdRoute,

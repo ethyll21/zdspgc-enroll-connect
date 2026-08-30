@@ -30,6 +30,7 @@ router.post('/', requireAuth, async (req, res) => {
     first_name, middle_name, last_name, gender,
     date_of_birth, address, contact_number, email,
     program_id, year_level, previous_school,
+    student_no,
     // New enrollment form fields
     suffix, place_of_birth, civil_status, religion,
     citizenship, postal_code, major,
@@ -54,9 +55,9 @@ router.post('/', requireAuth, async (req, res) => {
          (user_id, first_name, middle_name, last_name, gender, date_of_birth,
           address, contact_number, email, program_id, year_level, previous_school,
           suffix, place_of_birth, civil_status, religion, citizenship,
-          postal_code, major, family_background, educational_background, pledge_accepted)
+          postal_code, major, family_background, educational_background, pledge_accepted, student_no)
        VALUES ($1,$2,$3,$4,$5,$6::date,$7,$8,$9,$10,$11,$12,
-               $13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21::jsonb,$22)
+               $13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21::jsonb,$22,$23)
        RETURNING *`,
       [
         req.user.id, first_name, middle_name || null, last_name,
@@ -68,7 +69,8 @@ router.post('/', requireAuth, async (req, res) => {
         postal_code || null, major || null,
         JSON.stringify(family_background || {}),
         JSON.stringify(educational_background || {}),
-        pledge_accepted || false
+        pledge_accepted || false,
+        student_no || null
       ]
     );
     res.status(201).json({ student: rows[0] });
@@ -84,6 +86,7 @@ router.patch('/me', requireAuth, async (req, res) => {
     first_name, middle_name, last_name, gender,
     date_of_birth, address, contact_number, email,
     program_id, year_level, previous_school,
+    student_no,
     // New enrollment form fields
     suffix, place_of_birth, civil_status, religion,
     citizenship, postal_code, major,
@@ -113,6 +116,7 @@ router.patch('/me', requireAuth, async (req, res) => {
          family_background = COALESCE($20::jsonb, family_background),
          educational_background = COALESCE($21::jsonb, educational_background),
          pledge_accepted = COALESCE($22, pledge_accepted),
+         student_no = COALESCE($23, student_no),
          updated_at = NOW()
        WHERE user_id = $12 RETURNING *`,
       [
@@ -124,7 +128,8 @@ router.patch('/me', requireAuth, async (req, res) => {
         postal_code || null, major || null,
         family_background ? JSON.stringify(family_background) : null,
         educational_background ? JSON.stringify(educational_background) : null,
-        pledge_accepted != null ? pledge_accepted : null
+        pledge_accepted != null ? pledge_accepted : null,
+        student_no || null
       ]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Student record not found' });

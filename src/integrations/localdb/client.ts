@@ -44,6 +44,7 @@ export interface LocalUser {
   email: string;
   role: 'student' | 'admin';
   full_name: string;
+  student_type?: string;
   profile?: Profile | null;
 }
 
@@ -132,11 +133,40 @@ export interface Program {
   created_at: string;
 }
 
+export interface SubjectScheduleItem {
+  course_no: string;
+  descriptive_title: string;
+  units: number | string;
+  time?: string;
+  days?: string;
+  room?: string;
+  final_grade?: string;
+  posted_by?: string;
+}
+
+export interface RotcWatcDetails {
+  status?: 'enrolled' | 'exempted' | 'deferred' | string;
+  deferred_by?: string;
+  assessed_by?: string;
+  or_no?: string;
+  date?: string;
+  amount?: string;
+  collected_by?: string;
+  commandant?: string;
+}
+
 export interface Enrollment {
   id: string;
   student_id: string;
   school_year: string;
   semester: string;
+  student_type?: 'new' | 'old' | 'transferee' | 'returnee' | string;
+  date_enrolled?: string;
+  subjects?: SubjectScheduleItem[];
+  total_units?: number;
+  advised_by?: string;
+  approved_by?: string;
+  rotc_watc?: RotcWatcDetails;
   status: 'pending' | 'under_review' | 'approved' | 'rejected';
   remarks: string | null;
   submitted_at: string;
@@ -148,9 +178,16 @@ export interface Enrollment {
   student_no?: string;
   first_name?: string;
   last_name?: string;
+  middle_name?: string;
+  gender?: string;
+  date_of_birth?: string;
+  address?: string;
+  contact_number?: string;
   student_email?: string;
   program_code?: string;
   program_name?: string;
+  major?: string;
+  year_level?: number;
 }
 
 export interface ValidationRecord {
@@ -250,10 +287,10 @@ async function apiUpload<T>(endpoint: string, formData: FormData): Promise<T> {
 // AUTH API
 // ══════════════════════════════════════════════════════════════════════════════
 export const auth = {
-  async register(email: string, password: string, full_name?: string) {
+  async register(email: string, password: string, full_name?: string, studentType?: string) {
     const res = await apiFetch<{ token: string; user: LocalUser }>('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, full_name }),
+      body: JSON.stringify({ email, password, full_name, student_type: studentType }),
     });
     setToken(res.token);
     setStoredUser(res.user);
@@ -323,6 +360,16 @@ export const profiles = {
       body: JSON.stringify(data),
     });
   },
+  uploadAvatar(file: File) {
+    const form = new FormData();
+    form.append('avatar', file);
+    return apiUpload<{ profile: Profile; avatar_url: string }>('/api/profiles/me/avatar', form);
+  },
+  avatarUrl(url: string | null | undefined): string | undefined {
+    if (!url) return undefined;
+    if (url.startsWith('http')) return url;
+    return `${BASE_URL}${url}`;
+  },
   list(params?: { search?: string; page?: number; limit?: number }) {
     const qs = new URLSearchParams(params as any).toString();
     return apiFetch<{ profiles: Profile[]; total: number }>(`/api/profiles?${qs}`);
@@ -369,7 +416,17 @@ export const enrollments = {
   my() {
     return apiFetch<{ enrollments: Enrollment[] }>('/api/enrollments/my');
   },
-  submit(data: { school_year: string; semester: string }) {
+  submit(data: {
+    school_year: string;
+    semester: string;
+    student_type?: string;
+    date_enrolled?: string;
+    subjects?: SubjectScheduleItem[];
+    total_units?: number;
+    advised_by?: string;
+    approved_by?: string;
+    rotc_watc?: RotcWatcDetails;
+  }) {
     return apiFetch<{ enrollment: Enrollment }>('/api/enrollments', {
       method: 'POST',
       body: JSON.stringify(data),

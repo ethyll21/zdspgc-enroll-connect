@@ -28,7 +28,18 @@ router.get('/my', requireAuth, async (req, res) => {
 // ─── POST /api/enrollments ────────────────────────────────────────────────────
 // Student: submit enrollment
 router.post('/', requireAuth, async (req, res) => {
-  const { school_year, semester } = req.body;
+  const {
+    school_year,
+    semester,
+    student_type = 'new',
+    date_enrolled,
+    subjects = [],
+    total_units = 0,
+    advised_by = 'CHRISTINA B. ADOLFO (DSA)',
+    approved_by = 'JEFFRYL DAVE S. ALBELLAR (Registrar)',
+    rotc_watc = {},
+  } = req.body;
+
   if (!school_year || !semester) {
     return res.status(400).json({ error: 'school_year and semester are required' });
   }
@@ -54,9 +65,22 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     const { rows } = await db.query(
-      `INSERT INTO public.enrollments (student_id, school_year, semester, status)
-       VALUES ($1, $2, $3, 'pending') RETURNING *`,
-      [student_id, school_year, semester]
+      `INSERT INTO public.enrollments 
+         (student_id, school_year, semester, status, student_type, date_enrolled, subjects, total_units, advised_by, approved_by, rotc_watc)
+       VALUES ($1, $2, $3, 'pending', $4, COALESCE($5::date, CURRENT_DATE), $6::jsonb, $7, $8, $9, $10::jsonb)
+       RETURNING *`,
+      [
+        student_id,
+        school_year,
+        semester,
+        student_type,
+        date_enrolled || null,
+        JSON.stringify(subjects || []),
+        Number(total_units) || 0,
+        advised_by || 'CHRISTINA B. ADOLFO (DSA)',
+        approved_by || 'JEFFRYL DAVE S. ALBELLAR (Registrar)',
+        JSON.stringify(rotc_watc || {})
+      ]
     );
     res.status(201).json({ enrollment: rows[0] });
   } catch (err) {
@@ -86,10 +110,12 @@ router.get('/', async (req, res) => {
     params.push(parseInt(limit), offset);
     const { rows } = await db.query(
       `SELECT e.*, s.student_no, s.first_name, s.last_name, s.email AS student_email,
-              p.code AS program_code, p.name AS program_name
+              p.code AS program_code, p.name AS program_name,
+              pr.avatar_url
        FROM public.enrollments e
        JOIN public.students s ON s.id = e.student_id
        LEFT JOIN public.programs p ON p.id = s.program_id
+       LEFT JOIN public.profiles pr ON pr.id = s.user_id
        ${where}
        ORDER BY e.submitted_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -141,7 +167,12 @@ router.get('/stats/overview', requireAdmin, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT e.*, s.student_no, s.first_name, s.last_name, s.user_id,
+      `SELECT e.*, 
+              s.student_no, s.first_name, s.last_name, s.middle_name, s.suffix,
+              s.user_id, s.gender, s.date_of_birth, s.place_of_birth,
+              s.civil_status, s.religion, s.citizenship, s.address, s.postal_code,
+              s.contact_number, s.email AS student_email,
+              s.family_background, s.educational_background,
               p.code AS program_code, p.name AS program_name
        FROM public.enrollments e
        JOIN public.students s ON s.id = e.student_id

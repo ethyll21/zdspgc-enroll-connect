@@ -59,7 +59,7 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const { doc_type } = req.body;
-  const validDocTypes = ['psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate', 'other'];
+  const validDocTypes = ['registration_form', 'psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate', 'other'];
   if (!doc_type || !validDocTypes.includes(doc_type)) {
     // Clean up uploaded file
     fs.unlinkSync(req.file.path);
@@ -170,6 +170,7 @@ router.get('/', requireAdmin, async (req, res) => {
 
 // ─── GET /api/documents/file/:id (serve file) ────────────────────────────────
 router.get('/file/:id', requireAuth, async (req, res) => {
+  console.log('[Documents/serve] Request for file id:', req.params.id, 'User:', req.user.id);
   try {
     const docRes = await db.query(
       `SELECT d.*, s.user_id FROM public.documents d
@@ -177,11 +178,16 @@ router.get('/file/:id', requireAuth, async (req, res) => {
        WHERE d.id = $1`,
       [req.params.id]
     );
-    if (docRes.rows.length === 0) return res.status(404).json({ error: 'Document not found' });
+    if (docRes.rows.length === 0) {
+      console.log('[Documents/serve] Document not found in DB');
+      return res.status(404).json({ error: 'Document not found' });
+    }
     const doc = docRes.rows[0];
     if (req.user.role !== 'admin' && doc.user_id !== req.user.id) {
+      console.log('[Documents/serve] Access denied. user_id:', doc.user_id, 'req.user.id:', req.user.id);
       return res.status(403).json({ error: 'Access denied' });
     }
+
     const filePath = path.join(UPLOAD_DIR, doc.file_path);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
     res.setHeader('Content-Disposition', `inline; filename="${doc.file_name}"`);

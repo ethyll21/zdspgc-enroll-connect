@@ -22,11 +22,18 @@ function verifyToken(token) {
  * Sets req.user = { id, email, role }
  */
 function requireAuth(req, res, next) {
+  let token = null;
   const authHeader = req.headers['authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7);
+  } else if (req.query.token) {
+    token = req.query.token;
   }
-  const token = authHeader.slice(7);
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Missing or invalid Authorization header or token' });
+  }
+
   try {
     const decoded = verifyToken(token);
     req.user = decoded;

@@ -9,7 +9,7 @@ const SALT_ROUNDS = 12;
 
 // ─── POST /api/auth/register ────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
-  const { email, password, full_name } = req.body;
+  const { email, password, full_name, student_type } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -39,7 +39,7 @@ router.post('/register', async (req, res) => {
     await client.query(
       `INSERT INTO auth.users (id, email, password_hash, raw_user_meta_data, is_active, email_verified, created_at)
        VALUES ($1, $2, $3, $4::jsonb, true, true, NOW())`,
-      [userId, email.toLowerCase(), password_hash, JSON.stringify({ full_name: full_name || '' })]
+      [userId, email.toLowerCase(), password_hash, JSON.stringify({ full_name: full_name || '', student_type: student_type || 'new' })]
     );
 
     // Fetch the created profile
@@ -64,6 +64,7 @@ router.post('/register', async (req, res) => {
         email: email.toLowerCase(),
         full_name: full_name || '',
         role,
+        student_type,
         profile: profileRes.rows[0] || null,
       },
     });
@@ -126,6 +127,7 @@ router.post('/login', async (req, res) => {
         id: user.id,
         email: user.email,
         role,
+        student_type: user.raw_user_meta_data?.student_type || 'new',
         full_name: profileRes.rows[0]?.full_name || user.raw_user_meta_data?.full_name || '',
         profile: profileRes.rows[0] || null,
       },
@@ -141,8 +143,10 @@ router.get('/me', requireAuth, async (req, res) => {
   try {
     const profileRes = await db.query(
       `SELECT p.id, p.email, p.full_name, p.contact_number, p.birthdate, p.gender, p.address, p.avatar_url,
-              p.created_at, p.updated_at
-       FROM public.profiles p WHERE p.id = $1`,
+              p.created_at, p.updated_at, u.raw_user_meta_data
+       FROM public.profiles p 
+       JOIN auth.users u ON u.id = p.id
+       WHERE p.id = $1`,
       [req.user.id]
     );
     const roleRes = await db.query(
@@ -157,6 +161,7 @@ router.get('/me', requireAuth, async (req, res) => {
     res.json({
       user: {
         ...profileRes.rows[0],
+        student_type: profileRes.rows[0].raw_user_meta_data?.student_type || 'new',
         role: roleRes.rows.some(r => r.role === 'admin') ? 'admin' : (roleRes.rows[0]?.role || 'student'),
         roles: roleRes.rows.map(r => r.role),
       },
