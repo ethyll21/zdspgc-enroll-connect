@@ -82,26 +82,18 @@ function AppLayout() {
     <div className="flex min-h-screen bg-background">
 
       {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
-      <aside className={`hidden w-64 shrink-0 flex-col border-r md:flex ${
-        isAdmin
-          ? "bg-[#0A2540] border-white/10"
-          : "bg-white border-slate-200"
-      }`}>
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-white/10 bg-[#0A2540] md:flex">
 
         {/* Logo / brand */}
-        <div className={`flex items-center gap-3 px-5 py-5 border-b ${
-          isAdmin ? "border-white/10" : "border-slate-100"
-        }`}>
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-white shadow-sm p-0.5">
             <img src="/logo.png" alt="ZDSPGC Logo" className="h-full w-full object-contain" />
           </div>
           <div className="leading-tight">
-            <p className={`font-display text-sm font-bold ${isAdmin ? "text-white" : "text-[#0A2540]"}`}>
+            <p className="font-display text-sm font-bold text-white">
               ZDSPGC
             </p>
-            <p className={`text-[10px] uppercase tracking-widest font-medium ${
-              isAdmin ? "text-gold/70" : "text-slate-400"
-            }`}>
+            <p className="text-[10px] uppercase tracking-widest font-medium text-gold/70">
               Dimataling Campus
             </p>
           </div>
@@ -117,9 +109,9 @@ function AppLayout() {
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 rounded px-3 py-2.5 border border-slate-100 bg-slate-50">
-              <GraduationCap className="h-3.5 w-3.5 text-[#0A2540]/60 shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#0A2540]/60">
+            <div className="flex items-center gap-2 rounded px-3 py-2.5 border border-white/20 bg-white/10">
+              <GraduationCap className="h-3.5 w-3.5 text-white shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white">
                 Student Portal
               </span>
             </div>
@@ -134,31 +126,14 @@ function AppLayout() {
                 ? pathname === item.to
                 : pathname.startsWith(item.to);
 
-            if (isAdmin) {
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={`flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-all ${
-                    active
-                      ? "bg-white/10 text-white border-l-2 border-gold pl-[10px]"
-                      : "text-slate-400 hover:bg-white/6 hover:text-white border-l-2 border-transparent pl-[10px]"
-                  }`}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {item.label}
-                </Link>
-              );
-            }
-
             return (
               <Link
                 key={item.to}
                 to={item.to}
                 className={`flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-all ${
                   active
-                    ? "bg-[#0A2540]/8 text-[#0A2540] border-l-2 border-[#0A2540] pl-[10px]"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-[#0A2540] border-l-2 border-transparent pl-[10px]"
+                    ? "bg-white/10 text-white border-l-2 border-gold pl-[10px]"
+                    : "text-slate-400 hover:bg-white/6 hover:text-white border-l-2 border-transparent pl-[10px]"
                 }`}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
@@ -174,12 +149,12 @@ function AppLayout() {
         </nav>
 
         {/* User footer */}
-        <div className={`border-t p-3 ${isAdmin ? "border-white/10" : "border-slate-100"}`}>
-          <div className={`mb-1.5 px-3 py-1 rounded ${isAdmin ? "bg-white/5" : "bg-slate-50"}`}>
-            <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
-              isAdmin ? "text-slate-500" : "text-slate-400"
-            }`}>Signed in as</p>
-            <p className={`text-xs truncate font-medium ${isAdmin ? "text-slate-300" : "text-slate-600"}`}>
+        <div className="border-t border-white/10 p-3">
+          <div className="mb-1.5 rounded bg-white/5 px-3 py-1">
+            <p className="mb-0.5 font-semibold uppercase tracking-wider text-[10px] text-slate-500">
+              Signed in as
+            </p>
+            <p className="truncate text-xs font-medium text-slate-300">
               {user?.email}
             </p>
           </div>
@@ -188,11 +163,7 @@ function AppLayout() {
               <Button
                 variant="ghost"
                 size="sm"
-                className={`w-full justify-start text-sm mt-1 ${
-                  isAdmin
-                    ? "text-slate-400 hover:bg-white/10 hover:text-white"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-[#0A2540]"
-                }`}
+                className="mt-1 w-full justify-start text-sm text-slate-400 hover:bg-white/10 hover:text-white"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
@@ -218,32 +189,24 @@ function AppLayout() {
       <main className="flex-1 overflow-x-hidden flex flex-col">
 
         {/* Top bar */}
-        <header className={`flex items-center justify-between border-b px-4 py-3 md:px-8 shrink-0 ${
-          isAdmin
-            ? "bg-[#0C2D50] border-white/10"
-            : "bg-white border-slate-200"
-        }`}>
+        <header className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#0C2D50] px-4 py-3 md:px-8">
           {/* Mobile: logo */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="flex items-center gap-2 md:hidden">
             <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-white p-0.5 shadow-sm">
               <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
-            <span className={`font-display text-sm font-bold ${isAdmin ? "text-white" : "text-[#0A2540]"}`}>
+            <span className="font-display text-sm font-bold text-white">
               ZDSPGC
             </span>
           </div>
 
-
-
           {/* Right: user info */}
-          <div className="flex items-center gap-3 ml-auto">
-            <div className="hidden md:block text-right">
-              <p className={`text-xs font-semibold leading-none ${isAdmin ? "text-white" : "text-[#0A2540]"}`}>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="hidden text-right md:block">
+              <p className="text-xs font-semibold leading-none text-white">
                 {user?.full_name || user?.email}
               </p>
-              <p className={`text-[10px] mt-0.5 uppercase tracking-wider font-medium ${
-                isAdmin ? "text-gold/70" : "text-slate-400"
-              }`}>
+              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-gold/70">
                 {isAdmin ? "Registrar" : "Student"}
               </p>
             </div>
@@ -252,9 +215,7 @@ function AppLayout() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className={`md:hidden ${
-                    isAdmin ? "text-slate-300 hover:bg-white/10 hover:text-white" : "text-slate-500"
-                  }`}
+                  className="text-slate-300 hover:bg-white/10 hover:text-white md:hidden"
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>
