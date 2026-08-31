@@ -396,21 +396,91 @@ function ApplyPage() {
         </div>
       </div>
 
-      {/* Formal Header */}
-      <div className="rounded-lg border border-primary/20 bg-primary/5 p-8 text-center shadow-sm">
-        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <ShieldCheck className="h-8 w-8 text-primary" />
+      {/* Formal Header — paper form style for Old Students, styled card for New Students */}
+      {studentType === "old" ? (
+        <div className="border border-slate-300 bg-white text-black shadow-sm">
+          {/* Seals + Title row */}
+          <div className="flex items-center justify-between gap-4 px-6 pt-4 pb-2">
+            {/* Left seal */}
+            <div className="shrink-0 flex flex-col items-center">
+              <img
+                src="/province-logo.png"
+                alt="Province of Zamboanga del Sur Official Seal"
+                className="h-20 w-20 object-contain"
+              />
+            </div>
+
+            {/* Center text */}
+            <div className="flex-1 text-center leading-tight">
+              <p className="text-[11px] italic text-slate-600">Republic of the Philippines</p>
+              <p className="text-[11px] italic text-slate-600">Zamboanga Peninsula, Region-IX</p>
+              <p className="text-[12px] font-semibold text-slate-700 mt-0.5">PROVINCE OF ZAMBOANGA DEL SUR</p>
+              <p className="text-[15px] font-extrabold uppercase tracking-tight text-slate-900 mt-0.5 leading-snug">
+                ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE
+              </p>
+              <p className="text-[12px] font-semibold text-slate-700 mt-0.5">DIMATALING, ZAMBOANGA DEL SUR</p>
+            </div>
+
+            {/* Right seal */}
+            <div className="shrink-0 flex flex-col items-center">
+              <img
+                src="/logo.png"
+                alt="Zamboanga Del Sur Provincial Government College Seal"
+                className="h-20 w-20 object-contain"
+              />
+            </div>
+          </div>
+
+          {/* Instruction strip */}
+          <div className="border-t border-slate-300 bg-slate-50 px-6 py-1.5">
+            <p className="text-[11px] font-semibold text-slate-700">
+              WRITE IN CAPITAL LETTERS: Fill-out this Form Correctly &amp; Legibly
+            </p>
+          </div>
         </div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Republic of the Philippines</p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-primary">ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE</h1>
-        <p className="text-sm text-muted-foreground">Dimataling Campus ┬╖ Dimataling, Zamboanga del Sur</p>
-        <div className="mt-4 inline-block rounded-md bg-primary/10 px-6 py-2">
-          <h2 className="font-display text-lg font-bold text-primary uppercase tracking-wide">College Enrollment Form</h2>
+      ) : (
+        /* Paper-form-style header for New Students */
+        <div className="border border-slate-300 bg-white text-black shadow-sm">
+          {/* Top row: Logo | Title | 2x2 photo box */}
+          <div className="flex items-center gap-4 px-6 pt-4 pb-3">
+            {/* Left: ZDSPGC seal */}
+            <div className="shrink-0">
+              <img
+                src="/logo.png"
+                alt="ZDSPGC Seal"
+                className="h-20 w-20 object-contain"
+              />
+            </div>
+
+            {/* Center: Title text */}
+            <div className="flex-1 text-center leading-tight">
+              <p className="text-[11px] italic text-slate-600">Republic of the Philippines</p>
+              <p className="text-[13px] font-bold uppercase text-slate-900 mt-0.5">ZAMBOANGA DEL SUR</p>
+              <p className="text-[13px] font-bold uppercase text-slate-900 leading-snug">PROVINCIAL GOVERNMENT COLLEGE</p>
+              <p className="text-[13px] font-bold uppercase text-slate-900 leading-snug">DIMATALING CAMPUS</p>
+              <p className="text-[11px] text-slate-600 mt-0.5">Dimataling, Zamboanga del Sur</p>
+            </div>
+
+            {/* Right: 2x2 photo placeholder */}
+            <div className="shrink-0 border border-slate-400 flex items-center justify-center bg-slate-50"
+              style={{ width: "72px", height: "88px" }}>
+              <span className="text-[10px] text-slate-400 text-center leading-tight select-none">2x2<br/>Photo</span>
+            </div>
+          </div>
+
+          {/* Dark "COLLEGE ENROLLMENT FORM" banner */}
+          <div className="bg-slate-800 px-6 py-1.5 text-center">
+            <h1 className="text-white font-bold uppercase tracking-wide text-[13px]">COLLEGE ENROLLMENT FORM</h1>
+          </div>
+
+          {/* Direction strip */}
+          <div className="px-6 py-2">
+            <p className="text-[11px] text-slate-700">
+              Direction: Fill-out required informations. Do not leave an item blank (indicate N/A if item is not applicable)
+            </p>
+          </div>
         </div>
-        <p className="mt-3 text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed italic">
-          Direction: Fill-out required information. Do not leave an item blank (indicate N/A if item is not applicable).
-        </p>
-      </div>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(submit, (errs) => {
