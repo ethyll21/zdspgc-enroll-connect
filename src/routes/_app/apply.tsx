@@ -1369,6 +1369,79 @@ function OldStudentSubjectsSection({ form }: { form: any }) {
           <span className="text-lg leading-none">+</span> Add Subject
         </Button>
       </div>
+
+      {/* ── Paper-form bottom section ── */}
+      <div className="mt-6 border border-slate-300 text-black text-xs font-sans overflow-x-auto rounded-none">
+
+        {/* Row 1: Advised By | Approved By | Date */}
+        <div className="grid grid-cols-12 divide-x divide-slate-300 border-b border-slate-300">
+          {/* Advised By */}
+          <div className="col-span-6 p-2 text-center">
+            <p className="font-semibold uppercase text-[10px] leading-tight">Advised By:</p>
+            <p className="font-bold uppercase text-[11px] underline leading-tight mt-0.5">JOANNAH LEA S. LAMBAN</p>
+            <p className="text-[10px] leading-tight">DSA</p>
+          </div>
+
+          {/* Approved By */}
+          <div className="col-span-5 p-2 text-center">
+            <p className="font-semibold uppercase text-[10px] leading-tight">Approved By:</p>
+            <p className="font-bold uppercase text-[11px] underline leading-tight mt-0.5">JEFFRYL DAVE S. ALBELLAR</p>
+            <p className="text-[10px] leading-tight">Registrar</p>
+          </div>
+
+          {/* Date */}
+          <div className="col-span-1 p-2 flex flex-col">
+            <p className="font-semibold text-[10px] leading-tight whitespace-nowrap">Date:</p>
+            <div className="border-b border-slate-400 flex-1 mt-1" />
+          </div>
+        </div>
+
+        {/* Row 2: ROTC/WATC | Commandant | Payment Receipt columns */}
+        <div className="grid grid-cols-12 divide-x divide-slate-300">
+          {/* ROTC/WATC */}
+          <div className="col-span-7 p-2 space-y-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="font-semibold">ROTC/WATC:</span>
+              <label className="flex items-center gap-1 cursor-pointer select-none">
+                <input type="checkbox" className="h-3 w-3 accent-slate-700" /> Deferred by
+              </label>
+              <div className="border-b border-slate-400 w-24 h-4" />
+            </div>
+            <div className="flex items-center gap-3 flex-wrap mt-1">
+              <label className="flex items-center gap-1 cursor-pointer select-none">
+                <input type="checkbox" className="h-3 w-3 accent-slate-700" /> Exempted
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer select-none">
+                <input type="checkbox" className="h-3 w-3 accent-slate-700" /> Enrolled
+              </label>
+            </div>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="font-semibold whitespace-nowrap">Assessed by:</span>
+              <div className="border-b border-slate-400 w-24 h-4" />
+              <span className="font-semibold whitespace-nowrap">OR No.:</span>
+              <div className="border-b border-slate-400 w-24 h-4" />
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-semibold whitespace-nowrap">Commandant:</span>
+              <div className="border-b border-slate-400 flex-1 h-4" />
+            </div>
+          </div>
+
+          {/* Payment Receipt columns */}
+          <div className="col-span-5 grid grid-cols-4 divide-x divide-slate-300">
+            <div className="p-1 text-center font-semibold text-[10px] flex items-center justify-center border-b border-slate-300">Date</div>
+            <div className="p-1 text-center font-semibold text-[10px] flex items-center justify-center border-b border-slate-300">Amount</div>
+            <div className="p-1 text-center font-semibold text-[10px] flex items-center justify-center border-b border-slate-300">Collected by:</div>
+            <div className="p-1 text-center font-semibold text-[10px] flex items-center justify-center border-b border-slate-300">Student's Signature</div>
+            {/* blank receipt row */}
+            <div className="p-2 h-10" />
+            <div className="p-2 h-10" />
+            <div className="p-2 h-10" />
+            <div className="p-2 h-10" />
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
