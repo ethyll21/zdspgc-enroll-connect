@@ -93,9 +93,9 @@ const applySchema = z.object({
 
   // Subjects for Old Students
   subjects: z.array(z.object({
-    course_no: z.string().min(1, { message: "Required" }),
-    descriptive_title: z.string().min(1, { message: "Required" }),
-    units: z.string().min(1, { message: "Required" }),
+    course_no: z.string().optional(),
+    descriptive_title: z.string().optional(),
+    units: z.string().optional(),
     time: z.string().optional(),
     days: z.string().optional(),
     room: z.string().optional(),
@@ -328,12 +328,16 @@ function ApplyPage() {
         await students.create(studentPayload);
       }
 
+      const validSubjects = studentType === "old"
+        ? values.subjects?.filter((s) => s.course_no?.trim() || s.descriptive_title?.trim() || s.units?.trim())
+        : undefined;
+
       // 2. Submit enrollment
       await enrollments.submit({ 
         school_year: values.school_year, 
         semester: values.semester,
         student_type: studentType,
-        subjects: studentType === "old" ? values.subjects : undefined,
+        subjects: validSubjects,
       });
 
       // 3. Upload documents (Only for New Students)
@@ -1231,6 +1235,15 @@ function OldStudentSubjectsSection({ form }: { form: any }) {
     control: form.control,
     name: "subjects",
   });
+
+  useEffect(() => {
+    if (fields.length < 10) {
+      const emptySubject = { course_no: "", descriptive_title: "", units: "", time: "", days: "", room: "", final_grade: "", posted_by: "" };
+      const toAdd = 10 - fields.length;
+      const newSubjects = Array(toAdd).fill(emptySubject);
+      append(newSubjects);
+    }
+  }, [fields.length, append]);
 
   const subjects: any[] = form.watch("subjects") ?? [];
   const totalUnits = subjects.reduce((sum: number, s: any) => sum + (parseFloat(s.units) || 0), 0);
