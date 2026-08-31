@@ -81,6 +81,7 @@ const applySchema = z.object({
   junior_high_school: z.string().optional(),
   junior_high_address: z.string().optional(),
   junior_high_years: z.string().optional(),
+  senior_high_track: z.string().optional(),
   senior_high_school: z.string().optional(),
   senior_high_address: z.string().optional(),
   senior_high_years: z.string().optional(),
@@ -155,6 +156,7 @@ function ApplyPage() {
       // Education
       elementary_school: "", elementary_address: "", elementary_years: "",
       junior_high_school: "", junior_high_address: "", junior_high_years: "",
+      senior_high_track: "",
       senior_high_school: "", senior_high_address: "", senior_high_years: "",
       // Academic
       school_year: CURRENT_SY,
@@ -213,6 +215,7 @@ function ApplyPage() {
         junior_high_school: eb.junior_high_school || "",
         junior_high_address: eb.junior_high_address || "",
         junior_high_years: eb.junior_high_years || "",
+        senior_high_track: eb.senior_high_track || "",
         senior_high_school: eb.senior_high_school || "",
         senior_high_address: eb.senior_high_address || "",
         senior_high_years: eb.senior_high_years || "",
@@ -244,6 +247,7 @@ function ApplyPage() {
         emergency_contact_number: "",
         elementary_school: "", elementary_address: "", elementary_years: "",
         junior_high_school: "", junior_high_address: "", junior_high_years: "",
+        senior_high_track: "",
         senior_high_school: "", senior_high_address: "", senior_high_years: "",
         school_year: CURRENT_SY,
         semester: SEMESTERS[0],
@@ -284,6 +288,7 @@ function ApplyPage() {
         elementary_years: values.elementary_years,
         junior_high_school: values.junior_high_school, junior_high_address: values.junior_high_address,
         junior_high_years: values.junior_high_years,
+        senior_high_track: values.senior_high_track,
         senior_high_school: values.senior_high_school, senior_high_address: values.senior_high_address,
         senior_high_years: values.senior_high_years,
       };
@@ -678,6 +683,158 @@ function ApplyPage() {
             <OldStudentSubjectsSection form={form} />
           )}
 
+          {/* ═══ Personal Information (Old Students only) ═══ */}
+          {studentType === "old" && (
+            <Section title="Personal Information" icon={User}>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <FormField control={form.control} name="last_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name <span className="text-destructive ml-1">*</span></FormLabel>
+                      <FormControl><Input maxLength={80} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="first_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name <span className="text-destructive ml-1">*</span></FormLabel>
+                      <FormControl><Input maxLength={80} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="middle_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Middle Name</FormLabel>
+                      <FormControl><Input maxLength={80} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="suffix"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Suffix</FormLabel>
+                      <FormControl><Input maxLength={10} placeholder="Jr., Sr., III" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FormField control={form.control} name="date_of_birth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date of Birth</FormLabel>
+                      <FormControl><Input type="date" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sex <span className="text-destructive ml-1">*</span></FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="male">Male</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="place_of_birth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Place of Birth</FormLabel>
+                      <FormControl><Input maxLength={200} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+                <FormField control={form.control} name="civil_status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Civil Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {CIVIL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="religion"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Religion</FormLabel>
+                      <FormControl><Input maxLength={100} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="citizenship"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Citizenship</FormLabel>
+                      <FormControl><Input maxLength={100} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="contact_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact No.</FormLabel>
+                      <FormControl><Input placeholder="09XXXXXXXXX" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField control={form.control} name="postal_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code</FormLabel>
+                      <FormControl><Input maxLength={10} placeholder="e.g. 7100" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="mt-6">
+                <FormField control={form.control} name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Permanent Address <span className="text-destructive ml-1">*</span></FormLabel>
+                      <FormControl><Textarea rows={2} maxLength={300} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </Section>
+          )}
+
           {/* ═══ Family Background ═══ */}
           <Section title="Family Background" icon={Users}>
             {/* Father & Mother side-by-side */}
@@ -863,8 +1020,8 @@ function ApplyPage() {
                 <FormField control={form.control} name="elementary_years"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Inclusive Years</FormLabel>
-                      <FormControl><Input maxLength={20} placeholder="e.g. 2010-2016" {...field} /></FormControl>
+                      <FormLabel>{studentType === "old" ? "Year Graduated" : "Inclusive Years"}</FormLabel>
+                      <FormControl><Input maxLength={20} placeholder={studentType === "old" ? "e.g. 2016" : "e.g. 2010-2016"} {...field} /></FormControl>
                     </FormItem>
                   )}
                 />
@@ -872,7 +1029,7 @@ function ApplyPage() {
 
               {/* Junior High School */}
               <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
-                <h3 className="text-sm font-semibold text-primary text-center border-b pb-2">Junior High School</h3>
+                <h3 className="text-sm font-semibold text-primary text-center border-b pb-2">{studentType === "old" ? "Secondary (Senior HS)" : "Junior High School"}</h3>
                 <FormField control={form.control} name="junior_high_school"
                   render={({ field }) => (
                     <FormItem>
@@ -892,16 +1049,26 @@ function ApplyPage() {
                 <FormField control={form.control} name="junior_high_years"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Inclusive Years</FormLabel>
-                      <FormControl><Input maxLength={20} placeholder="e.g. 2016-2020" {...field} /></FormControl>
+                      <FormLabel>{studentType === "old" ? "Year Graduated" : "Inclusive Years"}</FormLabel>
+                      <FormControl><Input maxLength={20} placeholder={studentType === "old" ? "e.g. 2020" : "e.g. 2016-2020"} {...field} /></FormControl>
                     </FormItem>
                   )}
                 />
+                {studentType === "old" && (
+                  <FormField control={form.control} name="senior_high_track"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Track</FormLabel>
+                        <FormControl><Input maxLength={100} placeholder="e.g. STEM, HUMSS, TVL" {...field} /></FormControl>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
-              {/* Senior High School */}
+              {/* Senior High School / School Last Attended (COLLEGE) */}
               <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
-                <h3 className="text-sm font-semibold text-primary text-center border-b pb-2">Senior High School</h3>
+                <h3 className="text-sm font-semibold text-primary text-center border-b pb-2">{studentType === "old" ? "School Last Attended (COLLEGE)" : "Senior High School"}</h3>
                 <FormField control={form.control} name="senior_high_school"
                   render={({ field }) => (
                     <FormItem>
@@ -921,8 +1088,8 @@ function ApplyPage() {
                 <FormField control={form.control} name="senior_high_years"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Inclusive Years</FormLabel>
-                      <FormControl><Input maxLength={20} placeholder="e.g. 2020-2022" {...field} /></FormControl>
+                      <FormLabel>{studentType === "old" ? "Course & Year" : "Inclusive Years"}</FormLabel>
+                      <FormControl><Input maxLength={20} placeholder={studentType === "old" ? "e.g. BSIT 1" : "e.g. 2020-2022"} {...field} /></FormControl>
                     </FormItem>
                   )}
                 />

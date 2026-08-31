@@ -88,6 +88,7 @@ export interface EducationalBackground {
   junior_high_school?: string;
   junior_high_address?: string;
   junior_high_years?: string;
+  senior_high_track?: string;
   senior_high_school?: string;
   senior_high_address?: string;
   senior_high_years?: string;
