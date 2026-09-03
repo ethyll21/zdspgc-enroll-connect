@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Eye, CheckCircle2, XCircle, AlertCircle, ExternalLink, Printer, GraduationCap, School } from "lucide-react";
+import { ArrowLeft, Eye, CheckCircle2, XCircle, AlertCircle, ExternalLink, Printer, GraduationCap, School, Download } from "lucide-react";
 import { enrollments as enrollmentsApi, documents as docsApi, students as studentsApi } from "@/integrations/localdb/client";
 import type { SubjectScheduleItem, RotcWatcDetails } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { toJpeg } from "html-to-image";
+import { jsPDF } from "jspdf";
 
 export const Route = createFileRoute("/_app/applications/$appId")({
   component: ApplicationDetail,
@@ -42,17 +44,61 @@ function ApplicationDetail() {
   const [docRejectRemarks, setDocRejectRemarks] = useState("");
   const [statusSelection, setStatusSelection] = useState("pending");
 
-  const handlePrint = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const handlePrint = useCallback(async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setTimeout(() => {
-      const prevOnAfterPrint = window.onafterprint;
-      window.onafterprint = () => {
-        window.onafterprint = prevOnAfterPrint ?? null;
-      };
-      window.print();
-    }, 0);
-  }, []);
+
+    if (isAdmin) {
+      setTimeout(() => {
+        const prevOnAfterPrint = window.onafterprint;
+        window.onafterprint = () => {
+          window.onafterprint = prevOnAfterPrint ?? null;
+        };
+        window.print();
+      }, 0);
+    } else {
+      const element = document.getElementById("printable-application-form");
+      if (!element) return;
+      
+      const toastId = toast.loading("Generating PDF, please wait...");
+      try {
+        const imgData = await toJpeg(element, {
+          quality: 0.95,
+          backgroundColor: "#ffffff",
+          pixelRatio: 2,
+        });
+
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4",
+        });
+
+        // Calculate image dimensions to fit A4
+        const img = new Image();
+        img.src = imgData;
+        await new Promise((resolve) => { img.onload = resolve; });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (img.height * pdfWidth) / img.width;
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        // Split across multiple pages if form is tall
+        let yOffset = 0;
+        while (yOffset < pdfHeight) {
+          if (yOffset > 0) pdf.addPage();
+          pdf.addImage(imgData, "JPEG", 0, -yOffset, pdfWidth, pdfHeight);
+          yOffset += pageHeight;
+        }
+
+        pdf.save(`Enrollment_Form_${appId}.pdf`);
+        toast.success("PDF downloaded successfully!", { id: toastId });
+      } catch (err: any) {
+        console.error("PDF generation error:", err);
+        toast.error(`Failed to generate PDF: ${err?.message ?? "Unknown error"}`, { id: toastId });
+      }
+    }
+  }, [isAdmin, appId]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["enrollment-detail", appId],
@@ -148,13 +194,22 @@ function ApplicationDetail() {
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
         <Button type="button" onClick={handlePrint} variant="outline" className="shadow-sm font-semibold">
-          <Printer className="mr-2 h-4 w-4" /> Print Pre-Enrollment Form
+          {isAdmin ? (
+            <>
+              <Printer className="mr-2 h-4 w-4" /> Print Pre-Enrollment Form
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" /> Download Form
+            </>
+          )}
         </Button>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════════
           PRINTABLE / FORMAL APPLICATION VIEW
       ══════════════════════════════════════════════════════════════════════════ */}
+      <div id="printable-application-form">
       {isOldStudent ? (
         /* ─── OLD STUDENT FORM: TWO-COPY OFFICIAL SLIP (REGISTRAR + PROGRAM HEAD) ─── */
         <div className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 print:space-y-4">
@@ -189,16 +244,40 @@ function ApplicationDetail() {
         /* ─── NEW STUDENT FORM: FULL DETAILED COLLEGE ENROLLMENT FORM ─── */
         <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
           {/* Header */}
-          <div className="text-center border-b-2 border-black pb-3 relative">
-            <img src="/logo.png" alt="ZDSPGC Logo" className="absolute left-2 top-0 h-16 w-16 object-contain hidden sm:block print:block" />
-            <div className="flex justify-center mb-2 sm:hidden print:hidden">
-              <img src="/logo.png" alt="ZDSPGC Logo" className="h-12 w-12 object-contain" />
+          <div className="pb-2 relative">
+            <div className="flex items-center justify-between pb-2">
+              {/* Left Logo */}
+              <div className="w-[120px] flex justify-center shrink-0">
+                <img src="/logo.png" alt="ZDSPGC Logo" className="h-20 w-20 object-contain hidden sm:block print:block" />
+              </div>
+
+              {/* Center Text */}
+              <div className="flex-1 text-center flex flex-col items-center justify-center">
+                <p className="text-[11px] leading-tight">Republic of the Philippines</p>
+                <p className="text-[13px] font-bold uppercase tracking-wide leading-tight mt-0.5">Zamboanga del Sur</p>
+                <p className="text-[14px] font-bold uppercase tracking-wide leading-tight">Provincial Government College</p>
+                <p className="text-[13px] font-bold uppercase tracking-wide leading-tight">Dimataling Campus</p>
+                <p className="text-[10px] leading-tight mt-0.5">Dimataling, Zamboanga del Sur</p>
+              </div>
+
+              {/* Right 2x2 Box */}
+              <div className="w-[120px] flex justify-center shrink-0 hidden sm:flex print:flex">
+                <div className="w-24 h-24 border border-black flex items-center justify-center text-[10px] text-gray-500">
+                  2x2
+                </div>
+              </div>
             </div>
-            <p className="text-[12px] uppercase">Republic of the Philippines</p>
-            <h1 className="text-lg font-bold uppercase tracking-wide">Zamboanga del Sur Provincial Government College</h1>
-            <p className="text-[10px] uppercase">Dimataling Campus &middot; Dimataling, Zamboanga del Sur</p>
-            <h2 className="text-base font-bold mt-2 uppercase border-t border-b border-black py-1">College Enrollment Form</h2>
-            <p className="text-left text-[12px] italic mt-1 font-semibold uppercase">WRITE IN CAPITAL LETTERS: Fill-out this Form Correctly &amp; Legibly.</p>
+
+            {/* Title Bar */}
+            <div className="bg-black text-white text-center py-1 font-bold text-[13px] tracking-wider uppercase mt-1 print:bg-black print:text-white print:color-adjust-exact">
+              College Enrollment Form
+            </div>
+
+            {/* Direction */}
+            <div className="text-left mt-2 leading-tight">
+              <p className="text-[12px] italic">Direction: Fill-out required informations. Do not leave an item blank</p>
+              <p className="text-[12px] italic ml-10">(indicate N/A if item is not applicable)</p>
+            </div>
           </div>
 
           {/* Course & Major */}
@@ -335,6 +414,7 @@ function ApplicationDetail() {
           </div>
         </div>
       )}
+      </div>
 
       {/* ══════════════════════════════════════════════════════════════════════════
           FUNCTIONAL / UPLOADED DOCUMENTS & ADMIN PANEL (Hidden on Print)
@@ -576,43 +656,44 @@ function OldStudentSlipCopy({
       </div>
 
       {/* Top Student Box */}
-      <div className="border-b border-black py-1.5 pr-6 grid grid-cols-12 gap-1 text-[9px]">
-        {/* Name */}
-        <div className="col-span-6 flex flex-col justify-end border-r border-black pr-2">
-          <div className="flex items-baseline gap-1 mb-0.5">
-            <div className="flex justify-between flex-1 uppercase font-bold text-[10px] px-1">
-              <span className="text-left w-1/3 truncate">{student?.last_name || enrollment.last_name || ""}</span>
-              <span className="text-center w-1/3 truncate">{student?.first_name || enrollment.first_name || ""}</span>
-              <span className="text-right w-1/3 truncate">{student?.middle_name || enrollment.middle_name || ""}</span>
+      <div className="border-b border-black py-2.5 pr-6 grid grid-cols-12 gap-1 text-[10px]">
+          {/* Name Section */}
+          <div className="col-span-6 flex flex-col justify-end border-r border-black pr-2">
+            <div className="flex items-baseline gap-1 mb-1">
+              <span className="font-bold text-[10px] shrink-0 mr-1">NAME:</span>
+              <div className="flex justify-between flex-1 uppercase font-bold text-[12px] px-1">
+                <span className="text-left w-1/3 truncate">{student?.last_name || enrollment.last_name || ""}</span>
+                <span className="text-center w-1/3 truncate">{student?.first_name || enrollment.first_name || ""}</span>
+                <span className="text-right w-1/3 truncate">{student?.middle_name || enrollment.middle_name || ""}</span>
+              </div>
+            </div>
+            <div className="flex justify-between text-[8px] text-slate-500 pt-0.5 px-1 border-t border-slate-300 ml-10">
+              <span className="text-left w-1/3">Last Name</span>
+              <span className="text-center w-1/3">First Name</span>
+              <span className="text-right w-1/3">Middle Name</span>
             </div>
           </div>
-          <div className="flex justify-between text-[7px] text-slate-500 pt-0.5 px-1 border-t border-slate-300">
-            <span className="text-left w-1/3">Last Name</span>
-            <span className="text-center w-1/3">First Name</span>
-            <span className="text-right w-1/3">Middle Name</span>
-          </div>
-        </div>
 
-        {/* Course, Major, Student Number */}
-        <div className="col-span-6 grid grid-cols-3 gap-1 pl-1">
-          <div>
-            <span className="font-bold text-[8px] block">COURSE:</span>
-            <span className="font-bold text-[9px] uppercase">{student?.program_code || enrollment.program_code || "—"}</span>
-          </div>
-          <div>
-            <span className="font-bold text-[8px] block">MAJOR:</span>
-            <span className="font-bold text-[9px] uppercase">{student?.major || "N/A"}</span>
-          </div>
-          <div>
-            <span className="font-bold text-[8px] block">STUDENT NUMBER:</span>
-            <span className="font-mono font-bold text-[9.5px] uppercase">{student?.student_no || "—"}</span>
+          {/* Course, Major, Student Number */}
+          <div className="col-span-6 grid grid-cols-3 gap-1 pl-2">
+            <div>
+              <span className="font-bold text-[9px] block">COURSE:</span>
+              <span className="font-bold text-[11px] uppercase">{student?.program_code || enrollment.program_code || "—"}</span>
+            </div>
+            <div>
+              <span className="font-bold text-[9px] block">MAJOR:</span>
+              <span className="font-bold text-[11px] uppercase">{student?.major || "N/A"}</span>
+            </div>
+            <div>
+              <span className="font-bold text-[9px] block">STUDENT NUMBER:</span>
+              <span className="font-mono font-bold text-[11px] uppercase">{student?.student_no || "—"}</span>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Term & Registration Details Grid */}
-      <div className="border-b border-black py-1.5 pr-6 grid grid-cols-12 gap-2 text-[8.5px]">
-        <div className="col-span-5 space-y-0.5 border-r border-black pr-2">
+      <div className="border-b border-black py-2 pr-6 grid grid-cols-12 gap-2 text-[10px]">
+        <div className="col-span-5 space-y-1 border-r border-black pr-2">
           <div className="flex justify-between">
             <span><strong>Semester:</strong> {enrollment.semester?.includes("1st") ? "[✔] 1st" : enrollment.semester?.includes("2nd") ? "[✔] 2nd" : enrollment.semester}</span>
             <span><strong>Summer:</strong> {enrollment.semester === "Summer" ? "[✔]" : "____"}</span>
@@ -627,9 +708,9 @@ function OldStudentSlipCopy({
         </div>
 
         {/* Status of Registration */}
-        <div className="col-span-5 space-y-0.5 border-r border-black pr-2">
-          <span className="font-bold uppercase text-[8px] block">STATUS OF REGISTRATION</span>
-          <div className="grid grid-cols-2 gap-0.5 text-[8px]">
+        <div className="col-span-5 space-y-1 border-r border-black pr-2">
+          <span className="font-bold uppercase text-[10px] block">STATUS OF REGISTRATION</span>
+          <div className="grid grid-cols-2 gap-0.5 text-[10px]">
             <span>{enrollment.student_type === "new" ? "[✔]" : "[ ]"} New Student</span>
             <span>{enrollment.student_type === "transferee" ? "[✔]" : "[ ]"} Transferee</span>
             <span>{isOldStudent ? "[✔]" : "[ ]"} Old Student</span>
@@ -639,8 +720,8 @@ function OldStudentSlipCopy({
 
         {/* Sex */}
         <div className="col-span-2 flex flex-col justify-center">
-          <span className="font-bold uppercase text-[8px] block">SEX</span>
-          <div className="text-[8px] space-y-0.5">
+          <span className="font-bold uppercase text-[10px] block">SEX</span>
+          <div className="text-[10px] space-y-0.5">
             <span>{student?.gender === "male" ? "[✔]" : "[ ]"} Male</span><br/>
             <span>{student?.gender === "female" ? "[✔]" : "[ ]"} Female</span>
           </div>

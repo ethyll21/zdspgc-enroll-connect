@@ -10,7 +10,7 @@ export const REQUIRED_DOCUMENTS = [
 
 export type DocumentKey = (typeof REQUIRED_DOCUMENTS)[number]["key"];
 
-export const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"];
+export const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 export const STUDENT_TYPES = [
   { value: "new",        label: "New Student" },
   { value: "transferee", label: "Transferee" },
