@@ -259,8 +259,10 @@ async function apiFetch<T>(
   const data = await res.json().catch(() => ({ error: 'Invalid JSON response' }));
 
   if (!res.ok) {
-    const err = (data as ApiError).error || `HTTP ${res.status}`;
-    throw new Error(err);
+    const apiErr = data as any;
+    const err = apiErr.error || `HTTP ${res.status}`;
+    const detailMsg = apiErr.details ? ` (${apiErr.details})` : '';
+    throw new Error(`${err}${detailMsg}`);
   }
   return data as T;
 }

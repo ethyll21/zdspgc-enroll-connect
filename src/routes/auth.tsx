@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { GraduationCap, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,62 +163,7 @@ function AuthPage() {
                     )}
                   />
 
-                  {/* ── Student Type Picker ── */}
-                  <FormField
-                    control={form.control}
-                    name="studentType"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2.5">
-                        <FormLabel className="font-medium">I am a…</FormLabel>
-                        <div className="grid grid-cols-2 gap-3">
-                          {([
-                            {
-                              value: "new",
-                              icon: GraduationCap,
-                              label: "New Student",
-                              sub: "First-time enrollee",
-                            },
-                            {
-                              value: "returning",
-                              icon: RotateCcw,
-                              label: "Returning Student",
-                              sub: "Re-enrolling student",
-                            },
-                          ] as const).map(({ value, icon: Icon, label, sub }) => {
-                            const active = field.value === value;
-                            return (
-                              <button
-                                key={value}
-                                type="button"
-                                id={`student-type-${value}`}
-                                onClick={() => field.onChange(value)}
-                                className={[
-                                  "flex flex-col items-center gap-1.5 rounded-xl border-2 px-3 py-4 text-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                                  active
-                                    ? "border-primary bg-primary/8 shadow-sm"
-                                    : "border-slate-200 bg-white hover:border-primary/40 hover:bg-primary/4",
-                                ].join(" ")}
-                              >
-                                <span
-                                  className={[
-                                    "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
-                                    active ? "bg-primary text-white" : "bg-slate-100 text-slate-500",
-                                  ].join(" ")}
-                                >
-                                  <Icon className="h-4.5 w-4.5" />
-                                </span>
-                                <span className={`text-[13px] font-semibold leading-snug ${active ? "text-primary" : "text-slate-700"}`}>
-                                  {label}
-                                </span>
-                                <span className="text-[11px] text-muted-foreground leading-none">{sub}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
                 </>
               )}
 
