@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Upload, X, FileText, User, GraduationCap, School, Paperclip, CheckCircle2, AlertCircle, ShieldCheck, Users, BookOpen } from "lucide-react";
 import { programs as programsApi, students, enrollments, documents as docsApi } from "@/integrations/localdb/client";
 import type { FamilyBackground, EducationalBackground } from "@/integrations/localdb/client";
@@ -91,6 +91,8 @@ const applySchema = z.object({
   year_level: z.string().min(1, { message: "Please select your Year Level" }),
   school_year: z.string().min(1, { message: "Please enter the School Year" }),
   semester: z.string().min(1, { message: "Please select the Semester" }),
+  student_type: z.string().optional(),
+  date_enrolled: z.string().optional(),
 
   // Subjects for Old Students
   subjects: z.array(z.object({
@@ -147,7 +149,6 @@ function ApplyPage() {
       citizenship: "Filipino", postal_code: "",
       program_id: "", major: "",
       year_level: "1",
-      // Family
       father_name: "", father_occupation: "", father_company: "",
       father_address: "", father_contact: "",
       mother_name: "", mother_occupation: "", mother_company: "",
@@ -156,14 +157,14 @@ function ApplyPage() {
       guardian_address: "", guardian_contact: "",
       emergency_contact_person: "", emergency_contact_address: "",
       emergency_contact_number: "",
-      // Education
       elementary_school: "", elementary_address: "", elementary_years: "",
       junior_high_school: "", junior_high_address: "", junior_high_years: "",
       senior_high_track: "N/A",
       senior_high_school: "", senior_high_address: "", senior_high_years: "",
-      // Academic
       school_year: CURRENT_SY,
       semester: SEMESTERS[0],
+      student_type: "new",
+      date_enrolled: new Date().toISOString().split("T")[0],
       pledge_accepted: false,
       subjects: [],
     },
@@ -256,6 +257,8 @@ function ApplyPage() {
         senior_high_school: "", senior_high_address: "", senior_high_years: "",
         school_year: CURRENT_SY,
         semester: SEMESTERS[0],
+        student_type: "old",
+        date_enrolled: new Date().toISOString().split("T")[0],
         pledge_accepted: false,
       });
     }
@@ -341,7 +344,7 @@ function ApplyPage() {
       await enrollments.submit({ 
         school_year: values.school_year, 
         semester: values.semester,
-        student_type: studentType,
+        student_type: values.student_type || studentType,
         subjects: validSubjects,
       });
 
@@ -1036,14 +1039,15 @@ function OldStudentSubjectsSection({ form }: { form: any }) {
     name: "subjects",
   });
 
+  const initialized = useRef(false);
+
   useEffect(() => {
-    if (fields.length < 10) {
-      const emptySubject = { course_no: "", descriptive_title: "", units: "", time: "", days: "", room: "", final_grade: "", posted_by: "" };
-      const toAdd = 10 - fields.length;
-      const newSubjects = Array(toAdd).fill(emptySubject);
-      append(newSubjects);
-    }
-  }, [fields.length, append]);
+    if (initialized.current) return;
+    initialized.current = true;
+    const emptySubject = { course_no: "", descriptive_title: "", units: "", time: "", days: "", room: "", final_grade: "", posted_by: "" };
+    // Reset to exactly 5 rows: remove all existing, then add 5 fresh empty rows
+    form.setValue("subjects", Array(5).fill(null).map(() => ({ ...emptySubject })), { shouldDirty: false });
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const subjects: any[] = form.watch("subjects") ?? [];
   const totalUnits = subjects.reduce((sum: number, s: any) => sum + (parseFloat(s.units) || 0), 0);
@@ -1170,78 +1174,7 @@ function OldStudentSubjectsSection({ form }: { form: any }) {
         </Button>
       </div>
 
-      {/* ── Paper-form bottom section ── */}
-      <div className="mt-6 border border-slate-300 text-black text-xs font-sans overflow-x-auto rounded-none">
 
-        {/* Row 1: Advised By | Approved By | Date */}
-        <div className="grid grid-cols-12 divide-x divide-slate-300 border-b border-slate-300">
-          {/* Advised By */}
-          <div className="col-span-6 p-2 text-center">
-            <p className="font-semibold uppercase text-[10px] leading-tight">Advised By:</p>
-            <p className="font-bold uppercase text-[11px] underline leading-tight mt-0.5">JOANNAH LEA S. LAMBAN</p>
-            <p className="text-[10px] leading-tight">DSA</p>
-          </div>
-
-          {/* Approved By */}
-          <div className="col-span-5 p-2 text-center">
-            <p className="font-semibold uppercase text-[10px] leading-tight">Approved By:</p>
-            <p className="font-bold uppercase text-[11px] underline leading-tight mt-0.5">JEFFRYL DAVE S. ALBELLAR</p>
-            <p className="text-[10px] leading-tight">Registrar</p>
-          </div>
-
-          {/* Date */}
-          <div className="col-span-1 p-2 flex flex-col">
-            <p className="font-semibold text-[10px] leading-tight whitespace-nowrap">Date:</p>
-            <div className="border-b border-slate-400 flex-1 mt-1" />
-          </div>
-        </div>
-
-        {/* Row 2: ROTC/WATC | Commandant | Payment Receipt columns */}
-        <div className="grid grid-cols-12 divide-x divide-slate-300">
-          {/* ROTC/WATC */}
-          <div className="col-span-7 p-2 space-y-1">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-semibold">ROTC/WATC:</span>
-              <label className="flex items-center gap-1 cursor-pointer select-none">
-                <input type="checkbox" className="h-3 w-3 accent-slate-700" /> Deferred by
-              </label>
-              <div className="border-b border-slate-400 w-24 h-4" />
-            </div>
-            <div className="flex items-center gap-3 flex-wrap mt-1">
-              <label className="flex items-center gap-1 cursor-pointer select-none">
-                <input type="checkbox" className="h-3 w-3 accent-slate-700" /> Exempted
-              </label>
-              <label className="flex items-center gap-1 cursor-pointer select-none">
-                <input type="checkbox" className="h-3 w-3 accent-slate-700" /> Enrolled
-              </label>
-            </div>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className="font-semibold whitespace-nowrap">Assessed by:</span>
-              <div className="border-b border-slate-400 w-24 h-4" />
-              <span className="font-semibold whitespace-nowrap">OR No.:</span>
-              <div className="border-b border-slate-400 w-24 h-4" />
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="font-semibold whitespace-nowrap">Commandant:</span>
-              <div className="border-b border-slate-400 flex-1 h-4" />
-            </div>
-          </div>
-
-          {/* Payment Receipt columns */}
-          <div className="col-span-5 grid grid-cols-4 divide-x divide-slate-300">
-            <div className="p-1 text-center font-semibold text-[10px] flex items-center justify-center border-b border-slate-300">Date</div>
-            <div className="p-1 text-center font-semibold text-[10px] flex items-center justify-center border-b border-slate-300">Amount</div>
-            <div className="p-1 text-center font-semibold text-[10px] flex items-center justify-center border-b border-slate-300">Collected by:</div>
-            <div className="p-1 text-center font-semibold text-[10px] flex items-center justify-center border-b border-slate-300">Student's Signature</div>
-            {/* blank receipt row */}
-            <div className="p-2 h-10" />
-            <div className="p-2 h-10" />
-            <div className="p-2 h-10" />
-            <div className="p-2 h-10" />
-          </div>
-        </div>
-
-      </div>
     </div>
   );
 }
@@ -1249,40 +1182,41 @@ function OldStudentSubjectsSection({ form }: { form: any }) {
 function OldStudentPaperFormHeader({ form, programList, studentType }: { form: any; programList: any[]; studentType: string }) {
   return (
     <div className="mb-8 border border-slate-300 bg-white p-0 text-black font-sans shadow-sm rounded-none overflow-hidden">
+      {/* Row 1: Name | Course | Major | Student Number */}
       <div className="grid grid-cols-12 divide-x divide-slate-300 border-b border-slate-300">
-        <div className="col-span-12 md:col-span-6 p-3 space-y-1">
-          <div className="flex gap-2 items-baseline">
-            <span className="font-bold text-sm uppercase">NAME:</span>
-            <div className="grid grid-cols-3 gap-2 flex-1 pt-4">
+        <div className="col-span-12 md:col-span-6 p-4 space-y-2">
+          <div className="flex gap-3 items-baseline">
+            <span className="font-bold text-base uppercase shrink-0">NAME:</span>
+            <div className="grid grid-cols-3 gap-3 flex-1 pt-5">
               <FormField control={form.control} name="last_name" render={({ field }) => (
                 <FormItem className="space-y-0">
-                  <FormControl><Input className="h-7 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent" {...field} /></FormControl>
-                  <FormLabel className="text-[10px] italic text-center block pt-1 font-normal text-black">Last Name</FormLabel>
+                  <FormControl><Input className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent text-center" {...field} /></FormControl>
+                  <FormLabel className="text-[11px] italic text-center block pt-1 font-normal text-black">Last Name</FormLabel>
                 </FormItem>
               )} />
               <FormField control={form.control} name="first_name" render={({ field }) => (
                 <FormItem className="space-y-0">
-                  <FormControl><Input className="h-7 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent" {...field} /></FormControl>
-                  <FormLabel className="text-[10px] italic text-center block pt-1 font-normal text-black">First Name</FormLabel>
+                  <FormControl><Input className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent text-center" {...field} /></FormControl>
+                  <FormLabel className="text-[11px] italic text-center block pt-1 font-normal text-black">First Name</FormLabel>
                 </FormItem>
               )} />
               <FormField control={form.control} name="middle_name" render={({ field }) => (
                 <FormItem className="space-y-0">
-                  <FormControl><Input className="h-7 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent" {...field} /></FormControl>
-                  <FormLabel className="text-[10px] italic text-center block pt-1 font-normal text-black">Middle Name</FormLabel>
+                  <FormControl><Input className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent text-center" {...field} /></FormControl>
+                  <FormLabel className="text-[11px] italic text-center block pt-1 font-normal text-black">Middle Name</FormLabel>
                 </FormItem>
               )} />
             </div>
           </div>
         </div>
-        
-        <div className="col-span-4 md:col-span-2 p-3 flex flex-col">
-          <span className="font-bold text-xs uppercase mb-1">COURSE</span>
+
+        <div className="col-span-4 md:col-span-2 p-4 flex flex-col">
+          <span className="font-bold text-sm uppercase mb-2">COURSE</span>
           <FormField control={form.control} name="program_id" render={({ field }) => (
             <FormItem className="space-y-0 flex-1">
               <Select onValueChange={field.onChange} value={field.value || undefined}>
                 <FormControl>
-                  <SelectTrigger className="h-7 border-0 border-b border-slate-300 rounded-none shadow-none focus:ring-0 px-1 text-xs bg-transparent">
+                  <SelectTrigger className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus:ring-0 px-1 text-sm bg-transparent font-normal">
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                 </FormControl>
@@ -1294,67 +1228,81 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
           )} />
         </div>
 
-        <div className="col-span-4 md:col-span-2 p-3 flex flex-col">
-          <span className="font-bold text-xs uppercase mb-1">MAJOR</span>
+        <div className="col-span-4 md:col-span-2 p-4 flex flex-col">
+          <span className="font-bold text-sm uppercase mb-2">MAJOR</span>
           <FormField control={form.control} name="major" render={({ field }) => (
             <FormItem className="space-y-0 flex-1">
-              <FormControl><Input className="h-7 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-xs bg-transparent" {...field} /></FormControl>
+              <FormControl><Input className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent font-normal" {...field} /></FormControl>
             </FormItem>
           )} />
         </div>
 
-        <div className="col-span-4 md:col-span-2 p-3 flex flex-col">
-          <span className="font-bold text-xs uppercase mb-1">STUDENT NUMBER</span>
+        <div className="col-span-4 md:col-span-2 p-4 flex flex-col">
+          <span className="font-bold text-sm uppercase mb-2">STUDENT NUMBER</span>
           <FormField control={form.control} name="student_no" render={({ field }) => (
             <FormItem className="space-y-0 flex-1">
-              <FormControl><Input className="h-7 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-xs bg-transparent font-mono uppercase" {...field} /></FormControl>
+              <FormControl><Input className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent font-mono uppercase font-normal" {...field} /></FormControl>
             </FormItem>
           )} />
         </div>
       </div>
 
+      {/* Row 2: Term Info | Status of Registration | Sex */}
       <div className="grid grid-cols-12 divide-x divide-slate-300">
-        <div className="col-span-12 md:col-span-6 p-3 grid grid-cols-2 gap-x-6 gap-y-3 text-xs font-semibold">
-          <div className="flex items-center gap-2">
-            <span>Semester:</span>
+        <div className="col-span-12 md:col-span-6 p-4 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+          <div className="flex items-center gap-3">
+            <span className="font-semibold shrink-0">Semester:</span>
             <FormField control={form.control} name="semester" render={({ field }) => (
               <FormItem className="space-y-0 flex-1">
-                <Select onValueChange={field.onChange} value={field.value || undefined}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value === "Summer" ? undefined : (field.value || undefined)}
+                >
                   <FormControl>
-                    <SelectTrigger className="h-6 border-0 border-b border-slate-300 rounded-none shadow-none focus:ring-0 px-1 text-xs bg-transparent">
+                    <SelectTrigger className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus:ring-0 px-1 text-sm bg-transparent font-normal">
                       <SelectValue placeholder="" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="1st Semester">1st</SelectItem>
                     <SelectItem value="2nd Semester">2nd</SelectItem>
-                    <SelectItem value="Summer">Summer</SelectItem>
                   </SelectContent>
                 </Select>
               </FormItem>
             )} />
           </div>
-          <div className="flex items-center gap-2">
-            <span>Summer:</span>
-            <div className="border-b border-slate-300 flex-1 h-5 flex items-end justify-center px-1 font-normal">
-              {form.watch("semester") === "Summer" ? "Yes" : ""}
+          <div
+            className="flex items-center gap-3 cursor-pointer select-none"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (form.getValues("semester") === "Summer") {
+                form.setValue("semester", "", { shouldValidate: true, shouldDirty: true });
+              } else {
+                form.setValue("semester", "Summer", { shouldValidate: true, shouldDirty: true });
+              }
+            }}
+          >
+            <span className="font-semibold shrink-0">Summer:</span>
+            <div className="border-b border-slate-300 flex-1 h-8 flex items-center justify-center px-1 font-normal text-sm">
+              {form.watch("semester") === "Summer" ? "✔" : ""}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span>SY:</span>
+          <div className="flex items-center gap-3">
+            <span className="font-semibold shrink-0">SY:</span>
             <FormField control={form.control} name="school_year" render={({ field }) => (
               <FormItem className="space-y-0 flex-1">
-                <FormControl><Input className="h-6 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-xs bg-transparent" {...field} /></FormControl>
+                <FormControl><Input className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent font-normal" {...field} /></FormControl>
               </FormItem>
             )} />
           </div>
-          <div className="flex items-center gap-2">
-            <span>Year Level:</span>
+          <div className="flex items-center gap-3">
+            <span className="font-semibold shrink-0">Year Level:</span>
             <FormField control={form.control} name="year_level" render={({ field }) => (
               <FormItem className="space-y-0 flex-1">
                 <Select onValueChange={field.onChange} value={field.value || undefined}>
                   <FormControl>
-                    <SelectTrigger className="h-6 border-0 border-b border-slate-300 rounded-none shadow-none focus:ring-0 px-1 text-xs bg-transparent">
+                    <SelectTrigger className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus:ring-0 px-1 text-sm bg-transparent font-normal">
                       <SelectValue placeholder="" />
                     </SelectTrigger>
                   </FormControl>
@@ -1365,40 +1313,48 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
               </FormItem>
             )} />
           </div>
-          <div className="col-span-2 flex items-center gap-2 mt-1">
-            <span>Date Enrolled:</span>
-            <div className="border-b border-slate-300 flex-1 h-5 flex items-end font-normal px-2">
-              {new Date().toLocaleDateString()}
+          <div className="col-span-2 flex items-center gap-3">
+            <span className="font-semibold shrink-0">Date Enrolled:</span>
+            <FormField control={form.control} name="date_enrolled" render={({ field }) => (
+              <FormItem className="space-y-0 flex-1">
+                <FormControl>
+                  <Input
+                    type="date"
+                    className="h-8 border-0 border-b border-slate-300 rounded-none shadow-none focus-visible:ring-0 px-1 text-sm bg-transparent font-normal"
+                    {...field}
+                  />
+                </FormControl>
+              </FormItem>
+            )} />
+          </div>
+        </div>
+
+        <div className="col-span-8 md:col-span-4 p-4">
+          <span className="font-bold text-sm uppercase block mb-4">STATUS OF REGISTRATION</span>
+          <div className="grid grid-cols-2 gap-y-4 gap-x-3 text-sm">
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => form.setValue("student_type", "new", { shouldValidate: true, shouldDirty: true })}>
+              <span>{form.watch("student_type") === "new" ? "[✔]" : "[ ]"} New Student</span>
+            </div>
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => form.setValue("student_type", "transferee", { shouldValidate: true, shouldDirty: true })}>
+              <span>{form.watch("student_type") === "transferee" ? "[✔]" : "[ ]"} Transferee</span>
+            </div>
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => form.setValue("student_type", "old", { shouldValidate: true, shouldDirty: true })}>
+              <span>{form.watch("student_type") === "old" ? "[✔]" : "[ ]"} Old Student</span>
+            </div>
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => form.setValue("student_type", "returnee", { shouldValidate: true, shouldDirty: true })}>
+              <span>{form.watch("student_type") === "returnee" ? "[✔]" : "[ ]"} Returning</span>
             </div>
           </div>
         </div>
 
-        <div className="col-span-8 md:col-span-4 p-3">
-          <span className="font-bold text-xs uppercase block mb-3">STATUS OF REGISTRATION</span>
-          <div className="grid grid-cols-2 gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <span>{studentType === "new" ? "[✔]" : "[ ]"} New Student</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>{studentType === "transferee" ? "[✔]" : "[ ]"} Transferee</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>{studentType === "old" ? "[✔]" : "[ ]"} Old Student</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>{studentType === "returnee" ? "[✔]" : "[ ]"} Returning</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-span-4 md:col-span-2 p-3">
-          <span className="font-bold text-xs uppercase block mb-3">SEX</span>
+        <div className="col-span-4 md:col-span-2 p-4">
+          <span className="font-bold text-sm uppercase block mb-4">SEX</span>
           <FormField control={form.control} name="gender" render={({ field }) => (
-            <FormItem className="space-y-3">
-              <div className="flex items-center gap-2 text-xs cursor-pointer select-none" onClick={() => field.onChange("male")}>
+            <FormItem className="space-y-4">
+              <div className="flex items-center gap-2 text-sm cursor-pointer select-none" onClick={() => field.onChange("male")}>
                 <span>{field.value === "male" ? "[✔]" : "[ ]"} Male</span>
               </div>
-              <div className="flex items-center gap-2 text-xs cursor-pointer select-none" onClick={() => field.onChange("female")}>
+              <div className="flex items-center gap-2 text-sm cursor-pointer select-none" onClick={() => field.onChange("female")}>
                 <span>{field.value === "female" ? "[✔]" : "[ ]"} Female</span>
               </div>
             </FormItem>
@@ -1431,15 +1387,16 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
 
       {/* Header */}
       <div className="text-center relative pb-2 border-b border-black pr-6">
-        <div className="flex items-center justify-center gap-3">
-          <img src="/logo.png" alt="ZDSPGC Logo" className="h-10 w-10 object-contain hidden sm:block print:block" />
-          <div>
+        <div className="flex items-center justify-center gap-6">
+          <img src="/province-logo-white.png" alt="Province Logo" className="h-14 w-14 object-contain hidden sm:block print:block" />
+          <div className="text-center">
             <p className="text-[8px] uppercase tracking-wide">Republic of the Philippines</p>
             <p className="text-[8px] uppercase font-semibold">Zamboanga Peninsula, Region-IX</p>
             <p className="text-[8.5px] uppercase font-bold">PROVINCE OF ZAMBOANGA DEL SUR</p>
             <h1 className="text-xs font-black uppercase tracking-wider">ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE</h1>
             <p className="text-[8px] uppercase">DIMATALING, ZAMBOANGA DEL SUR</p>
           </div>
+          <img src="/logo.png" alt="ZDSPGC Logo" className="h-14 w-14 object-contain hidden sm:block print:block" />
         </div>
         <p className="text-left text-[7.5px] italic mt-1 font-bold uppercase tracking-wide border-t border-black pt-0.5">
           WRITE IN CAPITAL LETTERS: Fill-out this Form Correctly &amp; Legibly.
@@ -1489,7 +1446,7 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
             <span><strong>SY:</strong> {vals.school_year}</span>
             <span><strong>Year Level:</strong> {vals.year_level ? `${vals.year_level} Year` : "—"}</span>
           </div>
-          <div><strong>Date Enrolled:</strong> {new Date().toLocaleDateString()}</div>
+          <div><strong>Date Enrolled:</strong> {vals.date_enrolled ? new Date(vals.date_enrolled + "T00:00:00").toLocaleDateString() : new Date().toLocaleDateString()}</div>
         </div>
         <div className="col-span-5 space-y-0.5 border-r border-black pr-2">
           <span className="font-bold uppercase text-[8px] block">STATUS OF REGISTRATION</span>

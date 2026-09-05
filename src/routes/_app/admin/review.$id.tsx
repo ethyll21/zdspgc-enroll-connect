@@ -512,15 +512,16 @@ function AdminSlipCopy({
     <div className="border border-black p-3.5 relative text-[10px] leading-tight font-sans">
       <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold tracking-widest uppercase [writing-mode:vertical-rl] rotate-180 text-black border-l border-black pl-1 h-36 flex items-center justify-center">{copyTitle}</div>
       <div className="text-center relative pb-2 border-b border-black pr-6">
-        <div className="flex items-center justify-center gap-3">
-          <img src="/logo.png" alt="ZDSPGC Logo" className="h-10 w-10 object-contain hidden sm:block print:block" />
-          <div>
+        <div className="flex items-center justify-center gap-6">
+          <img src="/province-logo-white.png" alt="Province Logo" className="h-14 w-14 object-contain hidden sm:block print:block" />
+          <div className="text-center">
             <p className="text-[8px] uppercase tracking-wide">Republic of the Philippines</p>
             <p className="text-[8px] uppercase font-semibold">Zamboanga Peninsula, Region-IX</p>
             <p className="text-[8.5px] uppercase font-bold">PROVINCE OF ZAMBOANGA DEL SUR</p>
             <h1 className="text-xs font-black uppercase tracking-wider">ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE</h1>
             <p className="text-[8px] uppercase">DIMATALING, ZAMBOANGA DEL SUR</p>
           </div>
+          <img src="/logo.png" alt="ZDSPGC Logo" className="h-14 w-14 object-contain hidden sm:block print:block" />
         </div>
         <p className="text-left text-[7.5px] italic mt-1 font-bold uppercase tracking-wide border-t border-black pt-0.5">WRITE IN CAPITAL LETTERS: Fill-out this Form Correctly &amp; Legibly.</p>
       </div>

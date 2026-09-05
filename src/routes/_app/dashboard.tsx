@@ -23,12 +23,11 @@ const STATUS_META: Record<string, { label: string; tone: string; icon: any }> = 
 
 
 
-const STEPS = ["Submitted", "Documents", "Review", "Approved"];
+const STEPS = ["Submitted", "Under Review", "Approved"];
 
 function getStepIndex(status: string, hasDocs: boolean) {
-  if (status === "approved") return 3;
-  if (status === "under_review") return 2;
-  if (hasDocs) return 1;
+  if (status === "approved") return 2;
+  if (status === "under_review") return 1;
   return 0;
 }
 
