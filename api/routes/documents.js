@@ -128,18 +128,68 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
   if (!status || !validStatuses.includes(status)) {
     return res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}` });
   }
+
+  const client = await db.getClient();
   try {
-    const { rows } = await db.query(
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
       `UPDATE public.documents
        SET status = $1::document_status, remarks = $2, reviewed_at = NOW(), reviewed_by = $3
        WHERE id = $4 RETURNING *`,
       [status, remarks || null, req.user.id, req.params.id]
     );
-    if (rows.length === 0) return res.status(404).json({ error: 'Document not found' });
-    res.json({ document: rows[0] });
+    if (rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    const doc = rows[0];
+
+    // Notify the student about the document review
+    const studentRes = await client.query(
+      `SELECT s.user_id FROM public.documents d
+       JOIN public.students s ON s.id = d.student_id
+       WHERE d.id = $1`,
+      [req.params.id]
+    );
+
+    if (studentRes.rows.length > 0) {
+      const docTypeLabels = {
+        registration_form: 'Registration Form',
+        psa_birth_certificate: 'PSA Birth Certificate',
+        form_138: 'Form 138',
+        good_moral: 'Good Moral Certificate',
+        transfer_certificate: 'Transfer Certificate',
+        other: 'Document'
+      };
+      const statusLabels = {
+        approved: 'Approved ✓',
+        rejected: 'Rejected ✗',
+        pending: 'Pending'
+      };
+      const docLabel = docTypeLabels[doc.doc_type] || 'Document';
+      const statusLabel = statusLabels[status] || status;
+      const title = `${docLabel} ${statusLabel}`;
+      const message = remarks
+        ? `Your ${docLabel} has been ${status}. Remark: ${remarks}`
+        : `Your ${docLabel} has been ${status} by the admin.`;
+
+      await client.query(
+        `INSERT INTO public.notifications (user_id, title, message)
+         VALUES ($1, $2, $3)`,
+        [studentRes.rows[0].user_id, title, message]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ document: doc });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[Documents/review]', err.message);
     res.status(500).json({ error: 'Failed to review document', details: err.message });
+  } finally {
+    client.release();
   }
 });
 

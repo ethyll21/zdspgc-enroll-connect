@@ -243,47 +243,42 @@ function ApplicationDetail() {
       ) : (
         /* ─── NEW STUDENT FORM: FULL DETAILED COLLEGE ENROLLMENT FORM ─── */
         <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
-          {/* Header */}
-          <div className="pb-2 relative">
-            <div className="flex items-center justify-between pb-2">
-              {/* Left Logo */}
-              <div className="w-[120px] flex justify-center shrink-0">
-                <img src="/logo.png" alt="ZDSPGC Logo" className="h-20 w-20 object-contain hidden sm:block print:block" />
-              </div>
-
-              {/* Center Text */}
-              <div className="flex-1 text-center flex flex-col items-center justify-center">
-                <p className="text-[11px] leading-tight">Republic of the Philippines</p>
-                <p className="text-[13px] font-bold uppercase tracking-wide leading-tight mt-0.5">Zamboanga del Sur</p>
-                <p className="text-[14px] font-bold uppercase tracking-wide leading-tight">Provincial Government College</p>
-                <p className="text-[13px] font-bold uppercase tracking-wide leading-tight">Dimataling Campus</p>
-                <p className="text-[10px] leading-tight mt-0.5">Dimataling, Zamboanga del Sur</p>
-              </div>
-
-              {/* Right 2x2 Box */}
-              <div className="w-[120px] flex justify-center shrink-0 hidden sm:flex print:flex">
-                <div className="w-24 h-24 border border-black flex items-center justify-center text-[10px] text-gray-500">
-                  2x2
+          <div className="flex items-start justify-between gap-4 pb-2">
+            {/* Left Column: Header, Title, Direction, Course/Major */}
+            <div className="flex-1 flex flex-col">
+              {/* Logo & Header Text */}
+              <div className="flex items-center justify-center gap-4 mb-2">
+                <img src="/logo.png" alt="ZDSPGC Logo" className="h-16 w-16 object-contain hidden sm:block print:block" />
+                <div className="text-center flex flex-col items-center justify-center">
+                  <p className="text-[11px] leading-tight">Republic of the Philippines</p>
+                  <p className="text-[14px] font-bold uppercase tracking-wide leading-tight mt-0.5">Zamboanga del Sur Provincial Government College</p>
+                  <p className="text-[10px] uppercase leading-tight mt-0.5">Dimataling Campus &middot; Dimataling, Zamboanga del Sur</p>
                 </div>
               </div>
+
+              {/* Title Bar */}
+              <div className="bg-black text-white text-center py-1 font-bold text-[13px] tracking-wider uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                College Enrollment Form
+              </div>
+
+              {/* Direction */}
+              <div className="text-left mt-1 leading-tight">
+                <p className="text-[11px] italic text-black">Direction: Fill-out required informations. Do not leave an item blank (indicate N/A if item is not applicable)</p>
+              </div>
+
+              {/* Course & Major */}
+              <div className="flex flex-col gap-2 pt-3 pb-2">
+                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">COURSE:</span> <span className="border border-black flex-1 px-2 py-0.5 font-semibold uppercase leading-tight min-h-[22px] flex items-center">{studentData?.student.program_name || "—"}</span></div>
+                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">MAJOR:</span> <span className="border border-black flex-1 px-2 py-0.5 font-semibold uppercase leading-tight min-h-[22px] flex items-center">{(studentData?.student as any)?.major || "N/A"}</span></div>
+              </div>
             </div>
 
-            {/* Title Bar */}
-            <div className="bg-black text-white text-center py-1 font-bold text-[13px] tracking-wider uppercase mt-1 print:bg-black print:text-white print:color-adjust-exact">
-              College Enrollment Form
+            {/* Right Column: 2x2 Box */}
+            <div className="w-[2in] flex justify-end shrink-0 hidden sm:flex print:flex">
+              <div className="w-[2in] h-[2in] border border-black flex items-center justify-center text-[12px] text-gray-500">
+                2x2
+              </div>
             </div>
-
-            {/* Direction */}
-            <div className="text-left mt-2 leading-tight">
-              <p className="text-[12px] italic">Direction: Fill-out required informations. Do not leave an item blank</p>
-              <p className="text-[12px] italic ml-10">(indicate N/A if item is not applicable)</p>
-            </div>
-          </div>
-
-          {/* Course & Major */}
-          <div className="grid grid-cols-2 gap-4 pt-1">
-            <div className="flex gap-1"><span className="font-bold">COURSE:</span> <span className="border-b border-black flex-1 px-1 font-semibold">{studentData?.student.program_name || "—"}</span></div>
-            <div className="flex gap-1"><span className="font-bold">MAJOR:</span> <span className="border-b border-black flex-1 px-1 font-semibold">{(studentData?.student as any)?.major || "N/A"}</span></div>
           </div>
 
           {/* Personal Information */}

@@ -167,17 +167,42 @@ function AdminReviewApplication() {
         </div>
       ) : (
         <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
-          <div className="text-center border-b-2 border-black pb-3 relative">
-            <img src="/logo.png" alt="ZDSPGC Logo" className="absolute left-2 top-0 h-16 w-16 object-contain hidden sm:block print:block" />
-            <p className="text-[12px] uppercase">Republic of the Philippines</p>
-            <h1 className="text-lg font-bold uppercase tracking-wide">Zamboanga del Sur Provincial Government College</h1>
-            <p className="text-[10px] uppercase">Dimataling Campus &middot; Dimataling, Zamboanga del Sur</p>
-            <h2 className="text-base font-bold mt-2 uppercase border-t border-b border-black py-1">College Enrollment Form</h2>
-            <p className="text-[12px] italic mt-1">Direction: Fill-out required informations. Do not leave an item blank (indicate N/A if item is not applicable)</p>
-          </div>
-          <div className="grid grid-cols-2 gap-4 pt-1">
-            <div className="flex gap-1"><span className="font-bold">COURSE:</span> <span className="border-b border-black flex-1 px-1 font-semibold">{student?.program_name || enrollment.program_name || "—"}</span></div>
-            <div className="flex gap-1"><span className="font-bold">MAJOR:</span> <span className="border-b border-black flex-1 px-1 font-semibold">{(student as any)?.major || "N/A"}</span></div>
+          <div className="flex items-start justify-between gap-4 pb-2">
+            {/* Left Column: Header, Title, Direction, Course/Major */}
+            <div className="flex-1 flex flex-col">
+              {/* Logo & Header Text */}
+              <div className="flex items-center justify-center gap-4 mb-2">
+                <img src="/logo.png" alt="ZDSPGC Logo" className="h-16 w-16 object-contain hidden sm:block print:block" />
+                <div className="text-center flex flex-col items-center justify-center">
+                  <p className="text-[12px] uppercase">Republic of the Philippines</p>
+                  <h1 className="text-lg font-bold uppercase tracking-wide">Zamboanga del Sur Provincial Government College</h1>
+                  <p className="text-[10px] uppercase">Dimataling Campus &middot; Dimataling, Zamboanga del Sur</p>
+                </div>
+              </div>
+
+              {/* Title Bar */}
+              <div className="bg-black text-white text-center py-1 font-bold text-[13px] tracking-wider uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                College Enrollment Form
+              </div>
+
+              {/* Direction */}
+              <div className="text-left mt-1 leading-tight">
+                <p className="text-[11px] italic text-black">Direction: Fill-out required informations. Do not leave an item blank (indicate N/A if item is not applicable)</p>
+              </div>
+
+              {/* Course & Major */}
+              <div className="flex flex-col gap-2 pt-3 pb-2">
+                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">COURSE:</span> <span className="border border-black flex-1 px-2 py-0.5 font-semibold leading-tight min-h-[22px] flex items-center">{student?.program_name || enrollment.program_name || "—"}</span></div>
+                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">MAJOR:</span> <span className="border border-black flex-1 px-2 py-0.5 font-semibold leading-tight min-h-[22px] flex items-center">{(student as any)?.major || "N/A"}</span></div>
+              </div>
+            </div>
+
+            {/* Right Column: 2x2 Box */}
+            <div className="w-[2in] flex justify-end shrink-0 hidden sm:flex print:flex">
+              <div className="w-[2in] h-[2in] border border-black flex items-center justify-center text-[12px] text-gray-500">
+                2x2
+              </div>
+            </div>
           </div>
           <div>
             <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Personal Information</div>
