@@ -1,39 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { profiles } from "@/integrations/localdb/client";
+import { useRef, useState } from "react";
+import { profiles, auth } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Camera, User2, Loader2 } from "lucide-react";
+import { Camera, User2, Loader2, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_app/profile")({
   component: ProfilePage,
 });
 
-const profileSchema = z.object({
-  full_name: z.string().min(1, { message: "Please enter your Full Name" }).max(120),
-  contact_number: z.string().regex(/^09\d{9}$/, { message: "Please enter a valid 11-digit mobile number starting with 09" }).optional().or(z.literal("")),
-  birthdate: z.string().optional().or(z.literal("")),
-  gender: z.string().optional().or(z.literal("")),
-  address: z.string().max(300).optional().or(z.literal("")),
-});
-
 function ProfilePage() {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
-  const [busy, setBusy] = useState(false);
+
+  // ── Avatar state ──────────────────────────────────────────────────────────
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Password state ────────────────────────────────────────────────────────
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pwBusy, setPwBusy] = useState(false);
 
   const { data: profile, refetch } = useQuery({
     queryKey: ["profile-me", user?.id],
@@ -41,40 +37,16 @@ function ProfilePage() {
     queryFn: () => profiles.me().then((r) => r.profile),
   });
 
-  const form = useForm<z.infer<typeof profileSchema>>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      full_name: "",
-      contact_number: "",
-      birthdate: "",
-      gender: "",
-      address: "",
-    },
-  });
+  const currentAvatarSrc =
+    avatarPreview ?? (profile?.avatar_url ? profiles.avatarUrl(profile.avatar_url) : null);
 
-  useEffect(() => {
-    if (profile) {
-      form.reset({
-        full_name:      profile.full_name ?? "",
-        contact_number: profile.contact_number ?? "",
-        birthdate:      profile.birthdate?.slice(0, 10) ?? "",
-        gender:         profile.gender ?? "",
-        address:        profile.address ?? "",
-      });
-    }
-  }, [profile, form]);
-
-  // ── Avatar selection & upload ────────────────────────────────────────────────
+  // ── Avatar upload ─────────────────────────────────────────────────────────
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Local preview
     const reader = new FileReader();
     reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
-
-    // Upload immediately
     setAvatarUploading(true);
     try {
       await profiles.uploadAvatar(file);
@@ -87,177 +59,196 @@ function ProfilePage() {
       setAvatarPreview(null);
     } finally {
       setAvatarUploading(false);
-      // reset input so same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const currentAvatarSrc =
-    avatarPreview ?? (profile?.avatar_url ? profiles.avatarUrl(profile.avatar_url) : null);
-
-  // ── Profile save ─────────────────────────────────────────────────────────────
-  const save = async (values: z.infer<typeof profileSchema>) => {
-    setBusy(true);
+  // ── Change password ───────────────────────────────────────────────────────
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("New password and confirmation do not match");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
+      return;
+    }
+    setPwBusy(true);
     try {
-      await profiles.update({
-        full_name:      values.full_name,
-        contact_number: values.contact_number || undefined,
-        birthdate:      values.birthdate || undefined,
-        gender:         values.gender || undefined,
-        address:        values.address || undefined,
-      });
-      toast.success("Profile saved successfully");
-      refetch();
-      refreshUser();
-      queryClient.invalidateQueries({ queryKey: ["profile-me"] });
+      await auth.changePassword(currentPassword, newPassword);
+      toast.success("Password changed successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
     } catch (err: any) {
-      toast.error(err.message ?? "Failed to save profile");
+      toast.error(err.message ?? "Failed to change password");
     } finally {
-      setBusy(false);
+      setPwBusy(false);
     }
   };
 
-  return (
-    <div className="mx-auto max-w-3xl space-y-8 pb-20">
+  const isAdmin = user?.role === "admin";
 
-      {/* ── Avatar section ──────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden flex flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-md text-center">
-        <div className="relative group shrink-0">
-          {/* Avatar circle */}
-          <div className="h-32 w-32 rounded-full overflow-hidden ring-4 ring-slate-50 bg-slate-100 flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-[1.02]">
-            {currentAvatarSrc ? (
-              <img
-                src={currentAvatarSrc}
-                alt="Profile picture"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <User2 className="h-16 w-16 text-slate-300" />
-            )}
+  return (
+    <div className="w-full max-w-4xl mx-auto space-y-6 pb-20">
+
+      {/* ── Identity card ───────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {/* Decorative header strip */}
+        <div className="h-24 bg-gradient-to-r from-[#0A2540] to-[#0C3D6B]" />
+
+        <div className="flex flex-col items-center gap-3 px-8 pb-8 -mt-12 text-center">
+          {/* Avatar */}
+          <div className="relative group">
+            <div className="h-24 w-24 rounded-full overflow-hidden ring-4 ring-white bg-slate-100 flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-[1.03]">
+              {currentAvatarSrc ? (
+                <img src={currentAvatarSrc} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <User2 className="h-12 w-12 text-slate-300" />
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="absolute bottom-0.5 right-0.5 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#0A2540] text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-[#0C3D6B] disabled:opacity-60"
+              title="Change profile picture"
+            >
+              {avatarUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleAvatarChange} />
           </div>
 
-          {/* Camera overlay button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={avatarUploading}
-            className="
-              absolute bottom-1 right-1
-              flex h-11 w-11 items-center justify-center
-              rounded-full border-[3px] border-white
-              bg-blue-600 text-white shadow-xl
-              transition-all duration-200 hover:scale-110 hover:bg-blue-700
-              disabled:opacity-60 disabled:cursor-not-allowed
-            "
-            title="Change profile picture"
-          >
-            {avatarUploading
-              ? <Loader2 className="h-5 w-5 animate-spin" />
-              : <Camera className="h-5 w-5" />
-            }
-          </button>
-
-          {/* Hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            className="hidden"
-            onChange={handleAvatarChange}
-          />
-        </div>
-
-        <div className="flex flex-col items-center space-y-2">
-          <p className="text-2xl font-bold text-slate-800 tracking-tight">
+          {/* Name */}
+          <p className="text-2xl font-bold text-slate-800 tracking-tight mt-2">
             {profile?.full_name || user?.email}
           </p>
-          <div className="inline-flex items-center justify-center rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-600/20 uppercase tracking-widest">
-            {user?.role === "admin" ? "Registrar / Admin" : "Student"}
-          </div>
+
+          {/* Role badge */}
+          {isAdmin ? (
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-600/30 uppercase tracking-widest">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Registrar / Admin
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-600/20 uppercase tracking-widest">
+              <User2 className="h-3.5 w-3.5" />
+              Student
+            </div>
+          )}
+
+
         </div>
       </div>
 
-      {/* ── Profile form ────────────────────────────────────────────────────── */}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(save)} className="mt-4 space-y-4 rounded-xl border bg-card p-6 shadow-sm">
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input value={user?.email ?? ""} disabled className="bg-muted/40" />
+      {/* ── Change Password ──────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        {/* Section header */}
+        <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-6 py-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0A2540]/8">
+            <Lock className="h-4 w-4 text-[#0A2540]" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-slate-800">Change Password</p>
+            <p className="text-xs text-slate-400">Keep your account secure with a strong password</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleChangePassword} className="space-y-4 p-6">
+          {/* Current password */}
+          <div className="space-y-1.5">
+            <Label htmlFor="current-password" className="text-sm font-medium text-slate-700">
+              Current Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="current-password"
+                type={showCurrent ? "text" : "password"}
+                placeholder="Enter current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showCurrent ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
-          
-          <FormField
-            control={form.control}
-            name="full_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                  <Input maxLength={120} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid gap-4 md:grid-cols-2">
-
-            <FormField
-              control={form.control}
-              name="birthdate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Birthdate</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          {/* New password */}
+          <div className="space-y-1.5">
+            <Label htmlFor="new-password" className="text-sm font-medium text-slate-700">
+              New Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="new-password"
+                type={showNew ? "text" : "password"}
+                placeholder="At least 8 characters"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={8}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showNew ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
-          <FormField
-            control={form.control}
-            name="gender"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Gender</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || undefined}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Prefer not to say</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
+          {/* Confirm password */}
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm-password" className="text-sm font-medium text-slate-700">
+              Confirm New Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={showConfirm ? "text" : "password"}
+                placeholder="Re-enter new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+                className={`pr-10 ${
+                  confirmPassword && newPassword !== confirmPassword
+                    ? "border-rose-400 focus-visible:ring-rose-400"
+                    : ""
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showConfirm ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </button>
+            </div>
+            {confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-xs text-rose-500 mt-1">Passwords do not match</p>
             )}
-          />
+          </div>
 
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Address</FormLabel>
-                <FormControl>
-                  <Textarea rows={3} maxLength={300} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save changes"}</Button>
+          <Button
+            type="submit"
+            disabled={pwBusy || (!!confirmPassword && newPassword !== confirmPassword)}
+            className="w-full bg-[#0A2540] hover:bg-[#0C3D6B] text-white"
+          >
+            {pwBusy ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Updating…</> : "Update Password"}
+          </Button>
         </form>
-      </Form>
+      </div>
     </div>
   );
 }
-

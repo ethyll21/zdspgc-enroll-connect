@@ -4,7 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "api": "cd api && npx nodemon server.js",
+    "api": "node api/server.js",
     "dev": "concurrently \"npm run api\" \"vite dev\"",
     "build": "vite build",
     "build:dev": "vite build --mode development",

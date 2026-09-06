@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCircle2, AlertCircle } from "lucide-react";
 import { notifications } from "@/integrations/localdb/client";
@@ -19,7 +19,8 @@ export const Route = createFileRoute("/_app/notifications")({
 });
 
 function NotificationsPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedNotif, setSelectedNotif] = useState<any>(null);
 
@@ -66,7 +67,7 @@ function NotificationsPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
-                Student Portal
+                {isAdmin ? "Admin Portal" : "Student Portal"}
               </p>
               <h1 className="font-display text-2xl font-bold text-[#0A2540]">
                 Notifications
@@ -187,14 +188,28 @@ function NotificationsPage() {
               <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 {selectedNotif && format(new Date(selectedNotif.created_at), "MMM d, yyyy 'at' h:mm a")}
               </span>
-              <Button 
-                onClick={() => setSelectedNotif(null)} 
-                variant="outline" 
-                size="sm"
-                className="font-semibold text-slate-600 hover:text-[#0A2540] hover:bg-slate-50"
-              >
-                Close
-              </Button>
+              <div className="flex items-center gap-2">
+                {selectedNotif?.link && (
+                  <Button 
+                    onClick={() => {
+                      setSelectedNotif(null);
+                      navigate({ to: selectedNotif.link });
+                    }} 
+                    size="sm"
+                    className="font-semibold bg-[#0A2540] hover:bg-[#0C2D50] text-white"
+                  >
+                    View Details
+                  </Button>
+                )}
+                <Button 
+                  onClick={() => setSelectedNotif(null)} 
+                  variant="outline" 
+                  size="sm"
+                  className="font-semibold text-slate-600 hover:text-[#0A2540] hover:bg-slate-50"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>

@@ -450,6 +450,11 @@ export const enrollments = {
       body: JSON.stringify(data),
     });
   },
+  notifyResubmit(id: string) {
+    return apiFetch<{ success: boolean }>(`/api/enrollments/${id}/notify-resubmit`, {
+      method: 'POST',
+    });
+  },
   delete(id: string) {
     return apiFetch<{ message: string }>(`/api/enrollments/${id}`, {
       method: 'DELETE',

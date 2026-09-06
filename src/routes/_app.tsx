@@ -39,7 +39,7 @@ function AppLayout() {
 
   const { data: myNotifs = [] } = useQuery({
     queryKey: ["my-notifications", user?.id],
-    enabled: !!user && !isAdmin,
+    enabled: !!user,
     retry: false,
     queryFn: () => notifications.my().then((r) => r.notifications),
     refetchInterval: 30_000,
@@ -61,14 +61,16 @@ function AppLayout() {
 
   const studentNav = [
     { to: "/dashboard",  label: "Dashboard",       icon: LayoutDashboard, badge: 0 },
-    hasActiveApplication
-      ? { to: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount }
-      : { to: "/apply",      label: "New Application",  icon: FilePlus2, badge: 0 },
+    hasActiveApplication 
+      ? { to: "/applications/$appId", params: { appId: myEnrollments[0]?.id }, label: "Application", icon: FileSearch, badge: 0 } 
+      : { to: "/apply", label: "Application", icon: FileSearch, badge: 0 },
+    { to: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
     { to: "/profile",    label: "My Profile",       icon: User, badge: 0 },
   ];
   const adminNav = [
     { to: "/admin",              label: "Dashboard",     icon: LayoutDashboard, badge: 0 },
     { to: "/admin/applications", label: "Applications",  icon: FileSearch, badge: 0 },
+    { to: "/notifications",      label: "Notifications", icon: Bell, badge: unreadCount },
     { to: "/profile",            label: "My Profile",    icon: User, badge: 0 },
   ];
   const nav = isAdmin ? adminNav : studentNav;
@@ -130,6 +132,7 @@ function AppLayout() {
               <Link
                 key={item.to}
                 to={item.to}
+                params={item.params}
                 className={`flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-all ${
                   active
                     ? "bg-white/10 text-white border-l-2 border-gold pl-[10px]"

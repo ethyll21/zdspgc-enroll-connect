@@ -43,6 +43,7 @@ function ApplicationDetail() {
   const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
   const [docRejectRemarks, setDocRejectRemarks] = useState("");
   const [statusSelection, setStatusSelection] = useState("pending");
+  const [resubmittingDocId, setResubmittingDocId] = useState<string | null>(null);
 
   const handlePrint = useCallback(async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -140,6 +141,39 @@ function ApplicationDetail() {
     },
     onError: (err: any) => toast.error(err.message ?? "Failed to update document"),
   });
+
+  const resubmitDocMutation = useMutation({
+    mutationFn: async ({ oldDocId, docType, file }: { oldDocId: string; docType: string; file: File }) => {
+      await docsApi.delete(oldDocId);
+      await docsApi.upload(file, docType);
+      return enrollmentsApi.notifyResubmit(appId);
+    },
+    onSuccess: () => {
+      toast.success("Document resubmitted successfully");
+      queryClient.invalidateQueries({ queryKey: ["enrollment-docs", appId] });
+      setResubmittingDocId(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message ?? "Failed to resubmit document");
+      setResubmittingDocId(null);
+    }
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, oldDocId: string, docType: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File is too large. Maximum size is 10MB.");
+      return;
+    }
+    
+    setResubmittingDocId(oldDocId);
+    resubmitDocMutation.mutate({ oldDocId, docType, file });
+    
+    // Clear the input value so the same file can be selected again if needed
+    e.target.value = "";
+  };
 
   useEffect(() => {
     if (!isAdmin || !myDocs || !data) return;
@@ -489,8 +523,29 @@ function ApplicationDetail() {
                     )}
 
                     {d.status === "rejected" && d.remarks && (
-                      <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
-                        <span className="font-semibold">Rejection Reason:</span> {d.remarks}
+                      <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20 flex flex-col gap-3">
+                        <div>
+                          <span className="font-semibold">Rejection Reason:</span> {d.remarks}
+                        </div>
+                        {!isAdmin && (
+                          <div>
+                            <input 
+                              type="file" 
+                              id={`resubmit-${d.id}`} 
+                              className="hidden" 
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => handleFileChange(e, d.id, d.doc_type)}
+                            />
+                            <Button 
+                              size="sm" 
+                              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium"
+                              onClick={() => document.getElementById(`resubmit-${d.id}`)?.click()}
+                              disabled={resubmittingDocId === d.id}
+                            >
+                              {resubmittingDocId === d.id ? "Uploading..." : "Resubmit Document"}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -523,65 +578,80 @@ function ApplicationDetail() {
             <h2 className="text-lg font-bold text-[#0A2540] mb-6 border-b border-slate-200 pb-4">
               Final Decision
             </h2>
-            <div className="space-y-6">
-              <div>
-                <label className="text-sm font-medium text-[#0A2540] mb-2 block">
-                  Update Enrollment Status
-                </label>
+            {(enrollment?.status === "approved" || enrollment?.status === "rejected") ? (
+              <div className={`p-4 rounded-lg flex items-start gap-3 ${enrollment.status === "approved" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"}`}>
+                {enrollment.status === "approved" ? <CheckCircle2 className="w-5 h-5 mt-0.5 text-emerald-600" /> : <XCircle className="w-5 h-5 mt-0.5 text-rose-600" />}
+                <div>
+                  <h3 className="font-semibold">{enrollment.status === "approved" ? "Application Approved" : "Application Rejected"}</h3>
+                  {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <label className="text-sm font-medium text-[#0A2540] mb-2 block">
+                    Update Enrollment Status
+                  </label>
                 <Select 
-                  value={statusSelection} 
-                  onValueChange={(val: any) => setStatusSelection(val)}
-                >
-                  <SelectTrigger className="w-full sm:w-[280px]">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="under_review">Under Review</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-[#0A2540] mb-2 block">
-                  Remarks
-                </label>
-                <Textarea
-                  placeholder="e.g., Your documents have been verified and you are now officially enrolled."
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                  rows={2}
-                  maxLength={500}
-                />
-              </div>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    disabled={reviewMutation.isPending}
-                    className="font-semibold px-6"
+                    value={statusSelection} 
+                    onValueChange={(val: any) => setStatusSelection(val)}
+                    disabled={enrollment?.status === "approved" || enrollment?.status === "rejected"}
                   >
-                    Save
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action will update the student's enrollment status and send them a notification with your remarks.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => decide(statusSelection as any)}>
-                      Continue
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+                    <SelectTrigger className="w-full sm:w-[280px]">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {enrollment?.status !== "approved" && enrollment?.status !== "rejected" && (
+                        <>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="under_review">Under Review</SelectItem>
+                        </>
+                      )}
+                      {enrollment?.status !== "rejected" && <SelectItem value="approved">Approved</SelectItem>}
+                      {enrollment?.status !== "approved" && <SelectItem value="rejected">Rejected</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+  
+                <div>
+                  <label className="text-sm font-medium text-[#0A2540] mb-2 block">
+                    Remarks
+                  </label>
+                  <Textarea
+                    placeholder="e.g., Your documents have been verified and you are now officially enrolled."
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    rows={2}
+                    maxLength={500}
+                  />
+                </div>
+  
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      disabled={reviewMutation.isPending}
+                      className="font-semibold px-6"
+                    >
+                      Save
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action will update the student's enrollment status and send them a notification with your remarks.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => decide(statusSelection as any)}>
+                        Continue
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
           </div>
         )}
 

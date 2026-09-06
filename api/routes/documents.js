@@ -105,7 +105,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
     if (docRes.rows.length === 0) return res.status(404).json({ error: 'Document not found' });
 
     const doc = docRes.rows[0];
-    if (req.user.role !== 'admin' && doc.user_id !== req.user.id) {
+    const isAdmin = req.user.role === 'admin';
+    if (!isAdmin && doc.user_id !== req.user.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -114,6 +115,28 @@ router.delete('/:id', requireAuth, async (req, res) => {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     await db.query('DELETE FROM public.documents WHERE id = $1', [req.params.id]);
+
+    // Notify the student if admin deletes their document
+    if (isAdmin && doc.user_id !== req.user.id) {
+      const docTypeLabels = {
+        registration_form: 'Registration Form',
+        psa_birth_certificate: 'PSA Birth Certificate',
+        form_138: 'Form 138',
+        good_moral: 'Good Moral Certificate',
+        transfer_certificate: 'Transfer Certificate',
+        other: 'Document'
+      };
+      const docLabel = docTypeLabels[doc.doc_type] || 'Document';
+      const title = `${docLabel} Deleted`;
+      const message = `Your ${docLabel} (${doc.file_name}) has been deleted by the admin.`;
+      
+      await db.query(
+        `INSERT INTO public.notifications (user_id, title, message)
+         VALUES ($1, $2, $3)`,
+        [doc.user_id, title, message]
+      );
+    }
+
     res.json({ message: 'Document deleted successfully' });
   } catch (err) {
     console.error('[Documents/delete]', err.message);

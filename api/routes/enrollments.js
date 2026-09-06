@@ -82,10 +82,68 @@ router.post('/', requireAuth, async (req, res) => {
         JSON.stringify(rotc_watc || {})
       ]
     );
-    res.status(201).json({ enrollment: rows[0] });
+    
+    // Notify all admins about the new application
+    const enrollment = rows[0];
+    const adminRes = await db.query(`SELECT user_id FROM public.user_roles WHERE role = 'admin'`);
+    for (const adminRow of adminRes.rows) {
+      await db.query(
+        `INSERT INTO public.notifications (user_id, title, message, link)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          adminRow.user_id,
+          'New Application Submitted',
+          'A new enrollment application has been submitted and is waiting for your review.',
+          `/admin/review/${enrollment.id}`
+        ]
+      );
+    }
+
+    res.status(201).json({ enrollment });
   } catch (err) {
     console.error('[Enrollments/create]', err.message);
     res.status(500).json({ error: 'Failed to submit enrollment', details: err.message });
+  }
+});
+
+// ─── POST /api/enrollments/:id/notify-resubmit ────────────────────────────────
+router.post('/:id/notify-resubmit', requireAuth, async (req, res) => {
+  try {
+    // Verify ownership of enrollment
+    const verifyRes = await db.query(
+      `SELECT e.id, s.user_id 
+       FROM public.enrollments e
+       JOIN public.students s ON s.id = e.student_id
+       WHERE e.id = $1`,
+      [req.params.id]
+    );
+
+    if (verifyRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Enrollment not found' });
+    }
+
+    if (verifyRes.rows[0].user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Notify all admins
+    const adminRes = await db.query(`SELECT user_id FROM public.user_roles WHERE role = 'admin'`);
+    for (const adminRow of adminRes.rows) {
+      await db.query(
+        `INSERT INTO public.notifications (user_id, title, message, link)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          adminRow.user_id,
+          'Document Resubmitted',
+          'A student has resubmitted a document for their application.',
+          `/admin/review/${req.params.id}`
+        ]
+      );
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Enrollments/notify-resubmit]', err.message);
+    res.status(500).json({ error: 'Failed to notify admins', details: err.message });
   }
 });
 

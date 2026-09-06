@@ -335,37 +335,32 @@ function AdminReviewApplication() {
                           </div>
                         </div>
                         <div className="flex items-center gap-4 self-end sm:self-auto">
-                          <span className={`text-xs px-3 py-1.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                            doc.status === "approved" ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-600/20" : 
-                            doc.status === "rejected" ? "bg-rose-100 text-rose-700 ring-1 ring-rose-600/20" : 
-                            "bg-amber-100 text-amber-700 ring-1 ring-amber-600/20"
-                          }`}>
-                            {doc.status === "approved" && <CheckCircle2 className="h-3.5 w-3.5" />}
-                            {doc.status === "rejected" && <AlertCircle className="h-3.5 w-3.5" />}
-                            {doc.status === "pending" && <Clock className="h-3.5 w-3.5" />}
-                            {doc.status}
-                          </span>
+
                           
                           <div className="flex items-center bg-white shadow-sm border border-slate-200 rounded-lg p-1 gap-1">
-                            <Button 
-                              variant={doc.status === "approved" ? "default" : "ghost"} 
-                              size="sm" 
-                              className={`h-9 px-3 gap-2 ${doc.status === "approved" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 hover:text-emerald-600 hover:bg-emerald-50"}`} 
-                              onClick={() => docReviewMutation.mutate({ docId: doc.id, status: "approved" })}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              <span className="hidden xl:inline">Approve</span>
-                            </Button>
-                            <div className="w-px h-5 bg-slate-200 mx-1"></div>
-                            <Button 
-                              variant={doc.status === "rejected" ? "destructive" : "ghost"} 
-                              size="sm" 
-                              className={`h-9 px-3 gap-2 ${doc.status === "rejected" ? "bg-rose-600 text-white hover:bg-rose-700" : "text-slate-600 hover:text-rose-600 hover:bg-rose-50"}`} 
-                              onClick={() => { setRejectingDocId(doc.id); setRejectReason(doc.remarks || ""); }}
-                            >
-                              <XCircle className="h-4 w-4" />
-                              <span className="hidden xl:inline">Reject</span>
-                            </Button>
+                            {doc.status !== "rejected" && (
+                              <Button 
+                                variant={doc.status === "approved" ? "default" : "ghost"} 
+                                size="sm" 
+                                className={`h-9 px-3 gap-2 ${doc.status === "approved" ? "bg-emerald-600 text-white hover:bg-emerald-600 cursor-default" : "text-slate-600 hover:text-emerald-600 hover:bg-emerald-50"}`} 
+                                onClick={() => doc.status !== "approved" && docReviewMutation.mutate({ docId: doc.id, status: "approved" })}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                <span className="hidden xl:inline">Approve</span>
+                              </Button>
+                            )}
+                            {doc.status === "pending" && <div className="w-px h-5 bg-slate-200 mx-1"></div>}
+                            {doc.status !== "approved" && (
+                              <Button 
+                                variant={doc.status === "rejected" ? "destructive" : "ghost"} 
+                                size="sm" 
+                                className={`h-9 px-3 gap-2 ${doc.status === "rejected" ? "bg-rose-600 text-white hover:bg-rose-600 cursor-default" : "text-slate-600 hover:text-rose-600 hover:bg-rose-50"}`} 
+                                onClick={() => { if (doc.status !== "rejected") { setRejectingDocId(doc.id); setRejectReason(doc.remarks || ""); } }}
+                              >
+                                <XCircle className="h-4 w-4" />
+                                <span className="hidden xl:inline">Reject</span>
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -433,50 +428,64 @@ function AdminReviewApplication() {
 
         <div className="rounded-xl border bg-white p-5 shadow-sm border-blue-100">
           <h2 className="font-semibold text-slate-800 border-b pb-3 mb-4">Final Decision</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Update Enrollment Status</label>
-              <Select value={reviewStatus} onValueChange={setReviewStatus}>
-                <SelectTrigger className="w-full md:w-64 bg-slate-50"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="under_review">Under Review</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
+          {(enrollment?.status === "approved" || enrollment?.status === "rejected") ? (
+            <div className={`p-4 rounded-lg flex items-start gap-3 ${enrollment.status === "approved" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"}`}>
+              {enrollment.status === "approved" ? <CheckCircle2 className="w-5 h-5 mt-0.5 text-emerald-600" /> : <XCircle className="w-5 h-5 mt-0.5 text-rose-600" />}
+              <div>
+                <h3 className="font-semibold">{enrollment.status === "approved" ? "Application Approved" : "Application Rejected"}</h3>
+                {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Remarks</label>
-              <Input value={reviewRemarks} onChange={(e) => setReviewRemarks(e.target.value)} placeholder="e.g., Your documents have been verified and you are now officially enrolled." className="bg-slate-50" />
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">Update Enrollment Status</label>
+                <Select value={reviewStatus} onValueChange={setReviewStatus} disabled={enrollment?.status === "approved" || enrollment?.status === "rejected"}>
+                  <SelectTrigger className="w-full md:w-64 bg-slate-50"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {enrollment?.status !== "approved" && enrollment?.status !== "rejected" && (
+                      <>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="under_review">Under Review</SelectItem>
+                      </>
+                    )}
+                    {enrollment?.status !== "rejected" && <SelectItem value="approved">Approved</SelectItem>}
+                    {enrollment?.status !== "approved" && <SelectItem value="rejected">Rejected</SelectItem>}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">Remarks</label>
+                <Input value={reviewRemarks} onChange={(e) => setReviewRemarks(e.target.value)} placeholder="e.g., Your documents have been verified and you are now officially enrolled." className="bg-slate-50" />
+              </div>
+              <div className="pt-2 flex items-center gap-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button disabled={reviewMutation.isPending}>
+                      {reviewMutation.isPending ? "Saving..." : "Save"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action will update the student's enrollment status and send them a notification with your remarks.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => reviewMutation.mutate()}>
+                        Continue
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button variant="outline" onClick={() => navigate({ to: "/admin/applications" })}>
+                  Back
+                </Button>
+              </div>
             </div>
-            <div className="pt-2 flex items-center gap-3">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button disabled={reviewMutation.isPending}>
-                    {reviewMutation.isPending ? "Saving..." : "Save"}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action will update the student's enrollment status and send them a notification with your remarks.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => reviewMutation.mutate()}>
-                      Continue
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button variant="outline" onClick={() => navigate({ to: "/admin/applications" })}>
-                Back
-              </Button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
       <AlertDialog open={!!rejectingDocId} onOpenChange={(open) => {
