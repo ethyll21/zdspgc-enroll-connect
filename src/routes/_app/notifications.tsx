@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCircle2, AlertCircle } from "lucide-react";
+import { Bell, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 import { notifications } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
 import { formatDistanceToNow, format } from "date-fns";
@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_app/notifications")({
@@ -22,7 +23,7 @@ function NotificationsPage() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [selectedNotif, setSelectedNotif] = useState<any>(null);
+  const [notifToDelete, setNotifToDelete] = useState<any>(null);
 
   const { data: myNotifs = [], isLoading, isError, error } = useQuery({
     queryKey: ["my-notifications", user?.id],
@@ -48,6 +49,26 @@ function NotificationsPage() {
     onError: (err, id, context: any) => {
       if (context?.previousNotifs) {
         queryClient.setQueryData(["my-notifications", user?.id], context.previousNotifs);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-notifications", user?.id] });
+    },
+  });
+
+  const deleteNotif = useMutation({
+    mutationFn: (id: string) => notifications.delete(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["my-notifications", user?.id] });
+      const previous = queryClient.getQueryData(["my-notifications", user?.id]);
+      queryClient.setQueryData(["my-notifications", user?.id], (old: any) =>
+        old ? old.filter((n: any) => n.id !== id) : old
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context: any) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["my-notifications", user?.id], context.previous);
       }
     },
     onSettled: () => {
@@ -103,8 +124,8 @@ function NotificationsPage() {
               <div
                 key={n.id}
                 onClick={() => {
-                  setSelectedNotif(n);
                   if (!n.is_read) markRead.mutate(n.id);
+                  if (n.link) navigate({ to: n.link });
                 }}
                 className={`group relative flex gap-5 items-start p-6 transition-all duration-300 cursor-pointer ${
                   !n.is_read 
@@ -142,12 +163,20 @@ function NotificationsPage() {
                       }`}>
                         {n.message}
                       </p>
-                      <div className="flex items-center gap-2 mt-3 pt-1">
+                      <div className="flex items-center justify-between gap-2 mt-3 pt-1">
                         <p className={`text-[10px] font-bold uppercase tracking-widest ${
                           !n.is_read ? "text-blue-500/70" : "text-slate-400"
                         }`}>
                           {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                         </p>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setNotifToDelete(n); }}
+                          disabled={deleteNotif.isPending}
+                          title="Delete notification"
+                          className="p-2 rounded-md text-slate-500 hover:text-rose-600 hover:bg-rose-100 transition-colors duration-200"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -158,59 +187,38 @@ function NotificationsPage() {
         )}
       </div>
 
-      <Dialog open={!!selectedNotif} onOpenChange={(open) => !open && setSelectedNotif(null)}>
-        <DialogContent className="max-w-md p-0 overflow-hidden border-0 shadow-2xl">
-          <div className="bg-gradient-to-br from-[#0A2540] to-[#0C2D50] p-6 text-white flex items-start gap-4">
-            <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-inner backdrop-blur-sm">
-              {selectedNotif?.title?.toLowerCase().includes("approve") ? (
-                <CheckCircle2 className="h-6 w-6 text-emerald-400" />
-              ) : selectedNotif?.title?.toLowerCase().includes("reject") ? (
-                <AlertCircle className="h-6 w-6 text-rose-400" />
-              ) : (
-                <Bell className="h-6 w-6 text-blue-300" />
-              )}
-            </div>
-            <div>
-              <DialogHeader>
-                <DialogTitle className="font-display text-xl font-bold tracking-tight text-white mt-1">
-                  {selectedNotif?.title}
-                </DialogTitle>
-              </DialogHeader>
-            </div>
+
+      {/* ── Delete Confirmation Dialog ───────────────────────────────────────── */}
+      <Dialog open={!!notifToDelete} onOpenChange={(open) => !open && setNotifToDelete(null)}>
+        <DialogContent className="max-w-[400px] p-8 overflow-hidden border-0 shadow-2xl rounded-xl bg-slate-50">
+          <div className="flex flex-col space-y-4">
+            <h2 className="text-xl font-bold text-[#0A2540]">
+              Are you sure you want to delete this notification?
+            </h2>
+            <p className="text-slate-500 text-[15px]">
+              This action cannot be undone.
+            </p>
           </div>
-          
-          <div className="p-6 bg-white">
-            <DialogDescription className="text-slate-700 text-base leading-relaxed whitespace-pre-wrap">
-              {selectedNotif?.message}
-            </DialogDescription>
-            
-            <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                {selectedNotif && format(new Date(selectedNotif.created_at), "MMM d, yyyy 'at' h:mm a")}
-              </span>
-              <div className="flex items-center gap-2">
-                {selectedNotif?.link && (
-                  <Button 
-                    onClick={() => {
-                      setSelectedNotif(null);
-                      navigate({ to: selectedNotif.link });
-                    }} 
-                    size="sm"
-                    className="font-semibold bg-[#0A2540] hover:bg-[#0C2D50] text-white"
-                  >
-                    View Details
-                  </Button>
-                )}
-                <Button 
-                  onClick={() => setSelectedNotif(null)} 
-                  variant="outline" 
-                  size="sm"
-                  className="font-semibold text-slate-600 hover:text-[#0A2540] hover:bg-slate-50"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
+          <div className="mt-8 flex justify-end gap-3">
+            <Button
+              variant="outline"
+              className="px-6 font-semibold border-slate-200 text-slate-700 hover:bg-slate-100"
+              onClick={() => setNotifToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="px-8 font-semibold bg-[#0A2540] hover:bg-[#0C2D50] text-white"
+              disabled={deleteNotif.isPending}
+              onClick={() => {
+                deleteNotif.mutate(notifToDelete.id, {
+                  onSuccess: () => setNotifToDelete(null),
+                  onError: () => setNotifToDelete(null),
+                });
+              }}
+            >
+              {deleteNotif.isPending ? "Yes..." : "Yes"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

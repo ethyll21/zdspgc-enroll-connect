@@ -35,8 +35,8 @@ router.post('/', requireAuth, async (req, res) => {
     date_enrolled,
     subjects = [],
     total_units = 0,
-    advised_by = 'CHRISTINA B. ADOLFO (DSA)',
-    approved_by = 'JEFFRYL DAVE S. ALBELLAR (Registrar)',
+    advised_by = 'JOANNAH LEA S. LAMBAN',
+    approved_by = 'JEFFRYL DAVE S. ALBELLAR',
     rotc_watc = {},
   } = req.body;
 
@@ -77,8 +77,8 @@ router.post('/', requireAuth, async (req, res) => {
         date_enrolled || null,
         JSON.stringify(subjects || []),
         Number(total_units) || 0,
-        advised_by || 'CHRISTINA B. ADOLFO (DSA)',
-        approved_by || 'JEFFRYL DAVE S. ALBELLAR (Registrar)',
+        advised_by || 'JOANNAH LEA S. LAMBAN',
+        approved_by || 'JEFFRYL DAVE S. ALBELLAR',
         JSON.stringify(rotc_watc || {})
       ]
     );
@@ -298,12 +298,13 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
         pending: 'Pending'
       };
       await client.query(
-        `INSERT INTO public.notifications (user_id, title, message)
-         VALUES ($1, $2, $3)`,
+        `INSERT INTO public.notifications (user_id, title, message, link)
+         VALUES ($1, $2, $3, $4)`,
         [
           studentRes.rows[0].user_id,
           `Enrollment ${statusLabels[status]}`,
-          remarks || `Your enrollment for ${rows[0].school_year} ${rows[0].semester} has been ${status}.`
+          remarks || `Your enrollment for ${rows[0].school_year} ${rows[0].semester} has been ${status}.`,
+          `/applications/${req.params.id}`
         ]
       );
     }

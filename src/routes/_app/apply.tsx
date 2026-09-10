@@ -257,7 +257,7 @@ function ApplyPage() {
         senior_high_school: "", senior_high_address: "", senior_high_years: "",
         school_year: CURRENT_SY,
         semester: SEMESTERS[0],
-        student_type: "old",
+        student_type: "new",
         date_enrolled: new Date().toISOString().split("T")[0],
         pledge_accepted: false,
       });
@@ -341,19 +341,20 @@ function ApplyPage() {
         : undefined;
 
       // 2. Submit enrollment
-      await enrollments.submit({ 
+      const enrollmentResult = await enrollments.submit({ 
         school_year: values.school_year, 
         semester: values.semester,
         student_type: values.student_type || studentType,
         subjects: validSubjects,
       });
+      const enrollmentId = enrollmentResult.enrollment?.id;
 
       // 3. Upload documents (Only for New Students)
       if (studentType === "new") {
         for (const def of REQUIRED_DOCUMENTS) {
           const file = files[def.key];
           if (!file) continue;
-          await docsApi.upload(file, def.key);
+          await docsApi.upload(file, def.key, enrollmentId);
         }
       }
 
@@ -380,7 +381,7 @@ function ApplyPage() {
   ];
 
   const oldStudentSteps = [
-    { id: 'status', title: 'Status of Registration', fields: ['last_name', 'first_name', 'middle_name', 'program_id', 'major', 'student_no', 'semester', 'school_year', 'year_level', 'gender'] },
+    { id: 'status', title: 'Course & Major', fields: ['last_name', 'first_name', 'middle_name', 'program_id', 'major', 'student_no', 'semester', 'school_year', 'year_level', 'gender'] },
     { id: 'subjects', title: 'Subjects/Schedule', fields: ['subjects'] },
     { id: 'personal', title: 'Personal Information', fields: ['date_of_birth', 'place_of_birth', 'civil_status', 'religion', 'citizenship', 'contact_number', 'email', 'address', 'postal_code', 'suffix'] },
     { id: 'family', title: 'Family Background', fields: ['father_name', 'father_occupation', 'father_company', 'father_address', 'father_contact', 'mother_name', 'mother_occupation', 'mother_company', 'mother_address', 'mother_contact', 'guardian_name', 'guardian_relationship', 'guardian_address', 'guardian_contact', 'emergency_contact_person', 'emergency_contact_address', 'emergency_contact_number'] },
@@ -421,57 +422,6 @@ function ApplyPage() {
     }
   };
 
-  const ReviewSection = () => {
-    const vals = form.getValues();
-    
-    if (studentType === 'new') {
-      return (
-        <div className="w-full animate-in fade-in zoom-in-95 duration-300">
-           <h2 className="text-xl font-bold text-[#0A2540] mb-4 flex items-center gap-2">
-             <CheckCircle2 className="h-6 w-6 text-primary" /> Review Application
-           </h2>
-           <div className="rounded-lg border p-1 bg-slate-50 overflow-hidden shadow-md">
-             <NewStudentPaperReview vals={vals} programList={programList} />
-           </div>
-           <div className="mt-6 bg-primary/5 p-4 rounded-md border border-primary/20 text-center">
-             <p className="text-sm font-medium">Please verify all information above is correct before submitting your final application.</p>
-           </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="w-full animate-in fade-in zoom-in-95 duration-300">
-         <h2 className="text-xl font-bold text-[#0A2540] mb-4 flex items-center gap-2">
-           <CheckCircle2 className="h-6 w-6 text-primary" /> Review Application
-         </h2>
-         <div className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200">
-           {/* TOP COPY: REGISTRAR'S COPY */}
-           <OldStudentPaperReview 
-             copyTitle="REGISTRAR'S COPY" 
-             vals={vals} 
-             programList={programList} 
-           />
-           {/* Cut Line */}
-           <div className="relative py-2 text-center">
-             <div className="border-t-2 border-dashed border-slate-400 w-full absolute top-1/2" />
-             <span className="relative bg-white px-3 text-[9px] uppercase font-bold text-slate-400 tracking-widest">
-               ✂ Cut along dotted line
-             </span>
-           </div>
-           {/* BOTTOM COPY: PROGRAM HEAD'S COPY */}
-           <OldStudentPaperReview 
-             copyTitle="PROGRAM HEAD'S COPY" 
-             vals={vals} 
-             programList={programList} 
-           />
-         </div>
-         <div className="mt-6 bg-primary/5 p-4 rounded-md border border-primary/20 text-center">
-           <p className="text-sm font-medium">Please verify all information above is correct before submitting your final application.</p>
-         </div>
-      </div>
-    );
-  };
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 pb-24">
@@ -484,6 +434,7 @@ function ApplyPage() {
               setStudentType("new"); setCurrentStep(0); form.clearErrors(); 
               form.setValue("student_no", "N/A");
               form.setValue("senior_high_track", "N/A");
+              form.setValue("student_type", "new");
             }}
             className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${studentType === "new" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
           >
@@ -495,6 +446,7 @@ function ApplyPage() {
               setStudentType("old"); setCurrentStep(0); form.clearErrors(); 
               if (form.getValues("student_no") === "N/A") form.setValue("student_no", "");
               if (form.getValues("senior_high_track") === "N/A") form.setValue("senior_high_track", "");
+              form.setValue("student_type", "old");
             }}
             className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${studentType === "old" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
           >
@@ -503,45 +455,68 @@ function ApplyPage() {
         </div>
       </div>
 
-      {/* Enhanced Progress Indicator — hidden on Review step */}
-      {!isReviewStep && <div className="mb-12 mt-6">
-        <div className="relative flex justify-between items-start">
-          {/* Background Track */}
-          <div className="absolute left-[5%] right-[5%] top-5 h-[3px] bg-muted overflow-hidden rounded-full -z-0">
-            <div 
-              className="h-full bg-primary transition-all duration-700 ease-in-out"
-              style={{ width: `${(currentStep / (Math.max(1, currentStepsList.length - 1))) * 100}%` }}
-            />
+      {/* Progress Indicator — hidden on Review step */}
+      {!isReviewStep && (
+        <div className="mb-8 mt-4">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-4">
+            {/* Step labels row */}
+            <div className="flex items-center justify-between mb-3">
+              {currentStepsList.map((step, idx) => {
+                const isActive = idx === currentStep;
+                const isCompleted = idx < currentStep;
+                return (
+                  <span
+                    key={step.id}
+                    className={`text-[10px] font-semibold text-center flex-1 transition-all duration-300 ${
+                      isActive ? 'text-primary' : isCompleted ? 'text-foreground/60' : 'text-muted-foreground/40'
+                    }`}
+                  >
+                    {isActive ? step.title : ''}
+                  </span>
+                );
+              })}
+            </div>
+
+            {/* Track + Bubbles */}
+            <div className="relative flex items-center justify-between">
+              {/* Full background track */}
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] bg-slate-200 rounded-full" />
+              {/* Filled progress track */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 h-[2px] bg-primary rounded-full transition-all duration-700 ease-in-out left-0"
+                style={{ width: `${(currentStep / Math.max(1, currentStepsList.length - 1)) * 100}%` }}
+              />
+
+              {currentStepsList.map((step, idx) => {
+                const isActive = idx === currentStep;
+                const isCompleted = idx < currentStep;
+                return (
+                  <div
+                    key={step.id}
+                    className={`relative z-10 flex items-center justify-center rounded-full border-2 transition-all duration-500 ease-in-out
+                      ${isCompleted
+                        ? 'w-7 h-7 bg-primary border-primary text-primary-foreground'
+                        : isActive
+                        ? 'w-9 h-9 bg-white border-primary text-primary ring-4 ring-primary/15 shadow-md'
+                        : 'w-6 h-6 bg-white border-slate-300 text-slate-400'}
+                    `}
+                  >
+                    {isCompleted
+                      ? <CheckCircle2 className="w-3.5 h-3.5" />
+                      : <span className={`font-bold ${isActive ? 'text-sm' : 'text-[10px]'}`}>{idx + 1}</span>
+                    }
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Step count label */}
+            <div className="mt-3 text-center text-[11px] text-muted-foreground">
+              Step <span className="font-semibold text-primary">{currentStep + 1}</span> of {currentStepsList.length}
+            </div>
           </div>
-          
-          {currentStepsList.map((step, idx) => {
-            const isActive = idx === currentStep;
-            const isCompleted = idx < currentStep;
-            
-            return (
-              <div key={step.id} className="relative z-10 flex flex-col items-center flex-1 group">
-                <div 
-                  className={`
-                    flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500 ease-in-out
-                    ${isCompleted ? 'bg-primary border-primary text-primary-foreground shadow-sm' 
-                      : isActive ? 'bg-background border-primary text-primary scale-110 ring-4 ring-primary/20 shadow-md' 
-                      : 'bg-background border-muted-foreground/30 text-muted-foreground hover:border-primary/50'}
-                  `}
-                >
-                  {isCompleted ? <CheckCircle2 className="w-5 h-5 animate-in zoom-in duration-300" /> : <span className="font-semibold text-sm">{idx + 1}</span>}
-                </div>
-                <span 
-                  className={`text-[10px] sm:text-[11px] mt-3 block text-center max-w-[70px] leading-tight sm:max-w-[100px] transition-all duration-300
-                    ${isActive ? 'font-bold text-primary translate-y-0' : isCompleted ? 'font-medium text-foreground/80' : 'font-medium text-muted-foreground opacity-70 group-hover:opacity-100'}
-                  `}
-                >
-                  {step.title}
-                </span>
-              </div>
-            );
-          })}
         </div>
-      </div>}
+      )}
 
       <Form {...form}>
         <form 
@@ -578,6 +553,7 @@ function ApplyPage() {
           {/* Personal Information (Both Types) */}
           {currentStepsList[currentStep].id === 'personal' && (
             <Section title="Personal Information" icon={User}>
+              {/* Row 1: Last Name / First Name / Middle Name / Suffix */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <FormField control={form.control} name="last_name" render={({ field }) => (
                   <FormItem><FormLabel>Last Name <span className="text-destructive ml-1">*</span></FormLabel><FormControl><Input maxLength={80} {...field} /></FormControl><FormMessage /></FormItem>
@@ -593,10 +569,8 @@ function ApplyPage() {
                 )} />
               </div>
 
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormField control={form.control} name="date_of_birth" render={({ field }) => (
-                  <FormItem><FormLabel>Date of Birth</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
+              {/* Row 2: Sex / Civil Status / Date of Birth / Place of Birth */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
                 <FormField control={form.control} name="gender" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Sex <span className="text-destructive ml-1">*</span></FormLabel>
@@ -607,12 +581,6 @@ function ApplyPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="place_of_birth" render={({ field }) => (
-                  <FormItem><FormLabel>Place of Birth</FormLabel><FormControl><Input maxLength={200} {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
                 <FormField control={form.control} name="civil_status" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Civil Status</FormLabel>
@@ -623,35 +591,137 @@ function ApplyPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="religion" render={({ field }) => (
-                  <FormItem><FormLabel>Religion</FormLabel><FormControl><Input maxLength={100} {...field} /></FormControl><FormMessage /></FormItem>
+                <FormField control={form.control} name="date_of_birth" render={({ field }) => (
+                  <FormItem><FormLabel>Birthdate</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="citizenship" render={({ field }) => (
-                  <FormItem><FormLabel>Citizenship</FormLabel><FormControl><Input maxLength={100} {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="contact_number" render={({ field }) => (
-                  <FormItem><FormLabel>Contact No.</FormLabel><FormControl><Input placeholder="09XXXXXXXXX" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormField control={form.control} name="place_of_birth" render={({ field }) => (
+                  <FormItem><FormLabel>Place of Birth</FormLabel><FormControl><Input maxLength={200} {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
 
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="hidden">
-                  <FormField control={form.control} name="email" render={({ field }) => (
-                    <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
+              {/* Row 3: Home Address */}
+              <div className="mt-6">
+                <FormField control={form.control} name="address" render={({ field }) => (
+                  <FormItem><FormLabel>Home Address <span className="text-destructive ml-1">*</span></FormLabel><FormControl><Input maxLength={300} {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+
+              {/* Row 4: Present Address */}
+              <div className="mt-6">
+                <FormItem>
+                  <FormLabel>Present Address <span className="text-muted-foreground text-xs">(if different from Home Address)</span></FormLabel>
+                  <FormControl><Input maxLength={300} placeholder="Leave blank if same as Home Address" /></FormControl>
+                </FormItem>
+              </div>
+
+              {/* Row 5: Contact Number / Email Address / Postal Code */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FormField control={form.control} name="contact_number" render={({ field }) => (
+                  <FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input placeholder="09XXXXXXXXX" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
                 <FormField control={form.control} name="postal_code" render={({ field }) => (
                   <FormItem><FormLabel>Postal Code</FormLabel><FormControl><Input maxLength={10} placeholder="e.g. 7100" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
 
+              {/* Row 6: Citizenship */}
               <div className="mt-6">
-                <FormField control={form.control} name="address" render={({ field }) => (
-                  <FormItem><FormLabel>Permanent Address <span className="text-destructive ml-1">*</span></FormLabel><FormControl><Textarea rows={2} maxLength={300} {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
+                <FormField control={form.control} name="citizenship" render={({ field }) => {
+                  const isAlien = field.value && field.value.toLowerCase() !== "filipino" && field.value !== "";
+                  return (
+                    <FormItem>
+                      <FormLabel className="uppercase font-bold text-sm">Citizenship</FormLabel>
+                      <div className="flex flex-wrap items-center gap-6 mt-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="radio" name="citizenship_type" className="w-4 h-4"
+                            checked={!isAlien || field.value === "" || field.value?.toLowerCase() === "filipino"}
+                            onChange={() => field.onChange("Filipino")}
+                          />
+                          <span className="text-sm font-medium">Filipino</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="radio" name="citizenship_type" className="w-4 h-4"
+                            checked={isAlien}
+                            onChange={() => field.onChange("")}
+                          />
+                          <span className="text-sm font-medium">If Alien, ACR No.:</span>
+                        </label>
+                        {isAlien && (
+                          <Input
+                            className="w-48"
+                            placeholder="ACR Number"
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }} />
               </div>
+
+              {/* Row 7: Religious Affiliation */}
+              <div className="mt-6">
+                <FormField control={form.control} name="religion" render={({ field }) => {
+                  const isIslam = field.value?.toLowerCase() === "islam";
+                  const isProtestant = field.value?.toLowerCase() === "protestant";
+                  const isCatholic = field.value?.toLowerCase() === "catholic";
+                  const isOther = field.value && !isIslam && !isProtestant && !isCatholic;
+                  return (
+                    <FormItem>
+                      <FormLabel className="font-bold text-sm">Religious Affiliation</FormLabel>
+                      <div className="flex flex-wrap items-center gap-6 mt-2">
+                        {[{ label: "Islam", value: "Islam" }, { label: "Protestant", value: "Protestant" }, { label: "Catholic", value: "Catholic" }].map(opt => (
+                          <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="religion_type" className="w-4 h-4"
+                              checked={field.value?.toLowerCase() === opt.value.toLowerCase()}
+                              onChange={() => field.onChange(opt.value)}
+                            />
+                            <span className="text-sm font-medium">{opt.label}</span>
+                          </label>
+                        ))}
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="radio" name="religion_type" className="w-4 h-4"
+                            checked={!!isOther}
+                            onChange={() => field.onChange("")}
+                          />
+                          <span className="text-sm font-medium">Other (pls specify)</span>
+                        </label>
+                        {isOther && (
+                          <Input
+                            className="w-48"
+                            placeholder="Specify religion"
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }} />
+              </div>
+
+              {/* Row 8: Name & Address of Employer (old students) */}
+              {studentType === "old" && (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormItem>
+                    <FormLabel>Name &amp; Address of Employer <span className="text-muted-foreground text-xs">(If Employed)</span></FormLabel>
+                    <FormControl><Input maxLength={200} placeholder="Leave blank if not employed" /></FormControl>
+                  </FormItem>
+                  <FormItem>
+                    <FormLabel>Occupation <span className="text-muted-foreground text-xs">(If Employed)</span></FormLabel>
+                    <FormControl><Input maxLength={100} placeholder="Leave blank if not employed" /></FormControl>
+                  </FormItem>
+                </div>
+              )}
             </Section>
           )}
+
 
           {/* Family Background (Both Types) */}
           {currentStepsList[currentStep].id === 'family' && (
@@ -757,7 +827,9 @@ function ApplyPage() {
 
           {/* Old Student Status Header */}
           {studentType === "old" && currentStepsList[currentStep].id === 'status' && (
-            <OldStudentPaperFormHeader form={form} programList={programList} studentType={studentType} />
+            <Section title="Course & Major" icon={GraduationCap}>
+              <OldStudentPaperFormHeader form={form} programList={programList} studentType={studentType} />
+            </Section>
           )}
 
           {/* Old Student Subjects */}
@@ -766,7 +838,46 @@ function ApplyPage() {
           )}
 
           {/* Review Step */}
-          {isReviewStep && <ReviewSection />}
+          {isReviewStep && (
+            <div className="w-full animate-in fade-in zoom-in-95 duration-300">
+              <h2 className="text-xl font-bold text-[#0A2540] mb-4 flex items-center gap-2">
+                <CheckCircle2 className="h-6 w-6 text-primary" /> Review Application
+              </h2>
+              {studentType === 'new' ? (
+                <div className="rounded-lg border p-1 bg-slate-50 overflow-hidden shadow-md">
+                  <NewStudentPaperReview vals={form.getValues()} programList={programList} />
+                </div>
+              ) : (
+                <div className="flex flex-col gap-8">
+                  {/* ── PAGE 1 (FRONT) — Two copies ── */}
+                  <div className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200">
+                    <OldStudentPaperReview copyTitle="REGISTRAR'S COPY" vals={form.getValues()} programList={programList} />
+                    <div className="relative py-2 text-center">
+                      <div className="border-t-2 border-dashed border-slate-400 w-full absolute top-1/2" />
+                      <span className="relative bg-white px-3 text-[9px] uppercase font-bold text-slate-400 tracking-widest">✂ Cut along dotted line</span>
+                    </div>
+                    <OldStudentPaperReview copyTitle="PROGRAM HEAD'S COPY" vals={form.getValues()} programList={programList} />
+                  </div>
+
+                  {/* ── PAGE 2 (BACK) ── */}
+                  <div className="bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 min-h-[1056px] flex flex-col">
+                    {/* PAGE 2 — left-aligned tab */}
+                    <div className="flex items-center gap-0 mb-4 shrink-0">
+                      <span className="text-[11px] font-black uppercase tracking-widest text-white bg-[#0A2540] px-4 py-1.5 rounded-tl rounded-bl border border-[#0A2540]">
+                        PAGE 2
+                      </span>
+                      <div className="flex-1 h-px bg-slate-300 border-t border-slate-300" />
+                    </div>
+
+                    <OldStudentBackPage vals={form.getValues()} />
+                  </div>
+                </div>
+              )}
+              <div className="mt-6 bg-primary/5 p-4 rounded-md border border-primary/20 text-center">
+                <p className="text-sm font-medium">Please verify all information above is correct before submitting your final application.</p>
+              </div>
+            </div>
+          )}
 
           {/* Navigation Buttons */}
           <div className="mt-8 flex flex-col-reverse sm:flex-row items-center justify-between border-t pt-6 gap-4">
@@ -967,7 +1078,7 @@ function NewStudentPaperReview({ vals, programList }: { vals: any; programList: 
 function Section({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border bg-card p-6 md:p-8 shadow-sm transition-all duration-200 hover:shadow-md">
-      <div className="mb-6 flex items-center gap-3 border-b pb-4">
+      <div className="mb-6 flex items-center gap-3 border-b border-sky-300 bg-sky-100 -mx-6 md:-mx-8 px-6 md:px-8 py-3 rounded-t-lg">
         <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-200">
           <Icon className="h-5 w-5 text-[#0A2540]" />
         </div>
@@ -1524,6 +1635,194 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
             <p className="text-[7.5px] uppercase font-bold">Student's Signature</p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function OldStudentBackPage({ vals }: { vals: any }) {
+  const age = vals.date_of_birth
+    ? Math.floor((Date.now() - new Date(vals.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    : "—";
+
+  const isFilipinoOrBlank = !vals.citizenship || vals.citizenship.trim().toLowerCase() === "filipino";
+  const isIslam = (vals.religion || "").toLowerCase() === "islam";
+  const isProtestant = (vals.religion || "").toLowerCase() === "protestant";
+  const isCatholic = (vals.religion || "").toLowerCase() === "catholic";
+  const isOtherReligion = vals.religion && !isIslam && !isProtestant && !isCatholic;
+
+  return (
+    <div className="border border-black p-6 text-xs leading-relaxed font-sans mt-3 flex-1 flex flex-col">
+      {/* Body — two-column layout */}
+      <div className="grid grid-cols-12 gap-6 flex-1">
+
+        {/* ── Left Column (form fields) ── */}
+        <div className="col-span-8 space-y-3 text-[11px]">
+
+          {/* Age / Sex / Civil Status */}
+          <div className="grid grid-cols-3 gap-1">
+            <div><span className="font-bold">Age:</span> {age}</div>
+            <div><span className="font-bold">Sex:</span> {vals.gender ? vals.gender.charAt(0).toUpperCase() + vals.gender.slice(1) : "—"}</div>
+            <div><span className="font-bold">Civil Status:</span> {vals.civil_status || "—"}</div>
+          </div>
+
+          {/* Place of Birth / Zip */}
+          <div className="grid grid-cols-2 gap-1">
+            <div><span className="font-bold">Place of Birth:</span> {vals.place_of_birth || "—"}</div>
+            <div><span className="font-bold">Zip Code:</span> {vals.postal_code || "—"}</div>
+          </div>
+
+          {/* Birthdate */}
+          <div><span className="font-bold">Birthdate:</span> {vals.date_of_birth || "—"}</div>
+
+          {/* Home Address */}
+          <div><span className="font-bold">Home Address:</span> {vals.address || "—"}</div>
+
+          {/* Present Address */}
+          <div><span className="font-bold">Present Address:</span> {vals.address || "—"}</div>
+
+          {/* Contact / Email */}
+          <div className="grid grid-cols-2 gap-1">
+            <div><span className="font-bold">Contact Number:</span> {vals.contact_number || "—"}</div>
+            <div><span className="font-bold">Email Address:</span> {vals.email || "—"}</div>
+          </div>
+
+          {/* Citizenship */}
+          <div>
+            <span className="font-bold uppercase">CITIZENSHIP:</span>{" "}
+            <span className="mr-2">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
+            <span>{!isFilipinoOrBlank ? `[✔] If Alien, ACR No.: ${vals.citizenship}` : "[ ] If Alien, ACR No.: ___"}</span>
+          </div>
+
+          {/* Religious Affiliation */}
+          <div>
+            <span className="font-bold">Religious Affiliation:</span>{" "}
+            <span className="mr-2">{isIslam ? "[✔]" : "[ ]"} Islam</span>
+            <span className="mr-2">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
+            <span className="mr-2">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
+            <span>{isOtherReligion ? `[✔] Other: ${vals.religion}` : "[ ] Other(pls specify)"}</span>
+          </div>
+
+          <div className="border-t border-slate-400 my-1" />
+
+          {/* Employer */}
+          <div>
+            <span className="font-bold">Name &amp; Address of Employer (If Employed):</span> ___________________
+            <span className="font-bold ml-3">Occupation:</span> ___________
+          </div>
+
+          {/* Father */}
+          <div className="grid grid-cols-2 gap-1">
+            <div><span className="font-bold">Father's Complete Name:</span> {vals.father_name || "—"}</div>
+            <div><span className="font-bold">Occupation:</span> {vals.father_occupation || "—"}</div>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            <div><span className="font-bold">Monthly Income:</span> {vals.father_company || "—"}</div>
+            <div><span className="font-bold">Contact Number:</span> {vals.father_contact || "—"}</div>
+          </div>
+
+          {/* Mother */}
+          <div className="grid grid-cols-2 gap-1">
+            <div><span className="font-bold">Mother's Complete Maiden Name:</span> {vals.mother_name || "—"}</div>
+            <div><span className="font-bold">Contact No.:</span> {vals.mother_contact || "—"}</div>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            <div><span className="font-bold">Occupation:</span> {vals.mother_occupation || "—"}</div>
+            <div><span className="font-bold">Monthly Income:</span> {vals.mother_company || "—"}</div>
+          </div>
+          <div><span className="font-bold">Parents' Address:</span> {vals.father_address || vals.mother_address || "—"}</div>
+
+          {/* Guardian */}
+          <div className="grid grid-cols-2 gap-1">
+            <div><span className="font-bold">Guardian's Name:</span> {vals.guardian_name || "—"}</div>
+            <div><span className="font-bold">Contact Number:</span> {vals.guardian_contact || "—"}</div>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            <div><span className="font-bold">Monthly Income:</span> ___</div>
+            <div><span className="font-bold">Relationship:</span> {vals.guardian_relationship || "—"}</div>
+          </div>
+          <div><span className="font-bold">Address:</span> {vals.guardian_address || "—"}</div>
+        </div>
+
+        {/* ── Right Column — Student's Pledge Box ── */}
+        <div className="col-span-4 flex flex-col justify-end pb-36">
+          <div className="border border-black p-4 text-[10px] leading-relaxed flex flex-col">
+            <p className="font-bold text-center text-[11px] uppercase mb-3">STUDENT'S PLEDGE</p>
+            <p className="text-justify">
+              In consideration of my admission to the{" "}
+              <strong>ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE</strong>{" "}
+              and of the privileges I will henceforth enjoy as student of this institution,
+              I hereby pledge to abide by the rules and regulations laid down by the competent
+              authority of the state college and of the college in which I am enrolled.
+            </p>
+            <div className="mt-8">
+              <div className="border-b border-black w-full mb-1" />
+              <p className="text-center text-[9px]">Student's Signature</p>
+            </div>
+            <p className="text-[9px] italic mt-4">
+              * Refusal to take this pledge or any violation of its term shall be sufficient
+              cause of denial of admission.
+            </p>
+          </div>
+        </div>
+
+        {/* ── Full-width divider ── */}
+        <div className="col-span-12 border-t border-slate-400" />
+
+        {/* ── Educational Background — full width ── */}
+        <div className="col-span-12 space-y-3 text-[11px]">
+          <div className="font-bold uppercase text-[12px]">Educational Background:</div>
+
+          {/* Elementary */}
+          <div className="grid grid-cols-2 gap-6">
+            <div><span className="font-bold">Elementary:</span> {vals.elementary_school || "—"}</div>
+            <div><span className="font-bold">Year Graduated:</span> {vals.elementary_years || "—"}</div>
+          </div>
+          <div><span className="font-bold">Address:</span> {vals.elementary_address || "—"}</div>
+
+          {/* Secondary (Senior HS) */}
+          <div className="grid grid-cols-2 gap-6">
+            <div><span className="font-bold">Secondary (Senior HS):</span> {vals.junior_high_school || "—"}</div>
+            <div><span className="font-bold">Year Graduated:</span> {vals.junior_high_years || "—"}</div>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <div><span className="font-bold">Address:</span> {vals.junior_high_address || "—"}</div>
+            <div><span className="font-bold">Track:</span> {vals.senior_high_track || "—"}</div>
+          </div>
+
+          {/* School Last Attended (College) */}
+          <div className="grid grid-cols-2 gap-6">
+            <div><span className="font-bold">School Last Attended (COLLEGE):</span> {vals.senior_high_school || "—"}</div>
+            <div><span className="font-bold">Course &amp; Year:</span> {vals.senior_high_years || "—"}</div>
+          </div>
+          <div><span className="font-bold">Address:</span> {vals.senior_high_address || "—"}</div>
+
+          {/* LRN / Household */}
+          <div className="grid grid-cols-2 gap-6 mt-1">
+            <div><span className="font-bold">LRN No.:</span> ___________________</div>
+            <div><span className="font-bold">Household No.:</span> ___________________</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom — Full Student's Pledge block */}
+      <div className="pr-6 pt-4 border-t border-black mt-auto">
+        <p className="font-bold text-center text-[13px] uppercase mb-2">STUDENT'S PLEDGE</p>
+        <p className="text-[11px] text-justify leading-relaxed">
+          In consideration of my admission to the ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE
+          and of the privileges I will henceforth enjoy as a student of this institution, I hereby
+          pledge to abide by the rules and regulations laid down by competent authority of the state
+          college and of the college in which I am enrolled.
+        </p>
+        <div className="mt-8 flex justify-end">
+          <div className="text-center">
+            <div className="border-b border-black w-56 mb-1" />
+            <p className="text-[10px]">Student's Signature</p>
+          </div>
+        </div>
+        <p className="text-[9px] text-center mt-3 italic mb-2">
+          *Refusal to take this pledge or any violation of its terms shall be sufficient cause for denial of the admission.
+        </p>
       </div>
     </div>
   );

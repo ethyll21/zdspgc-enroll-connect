@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/my', requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, title, message, read AS is_read, created_at
+      `SELECT id, title, message, read AS is_read, created_at, link
        FROM public.notifications
        WHERE user_id = $1
        ORDER BY created_at DESC
@@ -28,7 +28,7 @@ router.patch('/:id/read', requireAuth, async (req, res) => {
     const { rows } = await db.query(
       `UPDATE public.notifications SET read = true
        WHERE id = $1 AND user_id = $2
-       RETURNING id, title, message, true AS is_read, created_at`,
+       RETURNING id, title, message, true AS is_read, created_at, link`,
       [req.params.id, req.user.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Notification not found' });
@@ -50,6 +50,21 @@ router.patch('/read-all', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('[Notifications/read-all]', err.message);
     res.status(500).json({ error: 'Failed to mark all as read', details: err.message });
+  }
+});
+
+// ─── DELETE /api/notifications/:id ───────────────────────────────────────────
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const { rowCount } = await db.query(
+      `DELETE FROM public.notifications WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Notification not found' });
+    res.json({ message: 'Notification deleted' });
+  } catch (err) {
+    console.error('[Notifications/delete]', err.message);
+    res.status(500).json({ error: 'Failed to delete notification', details: err.message });
   }
 });
 

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ArrowLeft, Eye, CheckCircle2, XCircle, AlertCircle, ExternalLink, Printer, GraduationCap, School, Download } from "lucide-react";
 import { enrollments as enrollmentsApi, documents as docsApi, students as studentsApi } from "@/integrations/localdb/client";
 import type { SubjectScheduleItem, RotcWatcDetails } from "@/integrations/localdb/client";
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_app/applications/$appId")({
 });
 
 const STATUS_META: Record<string, { label: string; tone: string }> = {
-  pending:      { label: "Pending",      tone: "text-slate-500" },
+  pending:      { label: "Pending",      tone: "text-yellow-600" },
   under_review: { label: "Under Review", tone: "text-blue-600" },
   approved:     { label: "Approved",     tone: "text-emerald-600" },
   rejected:     { label: "Rejected",     tone: "text-rose-600" },
@@ -115,8 +115,8 @@ function ApplicationDetail() {
   const { data: myDocs } = useQuery({
     queryKey: ["enrollment-docs", appId],
     queryFn: () => isAdmin 
-      ? docsApi.list({ student_id: data?.enrollment.student_id })
-      : docsApi.my(),
+      ? docsApi.list({ enrollment_id: appId })
+      : docsApi.my(appId),
     enabled: !!data?.enrollment.student_id,
   });
 
@@ -145,7 +145,7 @@ function ApplicationDetail() {
   const resubmitDocMutation = useMutation({
     mutationFn: async ({ oldDocId, docType, file }: { oldDocId: string; docType: string; file: File }) => {
       await docsApi.delete(oldDocId);
-      await docsApi.upload(file, docType);
+      await docsApi.upload(file, docType, appId);
       return enrollmentsApi.notifyResubmit(appId);
     },
     onSuccess: () => {
@@ -175,16 +175,26 @@ function ApplicationDetail() {
     e.target.value = "";
   };
 
+  const activeDocs = useMemo(() => {
+    const map = new Map();
+    const allDocs = myDocs?.documents ?? [];
+    for (const doc of allDocs) {
+      if (!map.has(doc.doc_type)) {
+        map.set(doc.doc_type, doc);
+      }
+    }
+    return Array.from(map.values());
+  }, [myDocs]);
+
   useEffect(() => {
     if (!isAdmin || !myDocs || !data) return;
-    const docs = myDocs.documents;
-    if (docs.length === 0) return;
+    if (activeDocs.length === 0) return;
     
-    const hasPending = docs.some(d => d.status === "pending");
+    const hasPending = activeDocs.some(d => d.status === "pending");
     if (hasPending) return;
 
-    const allApproved = docs.every(d => d.status === "approved");
-    const anyRejected = docs.some(d => d.status === "rejected");
+    const allApproved = activeDocs.every(d => d.status === "approved");
+    const anyRejected = activeDocs.some(d => d.status === "rejected");
     
     if (allApproved && data.enrollment.status !== "approved") {
       reviewMutation.mutate({ status: "approved", remarks: "All documents automatically verified." });
@@ -204,8 +214,8 @@ function ApplicationDetail() {
   }
 
   const { enrollment } = data;
-  const docs = myDocs?.documents ?? [];
-  const isOldStudent = enrollment.student_type === "old" || (enrollment.subjects && enrollment.subjects.length > 0) || !!studentData?.student.student_no;
+  const docs = activeDocs;
+  const isOldStudent = enrollment.student_type === "old" || enrollment.student_type === "returnee" || (!enrollment.student_type && enrollment.subjects && enrollment.subjects.length > 0);
   const subjectsList: SubjectScheduleItem[] = enrollment.subjects || [];
   const rotcData: RotcWatcDetails = enrollment.rotc_watc || {};
 
@@ -522,11 +532,13 @@ function ApplicationDetail() {
                       </div>
                     )}
 
-                    {d.status === "rejected" && d.remarks && (
+                    {d.status === "rejected" && (
                       <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20 flex flex-col gap-3">
-                        <div>
-                          <span className="font-semibold">Rejection Reason:</span> {d.remarks}
-                        </div>
+                        {d.remarks && (
+                          <div>
+                            <span className="font-semibold">Rejection Reason:</span> {d.remarks}
+                          </div>
+                        )}
                         {!isAdmin && (
                           <div>
                             <input 

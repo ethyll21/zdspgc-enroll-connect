@@ -39,13 +39,22 @@ const upload = multer({
 
 // ─── GET /api/documents/my ────────────────────────────────────────────────────
 router.get('/my', requireAuth, async (req, res) => {
+  const { enrollment_id } = req.query;
   try {
+    const conditions = ['s.user_id = $1'];
+    const params = [req.user.id];
+    
+    if (enrollment_id) {
+      params.push(enrollment_id);
+      conditions.push(`d.enrollment_id = $${params.length}`);
+    }
+
     const { rows } = await db.query(
       `SELECT d.* FROM public.documents d
        JOIN public.students s ON s.id = d.student_id
-       WHERE s.user_id = $1
+       WHERE ${conditions.join(' AND ')}
        ORDER BY d.uploaded_at DESC`,
-      [req.user.id]
+      params
     );
     res.json({ documents: rows });
   } catch (err) {
@@ -75,15 +84,16 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
       return res.status(404).json({ error: 'Student record not found' });
     }
     const student_id = studentRes.rows[0].id;
+    const enrollment_id = req.body.enrollment_id || null;
 
     const relativePath = path.relative(UPLOAD_DIR, req.file.path).replace(/\\/g, '/');
 
     const { rows } = await db.query(
       `INSERT INTO public.documents
-         (student_id, doc_type, file_path, file_name, mime_type, size_bytes, status)
-       VALUES ($1, $2::document_type, $3, $4, $5, $6, 'pending')
+         (student_id, enrollment_id, doc_type, file_path, file_name, mime_type, size_bytes, status)
+       VALUES ($1, $2, $3::document_type, $4, $5, $6, $7, 'pending')
        RETURNING *`,
-      [student_id, doc_type, relativePath, req.file.originalname, req.file.mimetype, req.file.size]
+      [student_id, enrollment_id, doc_type, relativePath, req.file.originalname, req.file.mimetype, req.file.size]
     );
     res.status(201).json({ document: rows[0] });
   } catch (err) {
@@ -131,9 +141,9 @@ router.delete('/:id', requireAuth, async (req, res) => {
       const message = `Your ${docLabel} (${doc.file_name}) has been deleted by the admin.`;
       
       await db.query(
-        `INSERT INTO public.notifications (user_id, title, message)
-         VALUES ($1, $2, $3)`,
-        [doc.user_id, title, message]
+        `INSERT INTO public.notifications (user_id, title, message, link)
+         VALUES ($1, $2, $3, $4)`,
+        [doc.user_id, title, message, doc.enrollment_id ? `/applications/${doc.enrollment_id}` : null]
       );
     }
 
@@ -199,9 +209,9 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
         : `Your ${docLabel} has been ${status} by the admin.`;
 
       await client.query(
-        `INSERT INTO public.notifications (user_id, title, message)
-         VALUES ($1, $2, $3)`,
-        [studentRes.rows[0].user_id, title, message]
+        `INSERT INTO public.notifications (user_id, title, message, link)
+         VALUES ($1, $2, $3, $4)`,
+        [studentRes.rows[0].user_id, title, message, doc.enrollment_id ? `/applications/${doc.enrollment_id}` : null]
       );
     }
 
@@ -218,12 +228,13 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
 
 // ─── GET /api/documents (admin: all documents) ───────────────────────────────
 router.get('/', requireAdmin, async (req, res) => {
-  const { status, student_id } = req.query;
+  const { status, student_id, enrollment_id } = req.query;
   try {
     const conditions = [];
     const params = [];
-    if (status) { params.push(status); conditions.push(`d.status = $${params.length}`); }
-    if (student_id) { params.push(student_id); conditions.push(`d.student_id = $${params.length}`); }
+    if (status)        { params.push(status);        conditions.push(`d.status = $${params.length}`); }
+    if (student_id)    { params.push(student_id);    conditions.push(`d.student_id = $${params.length}`); }
+    if (enrollment_id) { params.push(enrollment_id); conditions.push(`d.enrollment_id = $${params.length}`); }
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const { rows } = await db.query(

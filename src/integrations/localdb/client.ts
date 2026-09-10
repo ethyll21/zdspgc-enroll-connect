@@ -472,16 +472,18 @@ export const enrollments = {
 // DOCUMENTS API
 // ══════════════════════════════════════════════════════════════════════════════
 export const documents = {
-  my() {
-    return apiFetch<{ documents: Document[] }>('/api/documents/my');
+  my(enrollment_id?: string) {
+    const qs = enrollment_id ? `?enrollment_id=${enrollment_id}` : '';
+    return apiFetch<{ documents: Document[] }>(`/api/documents/my${qs}`);
   },
-  upload(file: File, doc_type: string) {
+  upload(file: File, doc_type: string, enrollment_id?: string) {
     const form = new FormData();
     form.append('file', file);
     form.append('doc_type', doc_type);
+    if (enrollment_id) form.append('enrollment_id', enrollment_id);
     return apiUpload<{ document: Document }>('/api/documents/upload', form);
   },
-  list(params?: { status?: string; student_id?: string }) {
+  list(params?: { status?: string; student_id?: string; enrollment_id?: string }) {
     const qs = new URLSearchParams(
       Object.fromEntries(Object.entries(params ?? {}).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))
     ).toString();
@@ -514,6 +516,9 @@ export const notifications = {
   },
   markAllRead() {
     return apiFetch<{ message: string }>('/api/notifications/read-all', { method: 'PATCH' });
+  },
+  delete(id: string) {
+    return apiFetch<{ message: string }>(`/api/notifications/${id}`, { method: 'DELETE' });
   },
 };
 

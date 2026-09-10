@@ -103,10 +103,13 @@ function StudentDashboard() {
                 Current Enrollment Status
               </h2>
             </div>
-            <Button variant="outline" size="sm" asChild className="h-8 border-slate-200">
-              <Link to="/applications/$appId" params={{ appId: activeEnrollment.id }}>
-                View Details
-              </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 border-slate-200"
+              onClick={() => navigate({ to: "/applications/$appId", params: { appId: activeEnrollment.id } })}
+            >
+              View Details
             </Button>
           </div>
 

@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ArrowLeft, FileText, Download, CheckCircle, XCircle, Printer, CheckCircle2, AlertCircle, Clock, ExternalLink } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 export const Route = createFileRoute("/_app/admin/review/$id")({
   component: AdminReviewApplication,
@@ -67,11 +67,21 @@ function AdminReviewApplication() {
     queryFn: () => studentsApi.getById(enrollment!.student_id),
   });
 
-  const { data: documents = [], isLoading: isDocsLoading } = useQuery({
+  const { data: rawDocuments = [], isLoading: isDocsLoading } = useQuery({
     enabled: isAdmin && !!enrollment?.student_id,
     queryKey: ["admin-documents", enrollment?.student_id],
     queryFn: () => documentsApi.list({ student_id: enrollment?.student_id }).then((r) => r.documents),
   });
+
+  const documents = useMemo(() => {
+    const map = new Map();
+    for (const doc of rawDocuments) {
+      if (!map.has(doc.doc_type)) {
+        map.set(doc.doc_type, doc);
+      }
+    }
+    return Array.from(map.values());
+  }, [rawDocuments]);
 
   const { data: history = [] } = useQuery({
     enabled: isAdmin && !!id,
@@ -134,7 +144,7 @@ function AdminReviewApplication() {
   };
   const subjects: SubjectScheduleItem[] = enrollment.subjects || [];
   const rotc: RotcWatcDetails = enrollment.rotc_watc || {};
-  const isOldStudent = enrollment.student_type === "old" || !enrollment.student_type || enrollment.student_type === "returnee" || (enrollment.subjects && enrollment.subjects.length > 0);
+  const isOldStudent = enrollment.student_type === "old" || enrollment.student_type === "returnee" || (!enrollment.student_type && enrollment.subjects && enrollment.subjects.length > 0);
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-20 print:pb-0 print:max-w-none print:m-0">
@@ -641,14 +651,14 @@ function AdminSlipCopy({
             <span className="font-bold text-[7px] uppercase block text-slate-500">ADVISED BY:</span>
             <div className="inline-block text-center mt-2">
               <p className="font-bold uppercase text-[8.5px] border-b border-black">{enrollment.advised_by || "JOANNAH LEA S. LAMBAN"}</p>
-              <span className="text-[7px] block">Dean of Student Affairs (DSA)</span>
+              <span className="text-[7px] block">DSA</span>
             </div>
           </div>
           <div className="col-span-4">
             <span className="font-bold text-[7px] uppercase block text-slate-500">APPROVED BY:</span>
             <div className="inline-block text-center mt-2">
               <p className="font-bold uppercase text-[8.5px] border-b border-black">{enrollment.approved_by || "JEFFRYL DAVE S. ALBELLAR"}</p>
-              <span className="text-[7px] block">Campus Registrar</span>
+              <span className="text-[7px] block">Registrar</span>
             </div>
           </div>
         </div>

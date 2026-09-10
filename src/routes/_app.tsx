@@ -126,7 +126,9 @@ function AppLayout() {
             const active =
               item.to === "/admin" || item.to === "/dashboard"
                 ? pathname === item.to
-                : pathname.startsWith(item.to);
+                : item.to === "/applications/$appId"
+                  ? pathname.startsWith("/applications/")
+                  : pathname.startsWith(item.to);
 
             return (
               <Link
@@ -249,7 +251,10 @@ function AppLayout() {
           {nav.map((item) => {
             const active =
               pathname === item.to ||
-              (item.to !== "/dashboard" && item.to !== "/admin" && pathname.startsWith(item.to));
+              (item.to !== "/dashboard" && item.to !== "/admin" &&
+                (item.to === "/applications/$appId"
+                  ? pathname.startsWith("/applications/")
+                  : pathname.startsWith(item.to)));
             return (
               <Link
                 key={item.to}
