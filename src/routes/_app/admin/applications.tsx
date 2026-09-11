@@ -46,7 +46,7 @@ function AdminApplications() {
   }, [isAdmin, loading, navigate]);
 
   const { data: allEnrollments = [], isLoading, error } = useQuery({
-    enabled: isAdmin,
+    enabled: typeof window !== 'undefined' && isAdmin,
     queryKey: ["admin-enrollments-all"],
     queryFn: () => enrollmentsApi.list({ limit: 200 }).then((r) => r.enrollments),
     refetchInterval: 30_000,

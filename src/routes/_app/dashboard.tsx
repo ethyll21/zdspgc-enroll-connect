@@ -41,14 +41,14 @@ function StudentDashboard() {
 
   const { data: myEnrollments = [], isLoading: isLoadingEnrollments } = useQuery({
     queryKey: ["my-enrollments", user?.id],
-    enabled: !!user,
+    enabled: typeof window !== 'undefined' && !!user,
     queryFn: () => enrollments.my().then((r) => r.enrollments),
   });
 
 
   const { data: myDocs = [] } = useQuery({
     queryKey: ["my-documents", user?.id],
-    enabled: !!user,
+    enabled: typeof window !== 'undefined' && !!user,
     queryFn: () => documents.my().then((r) => r.documents),
   });
 

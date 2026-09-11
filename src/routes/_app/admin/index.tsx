@@ -23,7 +23,7 @@ function AdminDashboard() {
   }, [isAdmin, loading, navigate]);
 
   const { data: statsData } = useQuery({
-    enabled: isAdmin,
+    enabled: typeof window !== 'undefined' && isAdmin,
     queryKey: ["admin-enrollment-stats"],
     queryFn: () => enrollmentsApi.stats().then((r) => r.stats),
     refetchInterval: 30_000,

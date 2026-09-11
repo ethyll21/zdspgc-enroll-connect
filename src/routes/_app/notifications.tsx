@@ -27,7 +27,7 @@ function NotificationsPage() {
 
   const { data: myNotifs = [], isLoading, isError, error } = useQuery({
     queryKey: ["my-notifications", user?.id],
-    enabled: !!user,
+    enabled: typeof window !== 'undefined' && !!user,
     retry: false,
     queryFn: () => notifications.my().then((r) => r.notifications),
   });

@@ -33,13 +33,13 @@ function AppLayout() {
 
   const { data: myEnrollments = [] } = useQuery({
     queryKey: ["my-enrollments", user?.id],
-    enabled: !!user && !isAdmin,
+    enabled: typeof window !== 'undefined' && !!user && !isAdmin,
     queryFn: () => enrollments.my().then((r) => r.enrollments),
   });
 
   const { data: myNotifs = [] } = useQuery({
     queryKey: ["my-notifications", user?.id],
-    enabled: !!user,
+    enabled: typeof window !== 'undefined' && !!user,
     retry: false,
     queryFn: () => notifications.my().then((r) => r.notifications),
     refetchInterval: 30_000,

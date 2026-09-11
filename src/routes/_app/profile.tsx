@@ -33,7 +33,7 @@ function ProfilePage() {
 
   const { data: profile, refetch } = useQuery({
     queryKey: ["profile-me", user?.id],
-    enabled: !!user,
+    enabled: typeof window !== 'undefined' && !!user,
     queryFn: () => profiles.me().then((r) => r.profile),
   });
 

@@ -58,38 +58,40 @@ function ApplicationDetail() {
         window.print();
       }, 0);
     } else {
-      const element = document.getElementById("printable-application-form");
-      if (!element) return;
-      
       const toastId = toast.loading("Generating PDF, please wait...");
       try {
-        const imgData = await toJpeg(element, {
-          quality: 0.95,
-          backgroundColor: "#ffffff",
-          pixelRatio: 2,
-        });
-
-        const pdf = new jsPDF({
-          orientation: "portrait",
-          unit: "mm",
-          format: "a4",
-        });
-
-        // Calculate image dimensions to fit A4
-        const img = new Image();
-        img.src = imgData;
-        await new Promise((resolve) => { img.onload = resolve; });
-
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (img.height * pdfWidth) / img.width;
         const pageHeight = pdf.internal.pageSize.getHeight();
 
-        // Split across multiple pages if form is tall
-        let yOffset = 0;
-        while (yOffset < pdfHeight) {
-          if (yOffset > 0) pdf.addPage();
-          pdf.addImage(imgData, "JPEG", 0, -yOffset, pdfWidth, pdfHeight);
-          yOffset += pageHeight;
+        // Collect printable sections: page1 and optionally page2
+        const page1El = document.getElementById("printable-application-form-page1");
+        const page2El = document.getElementById("printable-application-form-page2");
+        const fallbackEl = document.getElementById("printable-application-form");
+
+        const elements: HTMLElement[] = [];
+        if (page1El && page2El) {
+          elements.push(page1El, page2El);
+        } else if (fallbackEl) {
+          elements.push(fallbackEl);
+        }
+
+        for (let i = 0; i < elements.length; i++) {
+          const el = elements[i];
+          const imgData = await toJpeg(el, { quality: 0.95, backgroundColor: "#ffffff", pixelRatio: 2 });
+          const img = new Image();
+          img.src = imgData;
+          await new Promise((resolve) => { img.onload = resolve; });
+          const pdfHeight = (img.height * pdfWidth) / img.width;
+
+          let yOffset = 0;
+          let firstSlice = true;
+          while (yOffset < pdfHeight) {
+            if (!firstSlice || i > 0) pdf.addPage();
+            pdf.addImage(imgData, "JPEG", 0, -yOffset, pdfWidth, pdfHeight);
+            yOffset += pageHeight;
+            firstSlice = false;
+          }
         }
 
         pdf.save(`Enrollment_Form_${appId}.pdf`);
@@ -103,13 +105,14 @@ function ApplicationDetail() {
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["enrollment-detail", appId],
+    enabled: typeof window !== 'undefined',
     queryFn: () => enrollmentsApi.getById(appId),
   });
 
   const { data: studentData } = useQuery({
     queryKey: ["student-detail", data?.enrollment.student_id],
     queryFn: () => studentsApi.getById(data!.enrollment.student_id),
-    enabled: !!data?.enrollment.student_id,
+    enabled: typeof window !== 'undefined' && !!data?.enrollment.student_id,
   });
 
   const { data: myDocs } = useQuery({
@@ -117,7 +120,7 @@ function ApplicationDetail() {
     queryFn: () => isAdmin 
       ? docsApi.list({ enrollment_id: appId })
       : docsApi.my(appId),
-    enabled: !!data?.enrollment.student_id,
+    enabled: typeof window !== 'undefined' && !!data?.enrollment.student_id,
   });
 
   const reviewMutation = useMutation({
@@ -255,35 +258,49 @@ function ApplicationDetail() {
       ══════════════════════════════════════════════════════════════════════════ */}
       <div id="printable-application-form">
       {isOldStudent ? (
-        /* ─── OLD STUDENT FORM: TWO-COPY OFFICIAL SLIP (REGISTRAR + PROGRAM HEAD) ─── */
-        <div className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 print:space-y-4">
-          
-          {/* TOP COPY: REGISTRAR'S COPY */}
-          <OldStudentSlipCopy
-            copyTitle="REGISTRAR'S COPY"
-            student={studentData?.student}
-            enrollment={enrollment}
-            subjects={subjectsList}
-            rotc={rotcData}
-          />
+        /* ─── OLD STUDENT FORM: TWO-COPY OFFICIAL SLIP (REGISTRAR + PROGRAM HEAD) + PAGE 2 ─── */
+        <>
+          {/* PAGE 1 — Two copies */}
+          <div id="printable-application-form-page1" className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 print:space-y-4">
+            {/* TOP COPY: REGISTRAR'S COPY */}
+            <OldStudentSlipCopy
+              copyTitle="REGISTRAR'S COPY"
+              student={studentData?.student}
+              enrollment={enrollment}
+              subjects={subjectsList}
+              rotc={rotcData}
+            />
 
-          {/* Cut Line */}
-          <div className="relative py-2 text-center print:py-1">
-            <div className="border-t-2 border-dashed border-slate-400 w-full absolute top-1/2" />
-            <span className="relative bg-white px-3 text-[9px] uppercase font-bold text-slate-400 tracking-widest">
-              ✂ Cut along dotted line
-            </span>
+            {/* Cut Line */}
+            <div className="relative py-2 text-center print:py-1">
+              <div className="border-t-2 border-dashed border-slate-400 w-full absolute top-1/2" />
+              <span className="relative bg-white px-3 text-[9px] uppercase font-bold text-slate-400 tracking-widest">
+                ✂ Cut along dotted line
+              </span>
+            </div>
+
+            {/* BOTTOM COPY: PROGRAM HEAD'S COPY */}
+            <OldStudentSlipCopy
+              copyTitle="PROGRAM HEAD'S COPY"
+              student={studentData?.student}
+              enrollment={enrollment}
+              subjects={subjectsList}
+              rotc={rotcData}
+            />
           </div>
 
-          {/* BOTTOM COPY: PROGRAM HEAD'S COPY */}
-          <OldStudentSlipCopy
-            copyTitle="PROGRAM HEAD'S COPY"
-            student={studentData?.student}
-            enrollment={enrollment}
-            subjects={subjectsList}
-            rotc={rotcData}
-          />
-        </div>
+          {/* PAGE 2 — Back page (personal info, family background, educational background) */}
+          <div id="printable-application-form-page2" className="bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 min-h-[1056px] flex flex-col mt-4">
+            {/* PAGE 2 tab */}
+            <div className="flex items-center gap-0 mb-4 shrink-0">
+              <span className="text-[11px] font-black uppercase tracking-widest text-white bg-[#0A2540] px-4 py-1.5 rounded-tl rounded-bl border border-[#0A2540]">
+                PAGE 2
+              </span>
+              <div className="flex-1 h-px bg-slate-300 border-t border-slate-300" />
+            </div>
+            <OldStudentBackPageDisplay student={studentData?.student} enrollment={enrollment} />
+          </div>
+        </>
       ) : (
         /* ─── NEW STUDENT FORM: FULL DETAILED COLLEGE ENROLLMENT FORM ─── */
         <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
@@ -891,6 +908,231 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
         <h2 className="font-display text-base font-bold text-white">{title}</h2>
       </div>
       <div className="p-6 pt-4">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Page 2 (back page) for old student downloadable form.
+ * Mirrors OldStudentBackPage in apply.tsx but reads from DB student/enrollment objects.
+ */
+function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enrollment: any }) {
+  const s = student || {};
+  const fb = (() => {
+    const raw = s.family_background || (enrollment as any)?.family_background || {};
+    if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return {}; } }
+    return raw;
+  })();
+  const eb = (() => {
+    const raw = s.educational_background || (enrollment as any)?.educational_background || {};
+    if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return {}; } }
+    return raw;
+  })();
+
+  const dob = s.date_of_birth || "";
+  const age = dob
+    ? Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    : "—";
+
+  const citizenship = s.citizenship || "";
+  const religion = s.religion || "";
+  const isFilipinoOrBlank = !citizenship || citizenship.trim().toLowerCase() === "filipino";
+  const isIslam = religion.toLowerCase() === "islam";
+  const isProtestant = religion.toLowerCase() === "protestant";
+  const isCatholic = religion.toLowerCase() === "catholic";
+  const isOtherReligion = religion && !isIslam && !isProtestant && !isCatholic;
+
+  // Helper: renders a value inside a bordered box (mimics a paper form input)
+  const Box = ({ value, wide }: { value?: string | number | null; wide?: boolean }) => (
+    <span
+      style={{
+        display: "inline-block",
+        minWidth: wide ? "160px" : "90px",
+        borderBottom: "1.5px solid #000",
+        padding: "0 4px",
+        marginLeft: "4px",
+        verticalAlign: "bottom",
+        lineHeight: "1.4",
+      }}
+    >
+      {value ?? ""}
+    </span>
+  );
+
+  const F = ({ children }: { children: React.ReactNode }) => (
+    <div style={{ display: "flex", alignItems: "baseline", gap: "4px", minWidth: 0, overflow: "hidden" }}>{children}</div>
+  );
+  return (
+    <div className="border border-black p-6 text-xs leading-relaxed font-sans flex-1 flex flex-col">
+      <div className="grid grid-cols-12 gap-6 flex-1">
+
+        {/* ── Left Column ── */}
+        <div className="col-span-8 space-y-3 text-[11px]">
+
+          {/* Age / Sex / Civil Status */}
+          <div className="grid grid-cols-3 gap-1">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Age:</span><Box value={age} /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Sex:</span><Box value={s.gender ? s.gender.charAt(0).toUpperCase() + s.gender.slice(1) : ""} /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Civil Status:</span><Box value={s.civil_status} wide /></F>
+          </div>
+
+          {/* Place of Birth / Zip */}
+          <div className="grid grid-cols-2 gap-1">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Place of Birth:</span><Box value={s.place_of_birth} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Zip Code:</span><Box value={s.postal_code} /></F>
+          </div>
+
+          {/* Birthdate */}
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Birthdate:</span><Box value={dob} wide /></F>
+
+          {/* Home Address */}
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Home Address:</span><Box value={s.address} wide /></F>
+
+          {/* Present Address */}
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Present Address:</span><Box value={s.address} wide /></F>
+
+          {/* Contact / Email */}
+          <div className="grid grid-cols-2 gap-1">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact Number:</span><Box value={s.contact_number} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Email Address:</span><Box value={s.email} wide /></F>
+          </div>
+
+          {/* Citizenship */}
+          <div>
+            <span className="font-bold uppercase">CITIZENSHIP:</span>{" "}
+            <span className="mr-2">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
+            <span style={{display:"inline-flex",alignItems:"baseline",gap:"4px",flexWrap:"wrap"}}>
+              {!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:
+              <Box value={!isFilipinoOrBlank ? citizenship : ""} wide />
+            </span>
+          </div>
+
+          {/* Religious Affiliation */}
+          <div>
+            <span className="font-bold">Religious Affiliation:</span>{" "}
+            <span className="mr-2">{isIslam ? "[✔]" : "[ ]"} Islam</span>
+            <span className="mr-2">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
+            <span className="mr-2">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
+            <span style={{display:"inline-flex",alignItems:"baseline",gap:"4px"}}>
+              {isOtherReligion ? "[✔]" : "[ ]"} Other:
+              <Box value={isOtherReligion ? religion : ""} wide />
+            </span>
+          </div>
+
+          <div className="border-t border-slate-400 my-1" />
+
+          {/* Employer */}
+          <div className="flex flex-wrap gap-x-2 items-baseline">
+            <span className="font-bold">Name &amp; Address of Employer (If Employed):</span>
+            <Box value="" wide />
+          </div>
+
+          {/* Father */}
+          <div className="grid grid-cols-2 gap-1">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Father's Complete Name:</span><Box value={fb.father_name} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Occupation:</span><Box value={fb.father_occupation} wide /></F>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Monthly Income:</span><Box value={fb.father_company} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact Number:</span><Box value={fb.father_contact} wide /></F>
+          </div>
+
+          {/* Mother */}
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Mother's Complete Maiden Name:</span><Box value={fb.mother_name} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact No.:</span><Box value={fb.mother_contact} wide /></F>
+          <div className="grid grid-cols-2 gap-1">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Occupation:</span><Box value={fb.mother_occupation} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Monthly Income:</span><Box value={fb.mother_company} wide /></F>
+          </div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Parents' Address:</span><Box value={fb.father_address || fb.mother_address} wide /></F>
+
+          {/* Guardian */}
+          <div className="grid grid-cols-2 gap-1">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Guardian's Name:</span><Box value={fb.guardian_name} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact Number:</span><Box value={fb.guardian_contact} wide /></F>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Monthly Income:</span><Box value="" wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Relationship:</span><Box value={fb.guardian_relationship} wide /></F>
+          </div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={fb.guardian_address} wide /></F>
+        </div>
+
+        {/* ── Right Column — Student's Pledge Box ── */}
+        <div className="col-span-4 flex flex-col justify-end pb-36">
+          <div className="border border-black p-4 text-[10px] leading-relaxed flex flex-col">
+            <p className="font-bold text-center text-[11px] uppercase mb-3">STUDENT'S PLEDGE</p>
+            <p className="text-justify">
+              In consideration of my admission to the{" "}
+              <strong>ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE</strong>{" "}
+              and of the privileges I will henceforth enjoy as student of this institution,
+              I hereby pledge to abide by the rules and regulations laid down by the competent
+              authority of the state college and of the college in which I am enrolled.
+            </p>
+            <div className="mt-8">
+              <div className="border-b border-black w-full mb-1" />
+              <p className="text-center text-[9px]">Student's Signature</p>
+            </div>
+            <p className="text-[9px] italic mt-4">
+              * Refusal to take this pledge or any violation of its term shall be sufficient
+              cause of denial of admission.
+            </p>
+          </div>
+        </div>
+
+        {/* ── Full-width divider ── */}
+        <div className="col-span-12 border-t border-slate-400" />
+
+        {/* ── Educational Background — full width ── */}
+        <div className="col-span-12 space-y-3 text-[11px]">
+          <div className="font-bold uppercase text-[12px]">Educational Background:</div>
+
+          {/* Elementary */}
+          <div className="grid grid-cols-2 gap-6">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Elementary:</span><Box value={eb.elementary_school} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Year Graduated:</span><Box value={eb.elementary_years} /></F>
+          </div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={eb.elementary_address} wide /></F>
+
+          {/* Secondary (Senior HS) */}
+          <div className="grid grid-cols-2 gap-6">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Secondary (Senior HS):</span><Box value={eb.junior_high_school} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Year Graduated:</span><Box value={eb.junior_high_years} /></F>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={eb.junior_high_address} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Track:</span><Box value={eb.senior_high_track} wide /></F>
+          </div>
+
+          {/* School Last Attended (College) */}
+          <div className="grid grid-cols-2 gap-6">
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>School Last Attended (COLLEGE):</span><Box value={eb.senior_high_school} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Course &amp; Year:</span><Box value={eb.senior_high_years} wide /></F>
+          </div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={eb.senior_high_address} wide /></F>
+        </div>
+      </div>
+
+      {/* Bottom — Full Student's Pledge block */}
+      <div className="mt-auto pt-4"><div className="border-t border-black pr-6 pt-3">
+        <p className="font-bold text-center text-[13px] uppercase mb-2">STUDENT'S PLEDGE</p>
+        <p className="text-[11px] text-justify leading-relaxed">
+          In consideration of my admission to the ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE
+          and of the privileges I will henceforth enjoy as a student of this institution, I hereby
+          pledge to abide by the rules and regulations laid down by competent authority of the state
+          college and of the college in which I am enrolled.
+        </p>
+        <div className="mt-8 flex justify-end">
+          <div className="text-center">
+            <div className="border-b border-black w-56 mb-1" />
+            <p className="text-[10px]">Student's Signature</p>
+          </div>
+        </div>
+        <p className="text-[9px] text-center mt-3 italic mb-2">
+          *Refusal to take this pledge or any violation of its terms shall be sufficient cause for denial of the admission.
+        </p>
+      </div>
+      </div>
     </div>
   );
 }

@@ -44,7 +44,7 @@ const applySchema = z.object({
   last_name: z.string().min(1, { message: "Please enter your Last Name" }),
   first_name: z.string().min(1, { message: "Please enter your First Name" }),
   middle_name: z.string().min(1, { message: "Please enter Middle Name (or 'N/A')" }),
-  suffix: z.string().min(1, { message: "Please enter Suffix (or 'N/A')" }),
+  suffix: z.string().optional(),
   date_of_birth: z.string().min(1, { message: "Please enter your Date of Birth" }),
   gender: z.string().min(1, { message: "Please select Sex (Male/Female)" }),
   place_of_birth: z.string().min(1, { message: "Please enter your Place of Birth" }),
@@ -118,6 +118,11 @@ function ApplyPage() {
   const [files, setFiles] = useState<Partial<Record<DocKey, File>>>({});
   const [studentType, setStudentType] = useState<"new" | "old">("new");
   const [currentStep, setCurrentStep] = useState(0);
+  // Uncontrolled personal info fields for old students (persisted across step navigation)
+  const [oldAge, setOldAge] = useState("");
+  const [oldPresentAddress, setOldPresentAddress] = useState("");
+  const [oldEmployer, setOldEmployer] = useState("");
+  const [oldOccupation, setOldOccupation] = useState("");
 
   useEffect(() => {
     if (!loading && isAdmin) navigate({ to: "/admin", replace: true });
@@ -126,6 +131,7 @@ function ApplyPage() {
   // ΓöÇΓöÇ Fetch programs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const { data: programList = [] } = useQuery({
     queryKey: ["programs"],
+    enabled: typeof window !== 'undefined',
     queryFn: () => programsApi.list().then((r) => 
       r.programs.filter(p => ["ACT", "BSIS", "BPED"].includes(p.code.toUpperCase()))
     ),
@@ -134,7 +140,7 @@ function ApplyPage() {
   // ΓöÇΓöÇ Fetch existing student record to pre-fill ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const { data: studentRecord } = useQuery({
     queryKey: ["student-me", user?.id],
-    enabled: !!user,
+    enabled: typeof window !== 'undefined' && !!user,
     queryFn: () => students.me().then((r) => r.student).catch(() => null),
   });
 
@@ -142,7 +148,7 @@ function ApplyPage() {
     resolver: zodResolver(applySchema),
     defaultValues: {
       student_no: "N/A",
-      first_name: "", middle_name: "", last_name: "", suffix: "",
+      first_name: "", middle_name: "N/A", last_name: "", suffix: "N/A",
       contact_number: "", date_of_birth: "",
       gender: "", address: "", email: "",
       place_of_birth: "", civil_status: "", religion: "",
@@ -179,9 +185,9 @@ function ApplyPage() {
       form.reset({
         student_no:      studentRecord.student_no || "N/A",
         first_name:      studentRecord.first_name || nameParts[0] || "",
-        middle_name:     studentRecord.middle_name || "",
+        middle_name:     studentRecord.middle_name || "N/A",
         last_name:       studentRecord.last_name || nameParts[nameParts.length - 1] || "",
-        suffix:          studentRecord.suffix || "",
+        suffix:          studentRecord.suffix || "N/A",
         contact_number:  studentRecord.contact_number || "",
         date_of_birth:   studentRecord.date_of_birth || "",
         gender:          studentRecord.gender || "",
@@ -383,7 +389,7 @@ function ApplyPage() {
   const oldStudentSteps = [
     { id: 'status', title: 'Course & Major', fields: ['last_name', 'first_name', 'middle_name', 'program_id', 'major', 'student_no', 'semester', 'school_year', 'year_level', 'gender'] },
     { id: 'subjects', title: 'Subjects/Schedule', fields: ['subjects'] },
-    { id: 'personal', title: 'Personal Information', fields: ['date_of_birth', 'place_of_birth', 'civil_status', 'religion', 'citizenship', 'contact_number', 'email', 'address', 'postal_code', 'suffix'] },
+    { id: 'personal', title: 'Personal Information', fields: ['date_of_birth', 'gender', 'place_of_birth', 'civil_status', 'religion', 'citizenship', 'contact_number', 'email', 'address', 'postal_code'] },
     { id: 'family', title: 'Family Background', fields: ['father_name', 'father_occupation', 'father_company', 'father_address', 'father_contact', 'mother_name', 'mother_occupation', 'mother_company', 'mother_address', 'mother_contact', 'guardian_name', 'guardian_relationship', 'guardian_address', 'guardian_contact', 'emergency_contact_person', 'emergency_contact_address', 'emergency_contact_number'] },
     { id: 'education', title: 'Educational Background', fields: ['elementary_school', 'elementary_address', 'elementary_years', 'junior_high_school', 'junior_high_address', 'junior_high_years', 'senior_high_school', 'senior_high_address', 'senior_high_years', 'senior_high_track'] },
     { id: 'pledge', title: "Student's Pledge", fields: ['pledge_accepted'] },
@@ -397,7 +403,51 @@ function ApplyPage() {
     const fieldsToValidate = currentStepsList[currentStep].fields as any[];
     if (fieldsToValidate.length > 0) {
       const isValid = await form.trigger(fieldsToValidate);
-      if (!isValid) return;
+      if (!isValid) {
+        setTimeout(() => {
+          const firstError = document.querySelector('[aria-invalid="true"]');
+          if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            (firstError as HTMLElement).focus();
+          }
+        }, 50);
+        return;
+      }
+    }
+
+    // Extra validation for old student personal step (uncontrolled plain inputs)
+    if (studentType === "old" && currentStepsList[currentStep].id === 'personal') {
+      const checks = [
+        { id: 'old-age',            msg: 'Please enter your Age (e.g. 20)' },
+        { id: 'old-present-address',msg: 'Please enter your Present Address (or N/A)' },
+        { id: 'old-employer',       msg: 'Please enter Name & Address of Employer (or N/A)' },
+        { id: 'old-occupation',     msg: 'Please enter your Occupation (or N/A)' },
+      ];
+      let firstEmpty: HTMLInputElement | null = null;
+      checks.forEach(({ id, msg }) => {
+        const el = document.getElementById(id) as HTMLInputElement | null;
+        const errEl = document.getElementById(id + '-error');
+        if (!el) return;
+        if (!el.value.trim()) {
+          el.style.borderColor = '#f87171';
+          el.style.borderWidth = '1px';
+          el.style.borderStyle = 'solid';
+          el.style.backgroundColor = '';
+          if (errEl) { errEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:50%;background:#f87171;color:white;font-size:10px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">!</span>' + msg + '</span>'; errEl.style.display = 'block'; }
+          if (!firstEmpty) firstEmpty = el;
+        } else {
+          el.style.borderColor = '';
+          el.style.borderWidth = '';
+          el.style.borderStyle = '';
+          el.style.backgroundColor = '';
+          if (errEl) { errEl.innerHTML = ''; errEl.style.display = 'none'; }
+        }
+      });
+      if (firstEmpty) {
+        (firstEmpty as HTMLInputElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        (firstEmpty as HTMLInputElement).focus();
+        return;
+      }
     }
     
     // Custom validation for documents step
@@ -434,6 +484,9 @@ function ApplyPage() {
               setStudentType("new"); setCurrentStep(0); form.clearErrors(); 
               form.setValue("student_no", "N/A");
               form.setValue("senior_high_track", "N/A");
+              // Clear hidden fields so new students can fill them in
+              if (form.getValues("suffix") === "N/A") form.setValue("suffix", "");
+              if (form.getValues("middle_name") === "N/A") form.setValue("middle_name", "");
               form.setValue("student_type", "new");
             }}
             className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${studentType === "new" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
@@ -553,21 +606,23 @@ function ApplyPage() {
           {/* Personal Information (Both Types) */}
           {currentStepsList[currentStep].id === 'personal' && (
             <Section title="Personal Information" icon={User}>
-              {/* Row 1: Last Name / First Name / Middle Name / Suffix */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <FormField control={form.control} name="last_name" render={({ field }) => (
-                  <FormItem><FormLabel>Last Name <span className="text-destructive ml-1">*</span></FormLabel><FormControl><Input maxLength={80} {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="first_name" render={({ field }) => (
-                  <FormItem><FormLabel>First Name <span className="text-destructive ml-1">*</span></FormLabel><FormControl><Input maxLength={80} {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="middle_name" render={({ field }) => (
-                  <FormItem><FormLabel>Middle Name</FormLabel><FormControl><Input maxLength={80} {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="suffix" render={({ field }) => (
-                  <FormItem><FormLabel>Suffix</FormLabel><FormControl><Input maxLength={10} placeholder="Jr., Sr., III" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-              </div>
+              {/* Row 1: Last Name / First Name / Middle Name / Suffix — new students only */}
+              {studentType !== "old" && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <FormField control={form.control} name="last_name" render={({ field }) => (
+                    <FormItem><FormLabel>Last Name <span className="text-destructive ml-1">*</span></FormLabel><FormControl><Input maxLength={80} {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="first_name" render={({ field }) => (
+                    <FormItem><FormLabel>First Name <span className="text-destructive ml-1">*</span></FormLabel><FormControl><Input maxLength={80} {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="middle_name" render={({ field }) => (
+                    <FormItem><FormLabel>Middle Name</FormLabel><FormControl><Input maxLength={80} {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="suffix" render={({ field }) => (
+                    <FormItem><FormLabel>Suffix</FormLabel><FormControl><Input maxLength={10} placeholder="Jr., Sr., III" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
+              )}
 
               {/* Row 2: Sex / Civil Status / Date of Birth / Place of Birth */}
               <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -599,6 +654,19 @@ function ApplyPage() {
                 )} />
               </div>
 
+              {/* Row 2b: Age / Zip Code */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">Age</label>
+                  <Input id="old-age" type="number" min={1} max={120} placeholder="Enter age"
+                    value={oldAge} onChange={e => setOldAge(e.target.value)} />
+                  <p id="old-age-error" className="text-xs text-destructive font-medium" style={{display:'none'}}></p>
+                </div>
+                <FormField control={form.control} name="postal_code" render={({ field }) => (
+                  <FormItem><FormLabel>Zip Code</FormLabel><FormControl><Input maxLength={10} placeholder="e.g. 7100" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+
               {/* Row 3: Home Address */}
               <div className="mt-6">
                 <FormField control={form.control} name="address" render={({ field }) => (
@@ -606,24 +674,24 @@ function ApplyPage() {
                 )} />
               </div>
 
-              {/* Row 4: Present Address */}
               <div className="mt-6">
-                <FormItem>
-                  <FormLabel>Present Address <span className="text-muted-foreground text-xs">(if different from Home Address)</span></FormLabel>
-                  <FormControl><Input maxLength={300} placeholder="Leave blank if same as Home Address" /></FormControl>
-                </FormItem>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">
+                    Present Address
+                  </label>
+                  <Input id="old-present-address" maxLength={300} placeholder=""
+                    value={oldPresentAddress} onChange={e => setOldPresentAddress(e.target.value)} />
+                  <p id="old-present-address-error" className="text-xs text-destructive font-medium" style={{display:'none'}}></p>
+                </div>
               </div>
 
-              {/* Row 5: Contact Number / Email Address / Postal Code */}
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Row 5: Contact Number / Email Address */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField control={form.control} name="contact_number" render={({ field }) => (
                   <FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input placeholder="09XXXXXXXXX" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="postal_code" render={({ field }) => (
-                  <FormItem><FormLabel>Postal Code</FormLabel><FormControl><Input maxLength={10} placeholder="e.g. 7100" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
 
@@ -645,18 +713,16 @@ function ApplyPage() {
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="radio" name="citizenship_type" className="w-4 h-4"
                             checked={isAlien}
-                            onChange={() => field.onChange("")}
+                            onChange={() => field.onChange("")}  
                           />
                           <span className="text-sm font-medium">If Alien, ACR No.:</span>
                         </label>
-                        {isAlien && (
-                          <Input
-                            className="w-48"
-                            placeholder="ACR Number"
-                            value={field.value || ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                          />
-                        )}
+                        <Input
+                          className="w-48"
+                          placeholder="ACR Number"
+                          value={isAlien ? (field.value || "") : ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        />
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -687,18 +753,16 @@ function ApplyPage() {
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="radio" name="religion_type" className="w-4 h-4"
                             checked={!!isOther}
-                            onChange={() => field.onChange("")}
+                            onChange={() => field.onChange(" ")}
                           />
                           <span className="text-sm font-medium">Other (pls specify)</span>
                         </label>
-                        {isOther && (
-                          <Input
-                            className="w-48"
-                            placeholder="Specify religion"
-                            value={field.value || ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                          />
-                        )}
+                        <Input
+                          className="w-48"
+                          placeholder="Specify religion"
+                          value={isOther ? (field.value || "") : ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        />
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -709,14 +773,22 @@ function ApplyPage() {
               {/* Row 8: Name & Address of Employer (old students) */}
               {studentType === "old" && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormItem>
-                    <FormLabel>Name &amp; Address of Employer <span className="text-muted-foreground text-xs">(If Employed)</span></FormLabel>
-                    <FormControl><Input maxLength={200} placeholder="Leave blank if not employed" /></FormControl>
-                  </FormItem>
-                  <FormItem>
-                    <FormLabel>Occupation <span className="text-muted-foreground text-xs">(If Employed)</span></FormLabel>
-                    <FormControl><Input maxLength={100} placeholder="Leave blank if not employed" /></FormControl>
-                  </FormItem>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none">
+                      Name &amp; Address of Employer <span className="text-muted-foreground text-xs">(If Employed)</span>
+                    </label>
+                    <Input id="old-employer" maxLength={200} placeholder=""
+                      value={oldEmployer} onChange={e => setOldEmployer(e.target.value)} />
+                    <p id="old-employer-error" className="text-xs text-destructive font-medium" style={{display:'none'}}></p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none">
+                      Occupation <span className="text-muted-foreground text-xs">(If Employed)</span>
+                    </label>
+                    <Input id="old-occupation" maxLength={100} placeholder=""
+                      value={oldOccupation} onChange={e => setOldOccupation(e.target.value)} />
+                    <p id="old-occupation-error" className="text-xs text-destructive font-medium" style={{display:'none'}}></p>
+                  </div>
                 </div>
               )}
             </Section>
@@ -732,7 +804,7 @@ function ApplyPage() {
                   <h3 className="text-sm font-semibold text-primary border-b pb-2">Father's Information</h3>
                   <FormField control={form.control} name="father_name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="father_occupation" render={({ field }) => (<FormItem><FormLabel>Occupation</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                  <FormField control={form.control} name="father_company" render={({ field }) => (<FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                  <FormField control={form.control} name="father_company" render={({ field }) => (<FormItem><FormLabel>Monthly Income</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="father_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="father_contact" render={({ field }) => (<FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 </div>
@@ -740,7 +812,7 @@ function ApplyPage() {
                   <h3 className="text-sm font-semibold text-primary border-b pb-2">Mother's Information</h3>
                   <FormField control={form.control} name="mother_name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="mother_occupation" render={({ field }) => (<FormItem><FormLabel>Occupation</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                  <FormField control={form.control} name="mother_company" render={({ field }) => (<FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                  <FormField control={form.control} name="mother_company" render={({ field }) => (<FormItem><FormLabel>Monthly Income</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="mother_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="mother_contact" render={({ field }) => (<FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 </div>
@@ -1071,6 +1143,7 @@ function NewStudentPaperReview({ vals, programList }: { vals: any; programList: 
           <p className="text-[9px]">Signature over printed name</p>
         </div>
       </div>
+
     </div>
   );
 }
@@ -1651,6 +1724,25 @@ function OldStudentBackPage({ vals }: { vals: any }) {
   const isCatholic = (vals.religion || "").toLowerCase() === "catholic";
   const isOtherReligion = vals.religion && !isIslam && !isProtestant && !isCatholic;
 
+  // Helper: renders a value inside a bordered box (mimics a paper form input)
+  const Box = ({ value, wide }: { value?: string | number | null; wide?: boolean }) => (
+    <span
+      style={{
+        flex: "1 1 auto",
+        minWidth: 0,
+        maxWidth: "100%",
+        borderBottom: "1.5px solid #000",
+        padding: "0 4px",
+        lineHeight: "1.4",
+      }}
+    >
+      {value ?? ""}
+    </span>
+  );
+  const F = ({ children }: { children: React.ReactNode }) => (
+    <div style={{ display: "flex", alignItems: "baseline", gap: "4px", minWidth: 0, overflow: "hidden" }}>{children}</div>
+  );
+
   return (
     <div className="border border-black p-6 text-xs leading-relaxed font-sans mt-3 flex-1 flex flex-col">
       {/* Body — two-column layout */}
@@ -1661,37 +1753,40 @@ function OldStudentBackPage({ vals }: { vals: any }) {
 
           {/* Age / Sex / Civil Status */}
           <div className="grid grid-cols-3 gap-1">
-            <div><span className="font-bold">Age:</span> {age}</div>
-            <div><span className="font-bold">Sex:</span> {vals.gender ? vals.gender.charAt(0).toUpperCase() + vals.gender.slice(1) : "—"}</div>
-            <div><span className="font-bold">Civil Status:</span> {vals.civil_status || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Age:</span><Box value={age} /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Sex:</span><Box value={vals.gender ? vals.gender.charAt(0).toUpperCase() + vals.gender.slice(1) : ""} /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Civil Status:</span><Box value={vals.civil_status} wide /></F>
           </div>
 
           {/* Place of Birth / Zip */}
           <div className="grid grid-cols-2 gap-1">
-            <div><span className="font-bold">Place of Birth:</span> {vals.place_of_birth || "—"}</div>
-            <div><span className="font-bold">Zip Code:</span> {vals.postal_code || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Place of Birth:</span><Box value={vals.place_of_birth} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Zip Code:</span><Box value={vals.postal_code} /></F>
           </div>
 
           {/* Birthdate */}
-          <div><span className="font-bold">Birthdate:</span> {vals.date_of_birth || "—"}</div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Birthdate:</span><Box value={vals.date_of_birth} wide /></F>
 
           {/* Home Address */}
-          <div><span className="font-bold">Home Address:</span> {vals.address || "—"}</div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Home Address:</span><Box value={vals.address} wide /></F>
 
           {/* Present Address */}
-          <div><span className="font-bold">Present Address:</span> {vals.address || "—"}</div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Present Address:</span><Box value={vals.address} wide /></F>
 
           {/* Contact / Email */}
           <div className="grid grid-cols-2 gap-1">
-            <div><span className="font-bold">Contact Number:</span> {vals.contact_number || "—"}</div>
-            <div><span className="font-bold">Email Address:</span> {vals.email || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact Number:</span><Box value={vals.contact_number} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Email Address:</span><Box value={vals.email} wide /></F>
           </div>
 
           {/* Citizenship */}
           <div>
             <span className="font-bold uppercase">CITIZENSHIP:</span>{" "}
             <span className="mr-2">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
-            <span>{!isFilipinoOrBlank ? `[✔] If Alien, ACR No.: ${vals.citizenship}` : "[ ] If Alien, ACR No.: ___"}</span>
+            <span style={{display:"inline-flex",alignItems:"baseline",gap:"4px",flexWrap:"wrap"}}>
+              {!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:
+              <Box value={!isFilipinoOrBlank ? vals.citizenship : ""} wide />
+            </span>
           </div>
 
           {/* Religious Affiliation */}
@@ -1700,48 +1795,49 @@ function OldStudentBackPage({ vals }: { vals: any }) {
             <span className="mr-2">{isIslam ? "[✔]" : "[ ]"} Islam</span>
             <span className="mr-2">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
             <span className="mr-2">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
-            <span>{isOtherReligion ? `[✔] Other: ${vals.religion}` : "[ ] Other(pls specify)"}</span>
+            <span style={{display:"inline-flex",alignItems:"baseline",gap:"4px"}}>
+              {isOtherReligion ? "[✔]" : "[ ]"} Other:
+              <Box value={isOtherReligion ? vals.religion : ""} wide />
+            </span>
           </div>
 
           <div className="border-t border-slate-400 my-1" />
 
           {/* Employer */}
-          <div>
-            <span className="font-bold">Name &amp; Address of Employer (If Employed):</span> ___________________
-            <span className="font-bold ml-3">Occupation:</span> ___________
+          <div className="flex flex-wrap gap-x-2 items-baseline">
+            <span className="font-bold">Name &amp; Address of Employer (If Employed):</span>
+            <Box value="" wide />
           </div>
 
           {/* Father */}
           <div className="grid grid-cols-2 gap-1">
-            <div><span className="font-bold">Father's Complete Name:</span> {vals.father_name || "—"}</div>
-            <div><span className="font-bold">Occupation:</span> {vals.father_occupation || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Father's Complete Name:</span><Box value={vals.father_name} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Occupation:</span><Box value={vals.father_occupation} wide /></F>
           </div>
           <div className="grid grid-cols-2 gap-1">
-            <div><span className="font-bold">Monthly Income:</span> {vals.father_company || "—"}</div>
-            <div><span className="font-bold">Contact Number:</span> {vals.father_contact || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Monthly Income:</span><Box value={vals.father_company} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact Number:</span><Box value={vals.father_contact} wide /></F>
           </div>
 
           {/* Mother */}
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Mother's Complete Maiden Name:</span><Box value={vals.mother_name} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact No.:</span><Box value={vals.mother_contact} wide /></F>
           <div className="grid grid-cols-2 gap-1">
-            <div><span className="font-bold">Mother's Complete Maiden Name:</span> {vals.mother_name || "—"}</div>
-            <div><span className="font-bold">Contact No.:</span> {vals.mother_contact || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Occupation:</span><Box value={vals.mother_occupation} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Monthly Income:</span><Box value={vals.mother_company} wide /></F>
           </div>
-          <div className="grid grid-cols-2 gap-1">
-            <div><span className="font-bold">Occupation:</span> {vals.mother_occupation || "—"}</div>
-            <div><span className="font-bold">Monthly Income:</span> {vals.mother_company || "—"}</div>
-          </div>
-          <div><span className="font-bold">Parents' Address:</span> {vals.father_address || vals.mother_address || "—"}</div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Parents' Address:</span><Box value={vals.father_address || vals.mother_address} wide /></F>
 
           {/* Guardian */}
           <div className="grid grid-cols-2 gap-1">
-            <div><span className="font-bold">Guardian's Name:</span> {vals.guardian_name || "—"}</div>
-            <div><span className="font-bold">Contact Number:</span> {vals.guardian_contact || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Guardian's Name:</span><Box value={vals.guardian_name} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact Number:</span><Box value={vals.guardian_contact} wide /></F>
           </div>
           <div className="grid grid-cols-2 gap-1">
-            <div><span className="font-bold">Monthly Income:</span> ___</div>
-            <div><span className="font-bold">Relationship:</span> {vals.guardian_relationship || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Monthly Income:</span><Box value="" wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Relationship:</span><Box value={vals.guardian_relationship} wide /></F>
           </div>
-          <div><span className="font-bold">Address:</span> {vals.guardian_address || "—"}</div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={vals.guardian_address} wide /></F>
         </div>
 
         {/* ── Right Column — Student's Pledge Box ── */}
@@ -1775,38 +1871,33 @@ function OldStudentBackPage({ vals }: { vals: any }) {
 
           {/* Elementary */}
           <div className="grid grid-cols-2 gap-6">
-            <div><span className="font-bold">Elementary:</span> {vals.elementary_school || "—"}</div>
-            <div><span className="font-bold">Year Graduated:</span> {vals.elementary_years || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Elementary:</span><Box value={vals.elementary_school} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Year Graduated:</span><Box value={vals.elementary_years} /></F>
           </div>
-          <div><span className="font-bold">Address:</span> {vals.elementary_address || "—"}</div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={vals.elementary_address} wide /></F>
 
           {/* Secondary (Senior HS) */}
           <div className="grid grid-cols-2 gap-6">
-            <div><span className="font-bold">Secondary (Senior HS):</span> {vals.junior_high_school || "—"}</div>
-            <div><span className="font-bold">Year Graduated:</span> {vals.junior_high_years || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Secondary (Senior HS):</span><Box value={vals.junior_high_school} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Year Graduated:</span><Box value={vals.junior_high_years} /></F>
           </div>
           <div className="grid grid-cols-2 gap-6">
-            <div><span className="font-bold">Address:</span> {vals.junior_high_address || "—"}</div>
-            <div><span className="font-bold">Track:</span> {vals.senior_high_track || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={vals.junior_high_address} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Track:</span><Box value={vals.senior_high_track} wide /></F>
           </div>
 
           {/* School Last Attended (College) */}
           <div className="grid grid-cols-2 gap-6">
-            <div><span className="font-bold">School Last Attended (COLLEGE):</span> {vals.senior_high_school || "—"}</div>
-            <div><span className="font-bold">Course &amp; Year:</span> {vals.senior_high_years || "—"}</div>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>School Last Attended (COLLEGE):</span><Box value={vals.senior_high_school} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Course &amp; Year:</span><Box value={vals.senior_high_years} wide /></F>
           </div>
-          <div><span className="font-bold">Address:</span> {vals.senior_high_address || "—"}</div>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={vals.senior_high_address} wide /></F>
 
-          {/* LRN / Household */}
-          <div className="grid grid-cols-2 gap-6 mt-1">
-            <div><span className="font-bold">LRN No.:</span> ___________________</div>
-            <div><span className="font-bold">Household No.:</span> ___________________</div>
-          </div>
         </div>
       </div>
 
       {/* Bottom — Full Student's Pledge block */}
-      <div className="pr-6 pt-4 border-t border-black mt-auto">
+      <div className="mt-auto pt-4"><div className="border-t border-black pr-6 pt-3">
         <p className="font-bold text-center text-[13px] uppercase mb-2">STUDENT'S PLEDGE</p>
         <p className="text-[11px] text-justify leading-relaxed">
           In consideration of my admission to the ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE
@@ -1824,6 +1915,7 @@ function OldStudentBackPage({ vals }: { vals: any }) {
           *Refusal to take this pledge or any violation of its terms shall be sufficient cause for denial of the admission.
         </p>
       </div>
+    </div>
     </div>
   );
 }
