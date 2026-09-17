@@ -18,6 +18,15 @@ const notificationsRoutes = require('./routes/notifications');
 const app  = express();
 const PORT = process.env.PORT || 4000;
 
+// ── Prevent silent crashes ─────────────────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err.message, err.stack);
+  // Don't exit — let the server keep running
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled Rejection:', reason);
+});
+
 // ── CORS ───────────────────────────────────────────────────────────────────────
 app.use(cors({
   origin: true,
@@ -134,11 +143,19 @@ function startServer() {
   });
 }
 
-runMigrations()
-  .then(startServer)
-  .catch((err) => {
+// Try migrations with a timeout; always start the server regardless
+async function safeRunMigrations() {
+  try {
+    await Promise.race([
+      runMigrations(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Migration timeout after 30s')), 30000))
+    ]);
+  } catch (err) {
     console.error('[Startup] Migration error, starting server anyway:', err.message);
-    startServer();
-  });
+  }
+  startServer();
+}
+
+safeRunMigrations();
 
 module.exports = app;

@@ -227,7 +227,7 @@ async function runMigrations() {
     console.error('[Migration] Failed:', err.message);
     try { await client.query('ROLLBACK'); } catch {}
   } finally {
-    client.release();
+    try { client.release(); } catch {}
   }
 }
 
