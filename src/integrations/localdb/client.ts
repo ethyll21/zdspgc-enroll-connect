@@ -1,7 +1,7 @@
 // Local PostgreSQL API client — replaces Supabase DB calls.
 // Auth is handled with local JWT stored in localStorage.
 
-const BASE_URL = (import.meta as any).env?.VITE_LOCAL_API_URL ?? 'http://localhost:4000';
+const BASE_URL = typeof process !== 'undefined' && process.env.NODE_ENV === 'production' ? '' : (import.meta as any).env?.PROD ? ((import.meta as any).env?.VITE_LOCAL_API_URL || '') : 'http://localhost:4000';
 
 export const TOKEN_KEY = 'zdspgc_token';
 export const USER_KEY  = 'zdspgc_user';
@@ -254,6 +254,12 @@ async function apiFetch<T>(
     res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
   } catch (err: any) {
     throw new Error('Failed to connect to the server. Please ensure the API is running.');
+  }
+
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Server returned non-JSON response. Check API URL. Status: ${res.status}`);
   }
 
   const data = await res.json().catch(() => ({ error: 'Invalid JSON response' }));
