@@ -142,11 +142,12 @@ router.post('/login', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const profileRes = await db.query(
-      `SELECT p.id, p.email, p.full_name, p.contact_number, p.birthdate, p.gender, p.address, p.avatar_url,
-              p.created_at, p.updated_at, u.raw_user_meta_data
-       FROM public.profiles p 
-       JOIN auth.users u ON u.id = p.id
-       WHERE p.id = $1`,
+      `SELECT u.id, u.email, u.raw_user_meta_data,
+              p.full_name, p.contact_number, p.birthdate, p.gender, p.address, p.avatar_url,
+              p.created_at, p.updated_at
+       FROM auth.users u 
+       LEFT JOIN public.profiles p ON u.id = p.id
+       WHERE u.id = $1`,
       [req.user.id]
     );
     const roleRes = await db.query(
@@ -155,13 +156,14 @@ router.get('/me', requireAuth, async (req, res) => {
     );
 
     if (profileRes.rows.length === 0) {
-      return res.status(404).json({ error: 'User profile not found' });
+      return res.status(404).json({ error: 'User not found' });
     }
 
     res.json({
       user: {
         ...profileRes.rows[0],
         student_type: profileRes.rows[0].raw_user_meta_data?.student_type || 'new',
+        full_name: profileRes.rows[0].full_name || profileRes.rows[0].raw_user_meta_data?.full_name || '',
         role: roleRes.rows.some(r => r.role === 'admin') ? 'admin' : (roleRes.rows[0]?.role || 'student'),
         roles: roleRes.rows.map(r => r.role),
       },
