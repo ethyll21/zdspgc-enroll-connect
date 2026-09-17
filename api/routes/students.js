@@ -42,14 +42,6 @@ router.post('/', requireAuth, async (req, res) => {
   }
 
   try {
-    // Check if student record already exists
-    const existing = await db.query(
-      'SELECT id FROM public.students WHERE user_id = $1', [req.user.id]
-    );
-    if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'Student record already exists' });
-    }
-
     const { rows } = await db.query(
       `INSERT INTO public.students
          (user_id, first_name, middle_name, last_name, gender, date_of_birth,
@@ -58,6 +50,30 @@ router.post('/', requireAuth, async (req, res) => {
           postal_code, major, family_background, educational_background, pledge_accepted, student_no)
        VALUES ($1,$2,$3,$4,$5,$6::date,$7,$8,$9,$10,$11,$12,
                $13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21::jsonb,$22,$23)
+       ON CONFLICT (user_id) DO UPDATE SET
+         first_name = EXCLUDED.first_name,
+         middle_name = EXCLUDED.middle_name,
+         last_name = EXCLUDED.last_name,
+         gender = EXCLUDED.gender,
+         date_of_birth = EXCLUDED.date_of_birth,
+         address = EXCLUDED.address,
+         contact_number = EXCLUDED.contact_number,
+         email = EXCLUDED.email,
+         program_id = EXCLUDED.program_id,
+         year_level = EXCLUDED.year_level,
+         previous_school = EXCLUDED.previous_school,
+         suffix = EXCLUDED.suffix,
+         place_of_birth = EXCLUDED.place_of_birth,
+         civil_status = EXCLUDED.civil_status,
+         religion = EXCLUDED.religion,
+         citizenship = EXCLUDED.citizenship,
+         postal_code = EXCLUDED.postal_code,
+         major = EXCLUDED.major,
+         family_background = EXCLUDED.family_background,
+         educational_background = EXCLUDED.educational_background,
+         pledge_accepted = EXCLUDED.pledge_accepted,
+         student_no = EXCLUDED.student_no,
+         updated_at = NOW()
        RETURNING *`,
       [
         req.user.id, first_name, middle_name || null, last_name,
