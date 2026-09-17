@@ -123,7 +123,7 @@ app.use((err, req, res, _next) => {
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────────
-runMigrations().then(() => {
+function startServer() {
   app.listen(PORT, () => {
     console.log(`\n╔══════════════════════════════════════════════╗`);
     console.log(`║   ZDSPGC Local API Server                  ║`);
@@ -132,6 +132,13 @@ runMigrations().then(() => {
     console.log(`║   Health   : http://localhost:${PORT}/api/health ║`);
     console.log(`╚══════════════════════════════════════════════╝\n`);
   });
-});
+}
+
+runMigrations()
+  .then(startServer)
+  .catch((err) => {
+    console.error('[Startup] Migration error, starting server anyway:', err.message);
+    startServer();
+  });
 
 module.exports = app;
