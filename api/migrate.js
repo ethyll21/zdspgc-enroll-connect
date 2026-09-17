@@ -176,26 +176,23 @@ async function runMigrations() {
       );
     `);
 
-    // ── 10. Seed default programs (always upsert so new programs are added) ─────
-    console.log('[Migration] Upserting programs...');
-    const defaultPrograms = [
-      ['BSIT', 'Bachelor of Science in Information Technology'],
-      ['BSIS', 'Bachelor of Science in Information Systems'],
+    // ── 10. Seed programs (only ACT, BSIS, BPED) ────────────────────────────────
+    const allowedPrograms = [
       ['ACT',  'Associate in Computer Technology'],
-      ['BSED', 'Bachelor of Secondary Education'],
-      ['BEED', 'Bachelor of Elementary Education'],
+      ['BSIS', 'Bachelor of Science in Information Systems'],
       ['BPED', 'Bachelor of Physical Education'],
-      ['BSA',  'Bachelor of Science in Agriculture'],
-      ['BSCRIM', 'Bachelor of Science in Criminology'],
-      ['BSHM', 'Bachelor of Science in Hospitality Management'],
-      ['BSEntrep', 'Bachelor of Science in Entrepreneurship'],
     ];
-    for (const [code, name] of defaultPrograms) {
+    for (const [code, name] of allowedPrograms) {
       await client.query(
-        `INSERT INTO public.programs (code, name) VALUES ($1, $2) ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name`,
+        `INSERT INTO public.programs (code, name, active) VALUES ($1, $2, true)
+         ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, active = true`,
         [code, name]
       );
     }
+    // Deactivate any other programs that may exist
+    await client.query(
+      `UPDATE public.programs SET active = false WHERE code NOT IN ('ACT', 'BSIS', 'BPED')`
+    );
 
     // ── 11. Seed default admin user ─────────────────────────────────────────────
     const adminEmail = 'admin@zdspgc.edu.ph';
