@@ -53,7 +53,7 @@ router.get('/my', requireAuth, async (req, res) => {
       `SELECT d.* FROM public.documents d
        JOIN public.students s ON s.id = d.student_id
        WHERE ${conditions.join(' AND ')}
-       ORDER BY d.created_at DESC`,
+       ORDER BY d.uploaded_at DESC`,
       params
     );
     res.json({ documents: rows });
@@ -88,22 +88,12 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 
     const relativePath = path.relative(UPLOAD_DIR, req.file.path).replace(/\\/g, '/');
 
-    const dbDocTypeMap = {
-      'psa_birth_certificate': 'birth_certificate',
-      'form_138': 'form138',
-      'good_moral': 'good_moral',
-      'transfer_certificate': 'transfer_credentials',
-      'registration_form': 'other',
-      'other': 'other'
-    };
-    const dbDocType = dbDocTypeMap[doc_type] || 'other';
-
     const { rows } = await db.query(
       `INSERT INTO public.documents
          (student_id, enrollment_id, doc_type, file_path, file_name, mime_type, size_bytes, status)
        VALUES ($1, $2, $3::document_type, $4, $5, $6, $7, 'pending')
        RETURNING *`,
-      [student_id, enrollment_id, dbDocType, relativePath, req.file.originalname, req.file.mimetype, req.file.size]
+      [student_id, enrollment_id, doc_type, relativePath, req.file.originalname, req.file.mimetype, req.file.size]
     );
     res.status(201).json({ document: rows[0] });
   } catch (err) {
@@ -252,7 +242,7 @@ router.get('/', requireAdmin, async (req, res) => {
        FROM public.documents d
        JOIN public.students s ON s.id = d.student_id
        ${where}
-       ORDER BY d.created_at DESC`,
+       ORDER BY d.uploaded_at DESC`,
       params
     );
     res.json({ documents: rows });

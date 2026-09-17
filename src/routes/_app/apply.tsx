@@ -20,16 +20,16 @@ export const Route = createFileRoute("/_app/apply")({
 });
 
 const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-const SEMESTERS = ["1st Semester", "2nd Semester", "Summer"];
-const CURRENT_SY = "2026-2027";
+const SEMESTERS   = ["1st Semester", "2nd Semester", "Summer"];
+const CURRENT_SY  = "2026-2027";
 const CIVIL_STATUSES = ["Single", "Married", "Widower"];
 
 const REQUIRED_DOCUMENTS = [
-  { key: "psa_birth_certificate", label: "PSA Birth Certificate", required: true },
-  { key: "form_138", label: "Form 138 (Report Card)", required: true },
-  { key: "good_moral", label: "Good Moral Certificate", required: true },
-  { key: "transfer_certificate", label: "Transfer Credentials", required: false },
-  { key: "other", label: "Other Supporting Documents", required: false },
+  { key: "psa_birth_certificate", label: "PSA Birth Certificate",       required: true },
+  { key: "form_138",              label: "Form 138 (Report Card)",       required: true },
+  { key: "good_moral",            label: "Good Moral Certificate",       required: true },
+  { key: "transfer_certificate",  label: "Transfer Credentials",         required: false },
+  { key: "other",                 label: "Other Supporting Documents",   required: false },
 ] as const;
 
 type DocKey = (typeof REQUIRED_DOCUMENTS)[number]["key"];
@@ -44,7 +44,7 @@ const applySchema = z.object({
   last_name: z.string().min(1, { message: "Please enter your Last Name" }),
   first_name: z.string().min(1, { message: "Please enter your First Name" }),
   middle_name: z.string().min(1, { message: "Please enter Middle Name (or 'N/A')" }),
-  suffix: z.string().min(1, { message: "Please enter Suffix (or 'N/A')" }),
+  suffix: z.string().optional(),
   date_of_birth: z.string().min(1, { message: "Please enter your Date of Birth" }),
   gender: z.string().min(1, { message: "Please select Sex (Male/Female)" }),
   place_of_birth: z.string().min(1, { message: "Please enter your Place of Birth" }),
@@ -112,9 +112,9 @@ const applySchema = z.object({
 
 function ApplyPage() {
   const { user, isAdmin, loading } = useAuth();
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
   const queryClient = useQueryClient();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy]   = useState(false);
   const [files, setFiles] = useState<Partial<Record<DocKey, File>>>({});
   const [studentType, setStudentType] = useState<"new" | "old">("new");
   const [currentStep, setCurrentStep] = useState(0);
@@ -128,20 +128,12 @@ function ApplyPage() {
     if (!loading && isAdmin) navigate({ to: "/admin", replace: true });
   }, [isAdmin, loading, navigate]);
 
-  const FALLBACK_PROGRAMS = [
-    { id: "8c86462d-e2a3-4f1a-ada0-ec311f59c237", code: "ACT", name: "Associate in Computer Technology" },
-    { id: "c55d1cc3-55c6-494d-a83b-2916a580da0c", code: "BPED", name: "Bachelor of Physical Education" },
-    { id: "f4d934e4-d212-4ef1-be08-426a9b2fdd3b", code: "BSIS", name: "Bachelor of Science in Information Systems" }
-  ];
-
   // ΓöÇΓöÇ Fetch programs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-  const { data: fetchedProgramList = [] } = useQuery({
+  const { data: programList = [] } = useQuery({
     queryKey: ["programs"],
     enabled: typeof window !== 'undefined',
-    queryFn: () => programsApi.list().then((r) => r.programs.filter(p => p.active !== false)).catch(() => []),
+    queryFn: () => programsApi.list().then((r) => r.programs.filter(p => p.active !== false)),
   });
-
-  const programList = fetchedProgramList.length > 0 ? fetchedProgramList : FALLBACK_PROGRAMS;
 
   // ΓöÇΓöÇ Fetch existing student record to pre-fill ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const { data: studentRecord } = useQuery({
@@ -189,36 +181,36 @@ function ApplyPage() {
       const fb = (studentRecord.family_background || {}) as FamilyBackground;
       const eb = (studentRecord.educational_background || {}) as EducationalBackground;
       form.reset({
-        student_no: studentRecord.student_no || "N/A",
-        first_name: studentRecord.first_name || nameParts[0] || "",
-        middle_name: studentRecord.middle_name || "N/A",
-        last_name: studentRecord.last_name || nameParts[nameParts.length - 1] || "",
-        suffix: studentRecord.suffix || "N/A",
-        contact_number: studentRecord.contact_number || "",
-        date_of_birth: studentRecord.date_of_birth || "",
-        gender: studentRecord.gender || "",
-        address: studentRecord.address || "",
-        email: studentRecord.email || user?.email || "",
-        place_of_birth: studentRecord.place_of_birth || "",
-        civil_status: studentRecord.civil_status || "",
-        religion: studentRecord.religion || "",
-        citizenship: studentRecord.citizenship || "Filipino",
-        postal_code: studentRecord.postal_code || "",
-        program_id: studentRecord.program_id || "",
-        major: studentRecord.major || "",
-        year_level: String(studentRecord.year_level || 1),
+        student_no:      studentRecord.student_no || "N/A",
+        first_name:      studentRecord.first_name || nameParts[0] || "",
+        middle_name:     studentRecord.middle_name || "N/A",
+        last_name:       studentRecord.last_name || nameParts[nameParts.length - 1] || "",
+        suffix:          studentRecord.suffix || "N/A",
+        contact_number:  studentRecord.contact_number || "",
+        date_of_birth:   studentRecord.date_of_birth || "",
+        gender:          studentRecord.gender || "",
+        address:         studentRecord.address || "",
+        email:           studentRecord.email || user?.email || "",
+        place_of_birth:  studentRecord.place_of_birth || "",
+        civil_status:    studentRecord.civil_status || "",
+        religion:        studentRecord.religion || "",
+        citizenship:     studentRecord.citizenship || "Filipino",
+        postal_code:     studentRecord.postal_code || "",
+        program_id:      studentRecord.program_id || "",
+        major:           studentRecord.major || "",
+        year_level:      String(studentRecord.year_level || 1),
         // Family background
-        father_name: fb.father_name || "",
+        father_name:     fb.father_name || "",
         father_occupation: fb.father_occupation || "",
-        father_company: fb.father_company || "",
-        father_address: fb.father_address || "",
-        father_contact: fb.father_contact || "",
-        mother_name: fb.mother_name || "",
+        father_company:  fb.father_company || "",
+        father_address:  fb.father_address || "",
+        father_contact:  fb.father_contact || "",
+        mother_name:     fb.mother_name || "",
         mother_occupation: fb.mother_occupation || "",
-        mother_company: fb.mother_company || "",
-        mother_address: fb.mother_address || "",
-        mother_contact: fb.mother_contact || "",
-        guardian_name: fb.guardian_name || "",
+        mother_company:  fb.mother_company || "",
+        mother_address:  fb.mother_address || "",
+        mother_contact:  fb.mother_contact || "",
+        guardian_name:   fb.guardian_name || "",
         guardian_relationship: fb.guardian_relationship || "",
         guardian_address: fb.guardian_address || "",
         guardian_contact: fb.guardian_contact || "",
@@ -236,8 +228,8 @@ function ApplyPage() {
         senior_high_school: eb.senior_high_school || "",
         senior_high_address: eb.senior_high_address || "",
         senior_high_years: eb.senior_high_years || "",
-        school_year: CURRENT_SY,
-        semester: SEMESTERS[0],
+        school_year:     CURRENT_SY,
+        semester:        SEMESTERS[0],
         pledge_accepted: studentRecord.pledge_accepted || false,
       });
     } else if (user) {
@@ -246,9 +238,9 @@ function ApplyPage() {
         student_no: "N/A",
         first_name: nameParts[0] || "",
         middle_name: "",
-        last_name: nameParts[nameParts.length - 1] || "",
+        last_name:  nameParts[nameParts.length - 1] || "",
         suffix: "",
-        email: user.email || "",
+        email:      user.email || "",
         contact_number: "", date_of_birth: "",
         gender: "", address: "",
         place_of_birth: "", civil_status: "", religion: "",
@@ -353,8 +345,8 @@ function ApplyPage() {
         : undefined;
 
       // 2. Submit enrollment
-      const enrollmentResult = await enrollments.submit({
-        school_year: values.school_year,
+      const enrollmentResult = await enrollments.submit({ 
+        school_year: values.school_year, 
         semester: values.semester,
         student_type: values.student_type || studentType,
         subjects: validSubjects,
@@ -406,17 +398,30 @@ function ApplyPage() {
   const isReviewStep = currentStep === currentStepsList.length - 1;
 
   const handleNext = async () => {
-    let hasManualError = false;
-    let manualFirstEmpty: HTMLElement | null = null;
+    const fieldsToValidate = currentStepsList[currentStep].fields as any[];
+    if (fieldsToValidate.length > 0) {
+      const isValid = await form.trigger(fieldsToValidate);
+      if (!isValid) {
+        setTimeout(() => {
+          const firstError = document.querySelector('[aria-invalid="true"]');
+          if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            (firstError as HTMLElement).focus();
+          }
+        }, 50);
+        return;
+      }
+    }
 
-    // Run manual validation for old student personal step
+    // Extra validation for old student personal step (uncontrolled plain inputs)
     if (studentType === "old" && currentStepsList[currentStep].id === 'personal') {
       const checks = [
-        { id: 'old-age', msg: 'Please enter your Age (e.g. 20)' },
-        { id: 'old-present-address', msg: 'Please enter your Present Address (or N/A)' },
-        { id: 'old-employer', msg: 'Please enter Name & Address of Employer (or N/A)' },
-        { id: 'old-occupation', msg: 'Please enter your Occupation (or N/A)' },
+        { id: 'old-age',            msg: 'Please enter your Age (e.g. 20)' },
+        { id: 'old-present-address',msg: 'Please enter your Present Address (or N/A)' },
+        { id: 'old-employer',       msg: 'Please enter Name & Address of Employer (or N/A)' },
+        { id: 'old-occupation',     msg: 'Please enter your Occupation (or N/A)' },
       ];
+      let firstEmpty: HTMLInputElement | null = null;
       checks.forEach(({ id, msg }) => {
         const el = document.getElementById(id) as HTMLInputElement | null;
         const errEl = document.getElementById(id + '-error');
@@ -427,8 +432,7 @@ function ApplyPage() {
           el.style.borderStyle = 'solid';
           el.style.backgroundColor = '';
           if (errEl) { errEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:50%;background:#f87171;color:white;font-size:10px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">!</span>' + msg + '</span>'; errEl.style.display = 'block'; }
-          if (!manualFirstEmpty) manualFirstEmpty = el;
-          hasManualError = true;
+          if (!firstEmpty) firstEmpty = el;
         } else {
           el.style.borderColor = '';
           el.style.borderWidth = '';
@@ -437,25 +441,13 @@ function ApplyPage() {
           if (errEl) { errEl.innerHTML = ''; errEl.style.display = 'none'; }
         }
       });
+      if (firstEmpty) {
+        (firstEmpty as HTMLInputElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        (firstEmpty as HTMLInputElement).focus();
+        return;
+      }
     }
-
-    const fieldsToValidate = currentStepsList[currentStep].fields as any[];
-    let isValidForm = true;
-    if (fieldsToValidate.length > 0) {
-      isValidForm = await form.trigger(fieldsToValidate);
-    }
-
-    if (!isValidForm || hasManualError) {
-      setTimeout(() => {
-        const firstError = document.querySelector('[aria-invalid="true"]') || manualFirstEmpty;
-        if (firstError) {
-          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          (firstError as HTMLElement).focus();
-        }
-      }, 50);
-      return;
-    }
-
+    
     // Custom validation for documents step
     if (studentType === "new" && currentStepsList[currentStep].id === 'documents') {
       const missingReq = REQUIRED_DOCUMENTS.filter((d) => d.required && !files[d.key]);
@@ -486,8 +478,8 @@ function ApplyPage() {
         <div className="inline-flex items-center rounded-full border p-1 bg-muted/20 shadow-sm">
           <button
             type="button"
-            onClick={() => {
-              setStudentType("new"); setCurrentStep(0); form.clearErrors();
+            onClick={() => { 
+              setStudentType("new"); setCurrentStep(0); form.clearErrors(); 
               form.setValue("student_no", "N/A");
               form.setValue("senior_high_track", "N/A");
               // Clear hidden fields so new students can fill them in
@@ -501,8 +493,8 @@ function ApplyPage() {
           </button>
           <button
             type="button"
-            onClick={() => {
-              setStudentType("old"); setCurrentStep(0); form.clearErrors();
+            onClick={() => { 
+              setStudentType("old"); setCurrentStep(0); form.clearErrors(); 
               if (form.getValues("student_no") === "N/A") form.setValue("student_no", "");
               if (form.getValues("senior_high_track") === "N/A") form.setValue("senior_high_track", "");
               form.setValue("student_type", "old");
@@ -526,8 +518,9 @@ function ApplyPage() {
                 return (
                   <span
                     key={step.id}
-                    className={`text-[10px] font-semibold text-center flex-1 transition-all duration-300 ${isActive ? 'text-primary' : isCompleted ? 'text-foreground/60' : 'text-muted-foreground/40'
-                      }`}
+                    className={`text-[10px] font-semibold text-center flex-1 transition-all duration-300 ${
+                      isActive ? 'text-primary' : isCompleted ? 'text-foreground/60' : 'text-muted-foreground/40'
+                    }`}
                   >
                     {isActive ? step.title : ''}
                   </span>
@@ -555,8 +548,8 @@ function ApplyPage() {
                       ${isCompleted
                         ? 'w-7 h-7 bg-primary border-primary text-primary-foreground'
                         : isActive
-                          ? 'w-9 h-9 bg-white border-primary text-primary ring-4 ring-primary/15 shadow-md'
-                          : 'w-6 h-6 bg-white border-slate-300 text-slate-400'}
+                        ? 'w-9 h-9 bg-white border-primary text-primary ring-4 ring-primary/15 shadow-md'
+                        : 'w-6 h-6 bg-white border-slate-300 text-slate-400'}
                     `}
                   >
                     {isCompleted
@@ -577,7 +570,7 @@ function ApplyPage() {
       )}
 
       <Form {...form}>
-        <form
+        <form 
           onSubmit={(e) => { e.preventDefault(); }}
           className="space-y-8">
 
@@ -665,7 +658,7 @@ function ApplyPage() {
                   <label className="text-sm font-medium leading-none">Age</label>
                   <Input id="old-age" type="number" min={1} max={120} placeholder="Enter age"
                     value={oldAge} onChange={e => setOldAge(e.target.value)} />
-                  <p id="old-age-error" className="text-xs text-destructive font-medium" style={{ display: 'none' }}></p>
+                  <p id="old-age-error" className="text-xs text-destructive font-medium" style={{display:'none'}}></p>
                 </div>
                 <FormField control={form.control} name="postal_code" render={({ field }) => (
                   <FormItem><FormLabel>Zip Code</FormLabel><FormControl><Input maxLength={10} placeholder="e.g. 7100" {...field} /></FormControl><FormMessage /></FormItem>
@@ -686,7 +679,7 @@ function ApplyPage() {
                   </label>
                   <Input id="old-present-address" maxLength={300} placeholder=""
                     value={oldPresentAddress} onChange={e => setOldPresentAddress(e.target.value)} />
-                  <p id="old-present-address-error" className="text-xs text-destructive font-medium" style={{ display: 'none' }}></p>
+                  <p id="old-present-address-error" className="text-xs text-destructive font-medium" style={{display:'none'}}></p>
                 </div>
               </div>
 
@@ -703,33 +696,30 @@ function ApplyPage() {
               {/* Row 6: Citizenship */}
               <div className="mt-6">
                 <FormField control={form.control} name="citizenship" render={({ field }) => {
-                  const isFilipino = field.value === "Filipino";
+                  const isAlien = field.value && field.value.toLowerCase() !== "filipino" && field.value !== "";
                   return (
                     <FormItem>
                       <FormLabel className="uppercase font-bold text-sm">Citizenship</FormLabel>
                       <div className="flex flex-wrap items-center gap-6 mt-2">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="radio" name="citizenship_type" className="w-4 h-4"
-                            checked={isFilipino}
+                            checked={!isAlien || field.value === "" || field.value?.toLowerCase() === "filipino"}
                             onChange={() => field.onChange("Filipino")}
                           />
                           <span className="text-sm font-medium">Filipino</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="radio" name="citizenship_type" className="w-4 h-4"
-                            checked={!isFilipino}
-                            onChange={() => {
-                              if (field.value === "Filipino") field.onChange("");
-                            }}
+                            checked={isAlien}
+                            onChange={() => field.onChange("")}  
                           />
                           <span className="text-sm font-medium">If Alien, ACR No.:</span>
                         </label>
                         <Input
                           className="w-48"
                           placeholder="ACR Number"
-                          value={!isFilipino ? field.value : ""}
+                          value={isAlien ? (field.value || "") : ""}
                           onChange={(e) => field.onChange(e.target.value)}
-                          disabled={isFilipino}
                         />
                       </div>
                       <FormMessage />
@@ -787,7 +777,7 @@ function ApplyPage() {
                     </label>
                     <Input id="old-employer" maxLength={200} placeholder=""
                       value={oldEmployer} onChange={e => setOldEmployer(e.target.value)} />
-                    <p id="old-employer-error" className="text-xs text-destructive font-medium" style={{ display: 'none' }}></p>
+                    <p id="old-employer-error" className="text-xs text-destructive font-medium" style={{display:'none'}}></p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium leading-none">
@@ -795,7 +785,7 @@ function ApplyPage() {
                     </label>
                     <Input id="old-occupation" maxLength={100} placeholder=""
                       value={oldOccupation} onChange={e => setOldOccupation(e.target.value)} />
-                    <p id="old-occupation-error" className="text-xs text-destructive font-medium" style={{ display: 'none' }}></p>
+                    <p id="old-occupation-error" className="text-xs text-destructive font-medium" style={{display:'none'}}></p>
                   </div>
                 </div>
               )}
@@ -961,30 +951,30 @@ function ApplyPage() {
 
           {/* Navigation Buttons */}
           <div className="mt-8 flex flex-col-reverse sm:flex-row items-center justify-between border-t pt-6 gap-4">
-            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={currentStep > 0 ? handleBack : () => navigate({ to: "/dashboard" })}>
-              {currentStep > 0 ? "Back" : "Cancel Application"}
-            </Button>
-
-            {isReviewStep ? (
-              <Button
-                type="button"
-                size="lg"
-                className="w-full sm:w-auto font-semibold px-8"
-                disabled={busy}
-                onClick={() => {
-                  form.handleSubmit(submit, (errs) => {
-                    const first = Object.values(errs)[0]?.message;
-                    toast.error(typeof first === 'string' ? first : "Please check the form for errors.");
-                  })();
-                }}
-              >
-                {busy ? "Submitting..." : "Submit"}
-              </Button>
-            ) : (
-              <Button type="button" size="lg" className="w-full sm:w-auto font-semibold px-8" onClick={handleNext}>
-                Next
-              </Button>
-            )}
+             <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={currentStep > 0 ? handleBack : () => navigate({ to: "/dashboard" })}>
+               {currentStep > 0 ? "Back" : "Cancel Application"}
+             </Button>
+             
+             {isReviewStep ? (
+               <Button
+                 type="button"
+                 size="lg"
+                 className="w-full sm:w-auto font-semibold px-8"
+                 disabled={busy}
+                 onClick={() => {
+                   form.handleSubmit(submit, (errs) => {
+                     const first = Object.values(errs)[0]?.message;
+                     toast.error(typeof first === 'string' ? first : "Please check the form for errors.");
+                   })();
+                 }}
+               >
+                 {busy ? "Submitting..." : "Submit"}
+               </Button>
+             ) : (
+               <Button type="button" size="lg" className="w-full sm:w-auto font-semibold px-8" onClick={handleNext}>
+                 Next
+               </Button>
+             )}
           </div>
 
         </form>
@@ -1043,10 +1033,10 @@ function NewStudentPaperReview({ vals, programList }: { vals: any; programList: 
         <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Personal Information</div>
         <div className="border border-black p-2 space-y-1">
           <div className="grid grid-cols-4 gap-2">
-            <div><span className="font-bold text-[10px]">LAST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{vals.last_name || "—"}</span></div>
-            <div><span className="font-bold text-[10px]">FIRST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{vals.first_name || "—"}</span></div>
-            <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{vals.middle_name || "—"}</span></div>
-            <div><span className="font-bold text-[10px]">SUFFIX:</span><br /><span className="border-b border-black block uppercase">{vals.suffix || "N/A"}</span></div>
+            <div><span className="font-bold text-[10px]">LAST NAME:</span><br/><span className="border-b border-black block font-semibold uppercase">{vals.last_name || "—"}</span></div>
+            <div><span className="font-bold text-[10px]">FIRST NAME:</span><br/><span className="border-b border-black block font-semibold uppercase">{vals.first_name || "—"}</span></div>
+            <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><br/><span className="border-b border-black block font-semibold uppercase">{vals.middle_name || "—"}</span></div>
+            <div><span className="font-bold text-[10px]">SUFFIX:</span><br/><span className="border-b border-black block uppercase">{vals.suffix || "N/A"}</span></div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div><span className="font-bold text-[10px]">DATE OF BIRTH:</span> <span>{vals.date_of_birth ? vals.date_of_birth.slice(0, 10) : "—"}</span></div>
@@ -1109,19 +1099,19 @@ function NewStudentPaperReview({ vals, programList }: { vals: any; programList: 
         <div className="border border-black">
           <div className="grid grid-cols-3 divide-x divide-black uppercase">
             <div className="p-2 space-y-0.5">
-              <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">ELEMENTARY<br /><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
+              <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">ELEMENTARY<br/><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
               <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {vals.elementary_school || "—"}</div>
               <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {vals.elementary_address || "—"}</div>
               <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {vals.elementary_years || "—"}</div>
             </div>
             <div className="p-2 space-y-0.5">
-              <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">JUNIOR HIGH SCHOOL<br /><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
+              <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">JUNIOR HIGH SCHOOL<br/><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
               <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {vals.junior_high_school || "—"}</div>
               <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {vals.junior_high_address || "—"}</div>
               <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {vals.junior_high_years || "—"}</div>
             </div>
             <div className="p-2 space-y-0.5">
-              <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">SENIOR HIGH SCHOOL<br /><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
+              <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">SENIOR HIGH SCHOOL<br/><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
               <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {vals.senior_high_school || "—"}</div>
               <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {vals.senior_high_address || "—"}</div>
               <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {vals.senior_high_years || "—"}</div>
@@ -1180,7 +1170,7 @@ function DocUpload({ label, required, file, onChange }: {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full ${isUploaded ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"}`}>
-            {isUploaded ? <CheckCircle2 className="h-5 w-5" /> : required ? <AlertCircle className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+             {isUploaded ? <CheckCircle2 className="h-5 w-5" /> : required ? <AlertCircle className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
           </div>
           <div className="min-w-0">
             <p className={`text-sm font-semibold truncate ${isUploaded ? "text-foreground" : ""}`}>
@@ -1194,7 +1184,7 @@ function DocUpload({ label, required, file, onChange }: {
           </div>
         </div>
       </div>
-
+      
       <div className="flex items-center gap-2 mt-2">
         <label className="cursor-pointer flex-1">
           <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
@@ -1647,7 +1637,7 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
         <div className="col-span-2 flex flex-col justify-center">
           <span className="font-bold uppercase text-[8px] block">SEX</span>
           <div className="text-[8px] space-y-0.5">
-            <span>{vals.gender === "male" ? "[✔]" : "[ ]"} Male</span><br />
+            <span>{vals.gender === "male" ? "[✔]" : "[ ]"} Male</span><br/>
             <span>{vals.gender === "female" ? "[✔]" : "[ ]"} Female</span>
           </div>
         </div>
@@ -1761,37 +1751,37 @@ function OldStudentBackPage({ vals }: { vals: any }) {
 
           {/* Age / Sex / Civil Status */}
           <div className="grid grid-cols-3 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Age:</span><Box value={age} /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Sex:</span><Box value={vals.gender ? vals.gender.charAt(0).toUpperCase() + vals.gender.slice(1) : ""} /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Civil Status:</span><Box value={vals.civil_status} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Age:</span><Box value={age} /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Sex:</span><Box value={vals.gender ? vals.gender.charAt(0).toUpperCase() + vals.gender.slice(1) : ""} /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Civil Status:</span><Box value={vals.civil_status} wide /></F>
           </div>
 
           {/* Place of Birth / Zip */}
           <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Place of Birth:</span><Box value={vals.place_of_birth} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Zip Code:</span><Box value={vals.postal_code} /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Place of Birth:</span><Box value={vals.place_of_birth} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Zip Code:</span><Box value={vals.postal_code} /></F>
           </div>
 
           {/* Birthdate */}
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Birthdate:</span><Box value={vals.date_of_birth} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Birthdate:</span><Box value={vals.date_of_birth} wide /></F>
 
           {/* Home Address */}
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Home Address:</span><Box value={vals.address} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Home Address:</span><Box value={vals.address} wide /></F>
 
           {/* Present Address */}
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Present Address:</span><Box value={vals.address} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Present Address:</span><Box value={vals.address} wide /></F>
 
           {/* Contact / Email */}
           <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Contact Number:</span><Box value={vals.contact_number} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Email Address:</span><Box value={vals.email} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact Number:</span><Box value={vals.contact_number} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Email Address:</span><Box value={vals.email} wide /></F>
           </div>
 
           {/* Citizenship */}
           <div>
             <span className="font-bold uppercase">CITIZENSHIP:</span>{" "}
             <span className="mr-2">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
-            <span style={{ display: "inline-flex", alignItems: "baseline", gap: "4px", flexWrap: "wrap" }}>
+            <span style={{display:"inline-flex",alignItems:"baseline",gap:"4px",flexWrap:"wrap"}}>
               {!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:
               <Box value={!isFilipinoOrBlank ? vals.citizenship : ""} wide />
             </span>
@@ -1803,7 +1793,7 @@ function OldStudentBackPage({ vals }: { vals: any }) {
             <span className="mr-2">{isIslam ? "[✔]" : "[ ]"} Islam</span>
             <span className="mr-2">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
             <span className="mr-2">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
-            <span style={{ display: "inline-flex", alignItems: "baseline", gap: "4px" }}>
+            <span style={{display:"inline-flex",alignItems:"baseline",gap:"4px"}}>
               {isOtherReligion ? "[✔]" : "[ ]"} Other:
               <Box value={isOtherReligion ? vals.religion : ""} wide />
             </span>
@@ -1819,33 +1809,33 @@ function OldStudentBackPage({ vals }: { vals: any }) {
 
           {/* Father */}
           <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Father's Complete Name:</span><Box value={vals.father_name} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Occupation:</span><Box value={vals.father_occupation} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Father's Complete Name:</span><Box value={vals.father_name} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Occupation:</span><Box value={vals.father_occupation} wide /></F>
           </div>
           <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Monthly Income:</span><Box value={vals.father_company} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Contact Number:</span><Box value={vals.father_contact} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Monthly Income:</span><Box value={vals.father_company} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact Number:</span><Box value={vals.father_contact} wide /></F>
           </div>
 
           {/* Mother */}
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Mother's Complete Maiden Name:</span><Box value={vals.mother_name} wide /></F>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Contact No.:</span><Box value={vals.mother_contact} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Mother's Complete Maiden Name:</span><Box value={vals.mother_name} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact No.:</span><Box value={vals.mother_contact} wide /></F>
           <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Occupation:</span><Box value={vals.mother_occupation} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Monthly Income:</span><Box value={vals.mother_company} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Occupation:</span><Box value={vals.mother_occupation} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Monthly Income:</span><Box value={vals.mother_company} wide /></F>
           </div>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Parents' Address:</span><Box value={vals.father_address || vals.mother_address} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Parents' Address:</span><Box value={vals.father_address || vals.mother_address} wide /></F>
 
           {/* Guardian */}
           <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Guardian's Name:</span><Box value={vals.guardian_name} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Contact Number:</span><Box value={vals.guardian_contact} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Guardian's Name:</span><Box value={vals.guardian_name} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Contact Number:</span><Box value={vals.guardian_contact} wide /></F>
           </div>
           <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Monthly Income:</span><Box value="" wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Relationship:</span><Box value={vals.guardian_relationship} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Monthly Income:</span><Box value="" wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Relationship:</span><Box value={vals.guardian_relationship} wide /></F>
           </div>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Address:</span><Box value={vals.guardian_address} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={vals.guardian_address} wide /></F>
         </div>
 
         {/* ── Right Column — Student's Pledge Box ── */}
@@ -1879,27 +1869,27 @@ function OldStudentBackPage({ vals }: { vals: any }) {
 
           {/* Elementary */}
           <div className="grid grid-cols-2 gap-6">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Elementary:</span><Box value={vals.elementary_school} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Year Graduated:</span><Box value={vals.elementary_years} /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Elementary:</span><Box value={vals.elementary_school} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Year Graduated:</span><Box value={vals.elementary_years} /></F>
           </div>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Address:</span><Box value={vals.elementary_address} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={vals.elementary_address} wide /></F>
 
           {/* Secondary (Senior HS) */}
           <div className="grid grid-cols-2 gap-6">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Secondary (Senior HS):</span><Box value={vals.junior_high_school} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Year Graduated:</span><Box value={vals.junior_high_years} /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Secondary (Senior HS):</span><Box value={vals.junior_high_school} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Year Graduated:</span><Box value={vals.junior_high_years} /></F>
           </div>
           <div className="grid grid-cols-2 gap-6">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Address:</span><Box value={vals.junior_high_address} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Track:</span><Box value={vals.senior_high_track} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={vals.junior_high_address} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Track:</span><Box value={vals.senior_high_track} wide /></F>
           </div>
 
           {/* School Last Attended (College) */}
           <div className="grid grid-cols-2 gap-6">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>School Last Attended (COLLEGE):</span><Box value={vals.senior_high_school} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Course &amp; Year:</span><Box value={vals.senior_high_years} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>School Last Attended (COLLEGE):</span><Box value={vals.senior_high_school} wide /></F>
+            <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Course &amp; Year:</span><Box value={vals.senior_high_years} wide /></F>
           </div>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Address:</span><Box value={vals.senior_high_address} wide /></F>
+          <F><span className="font-bold" style={{whiteSpace:"nowrap"}}>Address:</span><Box value={vals.senior_high_address} wide /></F>
 
         </div>
       </div>
@@ -1923,7 +1913,7 @@ function OldStudentBackPage({ vals }: { vals: any }) {
           *Refusal to take this pledge or any violation of its terms shall be sufficient cause for denial of the admission.
         </p>
       </div>
-      </div>
+    </div>
     </div>
   );
 }
