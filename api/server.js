@@ -3,6 +3,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs    = require('fs');
 
 // ── Route imports ──────────────────────────────────────────────────────────────
 const authRoutes         = require('./routes/auth');
@@ -31,6 +32,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Raw files should NOT be publicly accessible
 // app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// ── Serve built frontend (production / Render) ─────────────────────────────────
+const CLIENT_DIST = path.join(__dirname, '../dist/client');
+const INDEX_HTML  = path.join(CLIENT_DIST, 'index.html');
+if (fs.existsSync(CLIENT_DIST)) {
+  app.use(express.static(CLIENT_DIST, { index: false }));
+}
+
 // ── Health check ───────────────────────────────────────────────────────────────
 app.get('/api/health', async (req, res) => {
   try {
@@ -55,6 +63,49 @@ app.use('/api/students',      studentsRoutes);
 app.use('/api/enrollments',   enrollmentsRoutes);
 app.use('/api/documents',     documentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+
+// ── SSR fallback — serve TanStack Start app for any non-API route ────────────
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  
+  try {
+    const serverPath = path.join(__dirname, '../dist/server/server.js');
+    if (fs.existsSync(serverPath)) {
+      const { default: frontendHandler } = require(serverPath);
+      
+      const url = new URL(req.originalUrl, `http://${req.headers.host || 'localhost'}`);
+      
+      // Node 18+ global Request
+      const fetchReq = new Request(url, {
+        method: req.method,
+        // Convert headers to a standard Headers object
+        headers: new Headers(req.headers),
+        // For GET/HEAD, body must be null
+        body: ['GET', 'HEAD'].includes(req.method) ? null : req.body ? JSON.stringify(req.body) : null,
+      });
+      
+      const fetchRes = await frontendHandler.fetch(fetchReq, process.env, { request: req, response: res });
+      
+      fetchRes.headers.forEach((value, key) => {
+        res.setHeader(key, value);
+      });
+      res.status(fetchRes.status);
+      
+      if (fetchRes.body) {
+        const arrayBuffer = await fetchRes.arrayBuffer();
+        return res.send(Buffer.from(arrayBuffer));
+      } else {
+        return res.end();
+      }
+    } else if (fs.existsSync(INDEX_HTML)) {
+      return res.sendFile(INDEX_HTML);
+    }
+  } catch (err) {
+    console.error('[SSR Error]', err);
+  }
+  
+  next();
+});
 
 // ── 404 handler ────────────────────────────────────────────────────────────────
 app.use((req, res) => {
