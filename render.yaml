@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: zdspgc-enroll-connect
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && cd api && npm install && cd .. && npm run build
+    startCommand: node api/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_LOCAL_API_URL
+        value: ""
+      - key: DATABASE_URL
+        sync: false   # Set this secret in the Render dashboard
+    healthCheckPath: /api/health
