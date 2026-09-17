@@ -53,7 +53,7 @@ router.get('/my', requireAuth, async (req, res) => {
       `SELECT d.* FROM public.documents d
        JOIN public.students s ON s.id = d.student_id
        WHERE ${conditions.join(' AND ')}
-       ORDER BY d.created_at DESC`,
+       ORDER BY d.uploaded_at DESC`,
       params
     );
     res.json({ documents: rows });
