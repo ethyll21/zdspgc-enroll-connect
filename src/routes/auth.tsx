@@ -54,6 +54,11 @@ function AuthPage() {
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const form = useForm<any>({
     resolver: zodResolver(getAuthSchema(mode === "signup")),
@@ -142,7 +147,7 @@ function AuthPage() {
           </p>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(submit)} className="mt-8 space-y-5">
+            <form onSubmit={form.handleSubmit(submit)} className="mt-8 space-y-5" method="POST">
               {mode === "signup" && (
                 <>
                   <FormField
@@ -251,7 +256,7 @@ function AuthPage() {
               <Button 
                 type="submit" 
                 className="w-full h-12 mt-4 rounded-xl font-semibold text-[15px] transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]" 
-                disabled={busy}
+                disabled={busy || !mounted}
               >
                 {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in securely"}
               </Button>
