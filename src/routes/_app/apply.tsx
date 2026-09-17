@@ -914,8 +914,54 @@ function ApplyPage() {
                 <CheckCircle2 className="h-6 w-6 text-primary" /> Review Application
               </h2>
               {studentType === 'new' ? (
-                <div className="rounded-lg border p-1 bg-slate-50 overflow-hidden shadow-md">
-                  <NewStudentPaperReview vals={form.getValues()} programList={programList} />
+                <div className="space-y-6">
+                  <div className="rounded-lg border p-1 bg-slate-50 overflow-hidden shadow-md">
+                    <NewStudentPaperReview vals={form.getValues()} programList={programList} />
+                  </div>
+                  <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <h3 className="font-semibold text-slate-800 border-b pb-3 mb-4 flex items-center gap-2"><Paperclip className="h-5 w-5 text-primary" /> Documents to Submit</h3>
+                    {Object.values(files).filter(Boolean).length === 0 ? (
+                      <p className="text-sm text-slate-500">No documents uploaded.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-6">
+                        {REQUIRED_DOCUMENTS.map(def => {
+                          const file = files[def.key];
+                          if (!file) return null;
+                          const isImage = file.type.startsWith('image/');
+                          const isPdf = file.type === 'application/pdf';
+                          const fileUrl = URL.createObjectURL(file);
+                          return (
+                            <div key={def.key} className="flex flex-col gap-4 rounded-xl border p-4 shadow-sm bg-muted/10">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-primary">{def.label}</p>
+                                  <p className="text-sm text-muted-foreground truncate">{file.name}</p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="status-pill bg-amber-100 text-amber-800 border-amber-200">PENDING</span>
+                                </div>
+                              </div>
+                              <div className="mt-2 w-full overflow-hidden rounded-lg border bg-muted/30 flex items-center justify-center min-h-[200px] max-h-[600px] relative">
+                                {isImage ? (
+                                  <img src={fileUrl} alt={file.name} className="object-contain w-full h-full max-h-[600px]" />
+                                ) : isPdf ? (
+                                  <iframe src={fileUrl} className="w-full h-[600px] border-0" title={file.name} />
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center p-8 text-center">
+                                    <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
+                                    <p className="text-sm text-muted-foreground mb-4">Preview not available for this file type.</p>
+                                    <Button variant="outline" onClick={() => window.open(fileUrl, "_blank")}>
+                                      <ExternalLink className="mr-2 h-4 w-4" /> Open File
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-8">
