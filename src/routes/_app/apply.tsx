@@ -132,9 +132,7 @@ function ApplyPage() {
   const { data: programList = [] } = useQuery({
     queryKey: ["programs"],
     enabled: typeof window !== 'undefined',
-    queryFn: () => programsApi.list().then((r) => 
-      r.programs.filter(p => ["ACT", "BSIS", "BPED"].includes(p.code.toUpperCase()))
-    ),
+    queryFn: () => programsApi.list().then((r) => r.programs.filter(p => p.active !== false)),
   });
 
   // ΓöÇΓöÇ Fetch existing student record to pre-fill ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
