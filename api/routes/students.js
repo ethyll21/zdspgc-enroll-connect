@@ -41,6 +41,7 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'first_name and last_name are required' });
   }
 
+  try {
     const { rows } = await db.query(
       `INSERT INTO public.students
          (user_id, first_name, middle_name, last_name, gender, date_of_birth,
