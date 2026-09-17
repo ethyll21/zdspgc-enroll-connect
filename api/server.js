@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs    = require('fs');
+const { runMigrations } = require('./migrate');
 
 // ── Route imports ──────────────────────────────────────────────────────────────
 const authRoutes         = require('./routes/auth');
@@ -122,13 +123,15 @@ app.use((err, req, res, _next) => {
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n╔══════════════════════════════════════════════╗`);
-  console.log(`║   ZDSPGC Local API Server                  ║`);
-  console.log(`║   Database : PRE-ENROLLMENT_DB             ║`);
-  console.log(`║   Port     : ${PORT}                           ║`);
-  console.log(`║   Health   : http://localhost:${PORT}/api/health ║`);
-  console.log(`╚══════════════════════════════════════════════╝\n`);
+runMigrations().then(() => {
+  app.listen(PORT, () => {
+    console.log(`\n╔══════════════════════════════════════════════╗`);
+    console.log(`║   ZDSPGC Local API Server                  ║`);
+    console.log(`║   Database : PRE-ENROLLMENT_DB             ║`);
+    console.log(`║   Port     : ${PORT}                           ║`);
+    console.log(`║   Health   : http://localhost:${PORT}/api/health ║`);
+    console.log(`╚══════════════════════════════════════════════╝\n`);
+  });
 });
 
 module.exports = app;
