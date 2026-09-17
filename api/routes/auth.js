@@ -1,3 +1,5 @@
+'use strict';
+
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
@@ -24,7 +26,7 @@ router.post('/register', async (req, res) => {
 
     // Check existing user
     const exists = await client.query(
-      'SELECT id FROM auth.users WHERE email = $1',
+      'SELECT id FROM public.users WHERE email = $1',
       [email.toLowerCase()]
     );
     if (exists.rows.length > 0) {
@@ -35,11 +37,27 @@ router.post('/register', async (req, res) => {
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
     const userId = uuidv4();
 
-    // Insert into auth.users (triggers handle_new_user → creates profile + student role)
+    // Insert into public.users
     await client.query(
-      `INSERT INTO auth.users (id, email, password_hash, raw_user_meta_data, is_active, email_verified, created_at)
+      `INSERT INTO public.users (id, email, password_hash, raw_user_meta_data, is_active, email_verified, created_at)
        VALUES ($1, $2, $3, $4::jsonb, true, true, NOW())`,
       [userId, email.toLowerCase(), password_hash, JSON.stringify({ full_name: full_name || '', student_type: student_type || 'new' })]
+    );
+
+    // Insert profile manually (trigger may not exist in production)
+    await client.query(
+      `INSERT INTO public.profiles (id, email, full_name)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (id) DO NOTHING`,
+      [userId, email.toLowerCase(), full_name || '']
+    );
+
+    // Insert student role
+    await client.query(
+      `INSERT INTO public.user_roles (user_id, role)
+       VALUES ($1, 'student')
+       ON CONFLICT (user_id, role) DO NOTHING`,
+      [userId]
     );
 
     // Fetch the created profile
@@ -88,7 +106,7 @@ router.post('/login', async (req, res) => {
   try {
     const userRes = await db.query(
       `SELECT u.id, u.email, u.password_hash, u.is_active, u.raw_user_meta_data
-       FROM auth.users u WHERE u.email = $1`,
+       FROM public.users u WHERE u.email = $1`,
       [email.toLowerCase()]
     );
 
@@ -145,7 +163,7 @@ router.get('/me', requireAuth, async (req, res) => {
       `SELECT u.id, u.email, u.raw_user_meta_data,
               p.full_name, p.contact_number, p.birthdate, p.gender, p.address, p.avatar_url,
               p.created_at, p.updated_at
-       FROM auth.users u 
+       FROM public.users u
        LEFT JOIN public.profiles p ON u.id = p.id
        WHERE u.id = $1`,
       [req.user.id]
@@ -184,12 +202,12 @@ router.post('/change-password', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'New password must be at least 8 characters' });
   }
   try {
-    const userRes = await db.query('SELECT password_hash FROM auth.users WHERE id = $1', [req.user.id]);
+    const userRes = await db.query('SELECT password_hash FROM public.users WHERE id = $1', [req.user.id]);
     if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const match = await bcrypt.compare(current_password, userRes.rows[0].password_hash || '');
     if (!match) return res.status(401).json({ error: 'Current password is incorrect' });
     const new_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
-    await db.query('UPDATE auth.users SET password_hash = $1 WHERE id = $2', [new_hash, req.user.id]);
+    await db.query('UPDATE public.users SET password_hash = $1 WHERE id = $2', [new_hash, req.user.id]);
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
     console.error('[Auth/change-password]', err.message);
