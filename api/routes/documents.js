@@ -43,7 +43,7 @@ router.get('/my', requireAuth, async (req, res) => {
   try {
     const conditions = ['s.user_id = $1'];
     const params = [req.user.id];
-    
+
     if (enrollment_id) {
       params.push(enrollment_id);
       conditions.push(`d.enrollment_id = $${params.length}`);
@@ -68,7 +68,11 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const { doc_type } = req.body;
-  const validDocTypes = ['registration_form', 'psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate', 'other'];
+  const validDocTypes = [
+    // These match the document_type enum values in the database exactly
+    'psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate',
+    'registration_form', 'other',
+  ];
   if (!doc_type || !validDocTypes.includes(doc_type)) {
     // Clean up uploaded file
     fs.unlinkSync(req.file.path);
@@ -88,16 +92,9 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 
     const relativePath = path.relative(UPLOAD_DIR, req.file.path).replace(/\\/g, '/');
 
-    // Map frontend doc_type keys to the postgres document_type ENUM values
-    const dbDocTypeMap = {
-      'psa_birth_certificate': 'birth_certificate',
-      'form_138': 'form138',
-      'good_moral': 'good_moral',
-      'transfer_certificate': 'transfer_credentials',
-      'registration_form': 'other',
-      'other': 'other'
-    };
-    const dbDocType = dbDocTypeMap[doc_type] || 'other';
+    // Use doc_type directly - the DB enum values match the frontend keys exactly:
+    // psa_birth_certificate, form_138, good_moral, transfer_certificate, other, registration_form
+    const dbDocType = doc_type;
 
     const { rows } = await db.query(
       `INSERT INTO public.documents
@@ -137,7 +134,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
     await db.query('DELETE FROM public.documents WHERE id = $1', [req.params.id]);
 
-    // Notify the student if admin deletes their document
+    // Notify the student if admin deletes their document (non-blocking)
     if (isAdmin && doc.user_id !== req.user.id) {
       const docTypeLabels = {
         registration_form: 'Registration Form',
@@ -150,12 +147,16 @@ router.delete('/:id', requireAuth, async (req, res) => {
       const docLabel = docTypeLabels[doc.doc_type] || 'Document';
       const title = `${docLabel} Deleted`;
       const message = `Your ${docLabel} (${doc.file_name}) has been deleted by the admin.`;
-      
-      await db.query(
-        `INSERT INTO public.notifications (user_id, title, message, link)
-         VALUES ($1, $2, $3, $4)`,
-        [doc.user_id, title, message, doc.enrollment_id ? `/applications/${doc.enrollment_id}` : null]
-      );
+
+      try {
+        await db.query(
+          `INSERT INTO public.notifications (user_id, title, message, link)
+           VALUES ($1, $2, $3, $4)`,
+          [doc.user_id, title, message, doc.enrollment_id ? `/applications/${doc.enrollment_id}` : null]
+        );
+      } catch (notifErr) {
+        console.warn('[Documents/delete] Notification failed (non-fatal):', notifErr.message);
+      }
     }
 
     res.json({ message: 'Document deleted successfully' });
@@ -219,11 +220,15 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
         ? `Your ${docLabel} has been ${status}. Remark: ${remarks}`
         : `Your ${docLabel} has been ${status} by the admin.`;
 
-      await client.query(
-        `INSERT INTO public.notifications (user_id, title, message, link)
-         VALUES ($1, $2, $3, $4)`,
-        [studentRes.rows[0].user_id, title, message, doc.enrollment_id ? `/applications/${doc.enrollment_id}` : null]
-      );
+      try {
+        await client.query(
+          `INSERT INTO public.notifications (user_id, title, message, link)
+           VALUES ($1, $2, $3, $4)`,
+          [studentRes.rows[0].user_id, title, message, doc.enrollment_id ? `/applications/${doc.enrollment_id}` : null]
+        );
+      } catch (notifErr) {
+        console.warn('[Documents/review] Notification failed (non-fatal):', notifErr.message);
+      }
     }
 
     await client.query('COMMIT');
@@ -243,8 +248,8 @@ router.get('/', requireAdmin, async (req, res) => {
   try {
     const conditions = [];
     const params = [];
-    if (status)        { params.push(status);        conditions.push(`d.status = $${params.length}`); }
-    if (student_id)    { params.push(student_id);    conditions.push(`d.student_id = $${params.length}`); }
+    if (status) { params.push(status); conditions.push(`d.status = $${params.length}`); }
+    if (student_id) { params.push(student_id); conditions.push(`d.student_id = $${params.length}`); }
     if (enrollment_id) { params.push(enrollment_id); conditions.push(`d.enrollment_id = $${params.length}`); }
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 

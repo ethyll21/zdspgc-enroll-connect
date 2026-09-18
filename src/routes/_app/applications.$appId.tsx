@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ArrowLeft, Eye, CheckCircle2, XCircle, AlertCircle, ExternalLink, Printer, GraduationCap, School, Download } from "lucide-react";
+import { ArrowLeft, Eye, CheckCircle2, XCircle, AlertCircle, ExternalLink, Printer, GraduationCap, School, Download, Upload } from "lucide-react";
 import { enrollments as enrollmentsApi, documents as docsApi, students as studentsApi } from "@/integrations/localdb/client";
 import type { SubjectScheduleItem, RotcWatcDetails } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { toJpeg } from "html-to-image";
 import { jsPDF } from "jspdf";
+import { REQUIRED_DOCUMENTS } from "@/lib/enrollment-constants";
 
 export const Route = createFileRoute("/_app/applications/$appId")({
   component: ApplicationDetail,
@@ -162,6 +163,22 @@ function ApplicationDetail() {
     }
   });
 
+  const uploadDocMutation = useMutation({
+    mutationFn: async ({ docType, file }: { docType: string; file: File }) => {
+      await docsApi.upload(file, docType, appId);
+      return enrollmentsApi.notifyResubmit(appId);
+    },
+    onSuccess: () => {
+      toast.success("Document uploaded successfully");
+      queryClient.invalidateQueries({ queryKey: ["enrollment-docs", appId] });
+      setResubmittingDocId(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message ?? "Failed to upload document");
+      setResubmittingDocId(null);
+    }
+  });
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, oldDocId: string, docType: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -178,15 +195,23 @@ function ApplicationDetail() {
     e.target.value = "";
   };
 
-  const activeDocs = useMemo(() => {
-    const map = new Map();
-    const allDocs = myDocs?.documents ?? [];
-    for (const doc of allDocs) {
-      if (!map.has(doc.doc_type)) {
-        map.set(doc.doc_type, doc);
-      }
+  const handleUploadMissing = (e: React.ChangeEvent<HTMLInputElement>, docType: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File is too large. Maximum size is 10MB.");
+      return;
     }
-    return Array.from(map.values());
+    
+    setResubmittingDocId(`new-${docType}`);
+    uploadDocMutation.mutate({ docType, file });
+    
+    e.target.value = "";
+  };
+
+  const activeDocs = useMemo(() => {
+    return myDocs?.documents ?? [];
   }, [myDocs]);
 
   useEffect(() => {
@@ -218,6 +243,13 @@ function ApplicationDetail() {
 
   const { enrollment } = data;
   const docs = activeDocs;
+  
+  // Find which documents are required based on student type
+  // If enrollment.student_type is not fully reliable, we default to "new" if no subjects
+  const studentTypeCategory = (enrollment.student_type === "old" || enrollment.student_type === "returnee") ? "old" : "new";
+  const expectedDocs = REQUIRED_DOCUMENTS.filter(d => d.for.includes(studentTypeCategory as any));
+  const missingDocs = expectedDocs.filter(ed => !docs.some(d => d.doc_type === ed.key));
+
   const isOldStudent = enrollment.student_type === "old" || enrollment.student_type === "returnee" || (!enrollment.student_type && enrollment.subjects && enrollment.subjects.length > 0);
   const subjectsList: SubjectScheduleItem[] = enrollment.subjects || [];
   const rotcData: RotcWatcDetails = enrollment.rotc_watc || {};
@@ -256,11 +288,12 @@ function ApplicationDetail() {
       {/* ══════════════════════════════════════════════════════════════════════════
           PRINTABLE / FORMAL APPLICATION VIEW
       ══════════════════════════════════════════════════════════════════════════ */}
-      <div id="printable-application-form">
-      {isOldStudent ? (
-        /* ─── OLD STUDENT FORM: TWO-COPY OFFICIAL SLIP (REGISTRAR + PROGRAM HEAD) + PAGE 2 ─── */
-        <>
-          {/* PAGE 1 — Two copies */}
+      <div id="printable-application-form" className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="min-w-[800px]">
+          {isOldStudent ? (
+            /* ─── OLD STUDENT FORM: TWO-COPY OFFICIAL SLIP (REGISTRAR + PROGRAM HEAD) + PAGE 2 ─── */
+            <div className="flex flex-col gap-4">
+              {/* PAGE 1 — Two copies */}
           <div id="printable-application-form-page1" className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 print:space-y-4">
             {/* TOP COPY: REGISTRAR'S COPY */}
             <OldStudentSlipCopy
@@ -300,12 +333,14 @@ function ApplicationDetail() {
             </div>
             <OldStudentBackPageDisplay student={studentData?.student} enrollment={enrollment} />
           </div>
-        </>
+        </div>
       ) : (
         /* ─── NEW STUDENT FORM: FULL DETAILED COLLEGE ENROLLMENT FORM ─── */
-        <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
-          <div className="flex items-start justify-between gap-4 pb-2">
-            {/* Left Column: Header, Title, Direction, Course/Major */}
+        <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="min-w-[800px]">
+            <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
+              <div className="flex items-start justify-between gap-4 pb-2">
+                {/* Left Column: Header, Title, Direction, Course/Major */}
             <div className="flex-1 flex flex-col">
               {/* Logo & Header Text */}
               <div className="flex items-center justify-center gap-4 mb-2">
@@ -469,17 +504,18 @@ function ApplicationDetail() {
             </div>
           </div>
         </div>
-      )}
       </div>
+    </div>
+  )}
+</div>
 
       {/* ══════════════════════════════════════════════════════════════════════════
           FUNCTIONAL / UPLOADED DOCUMENTS & ADMIN PANEL (Hidden on Print)
       ══════════════════════════════════════════════════════════════════════════ */}
       <div className="print:hidden space-y-6 mt-8">
         {/* Uploaded Documents */}
-        {!isOldStudent && (
-          <Card title="Uploaded Verification Documents">
-          {docs.length === 0 ? (
+        <Card title="Uploaded Verification Documents">
+          {docs.length === 0 && missingDocs.length === 0 ? (
             <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
           ) : (
             <div className="grid grid-cols-1 gap-6">
@@ -596,10 +632,46 @@ function ApplicationDetail() {
                   </div>
                 );
               })}
+              {missingDocs.map((md) => (
+                <div key={md.key} className="flex flex-col gap-4 rounded-xl border border-dashed border-muted-foreground/30 p-4 shadow-sm bg-muted/5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-primary">{md.label}</p>
+                      <p className="text-sm text-destructive font-medium">{md.required ? "Missing Required Document" : "Missing Optional Document"}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="status-pill bg-destructive/10 text-destructive border border-destructive/20">Missing</span>
+                    </div>
+                  </div>
+                  
+                  {!isAdmin && (
+                    <div className="mt-2 rounded-md bg-muted/20 p-4 flex flex-col items-center justify-center border border-muted">
+                      <p className="text-sm text-muted-foreground mb-3 text-center">
+                        This document is missing. Please upload it to complete your requirements.
+                      </p>
+                      <input 
+                        type="file" 
+                        id={`upload-${md.key}`} 
+                        className="hidden" 
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleUploadMissing(e, md.key)}
+                      />
+                      <Button 
+                        size="sm" 
+                        className="font-medium"
+                        onClick={() => document.getElementById(`upload-${md.key}`)?.click()}
+                        disabled={resubmittingDocId === `new-${md.key}`}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {resubmittingDocId === `new-${md.key}` ? "Uploading..." : "Upload Document"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </Card>
-        )}
 
         {/* Admin decision panel */}
         {isAdmin && (

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ArrowLeft, FileText, Download, CheckCircle, XCircle, Printer, CheckCircle2, AlertCircle, Clock, ExternalLink } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { REQUIRED_DOCUMENTS } from "@/lib/enrollment-constants";
 
 export const Route = createFileRoute("/_app/admin/review/$id")({
   component: AdminReviewApplication,
@@ -68,19 +69,13 @@ function AdminReviewApplication() {
   });
 
   const { data: rawDocuments = [], isLoading: isDocsLoading } = useQuery({
-    enabled: typeof window !== 'undefined' && isAdmin && !!enrollment?.student_id,
-    queryKey: ["admin-documents", enrollment?.student_id],
-    queryFn: () => documentsApi.list({ student_id: enrollment?.student_id }).then((r) => r.documents),
+    enabled: typeof window !== 'undefined' && isAdmin && !!id,
+    queryKey: ["admin-documents", id],
+    queryFn: () => documentsApi.list({ enrollment_id: id }).then((r) => r.documents),
   });
 
   const documents = useMemo(() => {
-    const map = new Map();
-    for (const doc of rawDocuments) {
-      if (!map.has(doc.doc_type)) {
-        map.set(doc.doc_type, doc);
-      }
-    }
-    return Array.from(map.values());
+    return rawDocuments || [];
   }, [rawDocuments]);
 
   const { data: history = [] } = useQuery({
@@ -105,7 +100,7 @@ function AdminReviewApplication() {
       documentsApi.review(docId, { status, remarks }),
     onSuccess: () => {
       toast.success("Document status updated");
-      queryClient.invalidateQueries({ queryKey: ["admin-documents", enrollment?.student_id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-documents", id] });
     },
     onError: (err: any) => toast.error(err.message ?? "Failed to review document"),
   });
@@ -146,6 +141,11 @@ function AdminReviewApplication() {
   const rotc: RotcWatcDetails = enrollment.rotc_watc || {};
   const isOldStudent = enrollment.student_type === "old" || enrollment.student_type === "returnee" || (!enrollment.student_type && enrollment.subjects && enrollment.subjects.length > 0);
 
+  // Determine which required docs are missing for this enrollment
+  const studentTypeCategory = enrollment.student_type === "old" ? "old" : "new";
+  const expectedDocs = REQUIRED_DOCUMENTS.filter((d: any) => !d.for || d.for.includes(studentTypeCategory));
+  const missingDocs = isOldStudent ? [] : expectedDocs.filter((ed: any) => !documents.some((d: any) => d.doc_type === ed.key));
+
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-20 print:pb-0 print:max-w-none print:m-0">
 
@@ -166,17 +166,19 @@ function AdminReviewApplication() {
       </div>
 
       {/* Formal Enrollment Form */}
-      {isOldStudent ? (
-        <>
-          {/* PAGE 1 — Two copies */}
-          <div className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 print:space-y-4">
-            <AdminSlipCopy copyTitle="REGISTRAR'S COPY" student={student} enrollment={enrollment} subjects={subjects} rotc={rotc} />
-            <div className="relative py-2 text-center print:py-1">
-              <div className="border-t-2 border-dashed border-slate-400 w-full absolute top-1/2" />
-              <span className="relative bg-white px-3 text-[9px] uppercase font-bold text-slate-400 tracking-widest">✂ Cut along dotted line</span>
-            </div>
-            <AdminSlipCopy copyTitle="PROGRAM HEAD'S COPY" student={student} enrollment={enrollment} subjects={subjects} rotc={rotc} />
-          </div>
+      <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="min-w-[800px]">
+          {isOldStudent ? (
+            <div className="flex flex-col gap-4">
+              {/* PAGE 1 — Two copies */}
+              <div className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 print:space-y-4">
+                <AdminSlipCopy copyTitle="REGISTRAR'S COPY" student={student} enrollment={enrollment} subjects={subjects} rotc={rotc} />
+                <div className="relative py-2 text-center print:py-1">
+                  <div className="border-t-2 border-dashed border-slate-400 w-full absolute top-1/2" />
+                  <span className="relative bg-white px-3 text-[9px] uppercase font-bold text-slate-400 tracking-widest">✂ Cut along dotted line</span>
+                </div>
+                <AdminSlipCopy copyTitle="PROGRAM HEAD'S COPY" student={student} enrollment={enrollment} subjects={subjects} rotc={rotc} />
+              </div>
 
           {/* PAGE 2 — Back page */}
           <div className="bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 min-h-[1056px] flex flex-col mt-4">
@@ -189,12 +191,13 @@ function AdminReviewApplication() {
             </div>
             <AdminBackPageDisplay student={student} />
           </div>
-        </>
-
+        </div>
       ) : (
-        <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
-          <div className="flex items-start justify-between gap-4 pb-2">
-            {/* Left Column: Header, Title, Direction, Course/Major */}
+        <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="min-w-[800px]">
+            <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
+              <div className="flex items-start justify-between gap-4 pb-2">
+                {/* Left Column: Header, Title, Direction, Course/Major */}
             <div className="flex-1 flex flex-col">
               {/* Logo & Header Text */}
               <div className="flex items-center justify-center gap-4 mb-2">
@@ -336,7 +339,7 @@ function AdminReviewApplication() {
             <h2 className="font-semibold text-slate-800 border-b pb-3 mb-4">Uploaded Documents</h2>
             {isDocsLoading ? (
               <p className="text-sm text-slate-500">Loading documents...</p>
-            ) : documents.length === 0 ? (
+            ) : documents.length === 0 && missingDocs.length === 0 ? (
               <p className="text-sm text-slate-500">No documents uploaded by this student.</p>
             ) : (
               <div className="grid grid-cols-1 gap-6">
@@ -431,6 +434,26 @@ function AdminReviewApplication() {
                     </div>
                   );
                 })}
+                {missingDocs.map((md) => (
+                  <div key={md.key} className="flex flex-col overflow-hidden border border-dashed rounded-xl bg-slate-50 shadow-sm opacity-80">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-100/50">
+                      <div className="flex items-center gap-4 mb-4 sm:mb-0">
+                        <div className="h-12 w-12 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center shrink-0 border border-slate-200">
+                          <FileText className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-600 capitalize text-base">{md.label}</p>
+                          <p className="text-xs text-rose-500 font-medium mt-0.5 flex items-center gap-1.5">
+                            {md.required ? "Missing Required Document" : "Missing Optional Document"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 self-end sm:self-auto">
+                        <span className="px-3 py-1 bg-rose-100 text-rose-700 text-xs font-semibold rounded-md border border-rose-200">Not Uploaded</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -917,3 +940,5 @@ function AdminBackPageDisplay({ student }: { student: any }) {
     </div>
   );
 }
+
+// Trigger HMR

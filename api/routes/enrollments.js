@@ -83,20 +83,25 @@ router.post('/', requireAuth, async (req, res) => {
       ]
     );
     
-    // Notify all admins about the new application
+    // Notify all admins about the new application (non-blocking — don't let this fail the enrollment)
     const enrollment = rows[0];
-    const adminRes = await db.query(`SELECT user_id FROM public.user_roles WHERE role = 'admin'`);
-    for (const adminRow of adminRes.rows) {
-      await db.query(
-        `INSERT INTO public.notifications (user_id, title, message, link)
-         VALUES ($1, $2, $3, $4)`,
-        [
-          adminRow.user_id,
-          'New Application Submitted',
-          'A new enrollment application has been submitted and is waiting for your review.',
-          `/admin/review/${enrollment.id}`
-        ]
-      );
+    try {
+      const adminRes = await db.query(`SELECT user_id FROM public.user_roles WHERE role = 'admin'`);
+      for (const adminRow of adminRes.rows) {
+        await db.query(
+          `INSERT INTO public.notifications (user_id, title, message, link)
+           VALUES ($1, $2, $3, $4)`,
+          [
+            adminRow.user_id,
+            'New Application Submitted',
+            'A new enrollment application has been submitted and is waiting for your review.',
+            `/admin/review/${enrollment.id}`
+          ]
+        );
+      }
+    } catch (notifErr) {
+      // Notification failure should NEVER fail the enrollment submission
+      console.warn('[Enrollments/create] Failed to send admin notification (non-fatal):', notifErr.message);
     }
 
     res.status(201).json({ enrollment });
@@ -126,19 +131,23 @@ router.post('/:id/notify-resubmit', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Notify all admins
-    const adminRes = await db.query(`SELECT user_id FROM public.user_roles WHERE role = 'admin'`);
-    for (const adminRow of adminRes.rows) {
-      await db.query(
-        `INSERT INTO public.notifications (user_id, title, message, link)
-         VALUES ($1, $2, $3, $4)`,
-        [
-          adminRow.user_id,
-          'Document Resubmitted',
-          'A student has resubmitted a document for their application.',
-          `/admin/review/${req.params.id}`
-        ]
-      );
+    // Notify all admins (non-blocking)
+    try {
+      const adminRes = await db.query(`SELECT user_id FROM public.user_roles WHERE role = 'admin'`);
+      for (const adminRow of adminRes.rows) {
+        await db.query(
+          `INSERT INTO public.notifications (user_id, title, message, link)
+           VALUES ($1, $2, $3, $4)`,
+          [
+            adminRow.user_id,
+            'Document Resubmitted',
+            'A student has resubmitted a document for their application.',
+            `/admin/review/${req.params.id}`
+          ]
+        );
+      }
+    } catch (notifErr) {
+      console.warn('[Enrollments/notify-resubmit] Notification failed (non-fatal):', notifErr.message);
     }
     res.json({ success: true });
   } catch (err) {
@@ -330,6 +339,18 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     await client.query(
       `DELETE FROM public.validation_records WHERE enrollment_id = $1`,
       [req.params.id]
+    );
+
+    // Delete documents
+    await client.query(
+      `DELETE FROM public.documents WHERE enrollment_id = $1`,
+      [req.params.id]
+    );
+
+    // Delete any notifications linking to this enrollment
+    await client.query(
+      `DELETE FROM public.notifications WHERE link = $1 OR link = $2`,
+      [`/admin/review/${req.params.id}`, `/applications/${req.params.id}`]
     );
 
     // Delete the enrollment

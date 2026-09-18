@@ -353,12 +353,22 @@ function ApplyPage() {
       });
       const enrollmentId = enrollmentResult.enrollment?.id;
 
-      // 3. Upload documents (Only for New Students)
-      if (studentType === "new") {
+      // 3. Upload documents (Only for New/Transferee/Returnee students)
+      // Non-blocking: if uploads fail, the enrollment is still saved. Student can re-upload from their dashboard.
+      if (studentType !== "old") {
+        const uploadErrors: string[] = [];
         for (const def of REQUIRED_DOCUMENTS) {
           const file = files[def.key];
           if (!file) continue;
-          await docsApi.upload(file, def.key, enrollmentId);
+          try {
+            await docsApi.upload(file, def.key, enrollmentId);
+          } catch (uploadErr: any) {
+            console.warn(`[Submit] Document upload failed for ${def.key}:`, uploadErr?.message);
+            uploadErrors.push(String(def.label ?? def.key));
+          }
+        }
+        if (uploadErrors.length > 0) {
+          toast.warning(`Enrollment submitted, but some documents failed to upload: ${uploadErrors.join(", ")}. You can re-upload them from your application page.`);
         }
       }
 
@@ -898,7 +908,11 @@ function ApplyPage() {
           {/* Old Student Status Header */}
           {studentType === "old" && currentStepsList[currentStep].id === 'status' && (
             <Section title="Course & Major" icon={GraduationCap}>
-              <OldStudentPaperFormHeader form={form} programList={programList} studentType={studentType} />
+              <div className="overflow-x-auto pb-4 -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="min-w-[800px]">
+                  <OldStudentPaperFormHeader form={form} programList={programList} studentType={studentType} />
+                </div>
+              </div>
             </Section>
           )}
 
@@ -916,7 +930,11 @@ function ApplyPage() {
               {studentType === 'new' ? (
                 <div className="space-y-6">
                   <div className="rounded-lg border p-1 bg-slate-50 overflow-hidden shadow-md">
-                    <NewStudentPaperReview vals={form.getValues()} programList={programList} />
+                    <div className="overflow-x-auto">
+                      <div className="min-w-[800px]">
+                        <NewStudentPaperReview vals={form.getValues()} programList={programList} />
+                      </div>
+                    </div>
                   </div>
                   <div className="rounded-lg border bg-white p-6 shadow-sm">
                     <h3 className="font-semibold text-slate-800 border-b pb-3 mb-4 flex items-center gap-2"><Paperclip className="h-5 w-5 text-primary" /> Documents to Submit</h3>
@@ -964,28 +982,30 @@ function ApplyPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-8">
-                  {/* ── PAGE 1 (FRONT) — Two copies ── */}
-                  <div className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200">
-                    <OldStudentPaperReview copyTitle="REGISTRAR'S COPY" vals={form.getValues()} programList={programList} />
-                    <div className="relative py-2 text-center">
-                      <div className="border-t-2 border-dashed border-slate-400 w-full absolute top-1/2" />
-                      <span className="relative bg-white px-3 text-[9px] uppercase font-bold text-slate-400 tracking-widest">✂ Cut along dotted line</span>
-                    </div>
-                    <OldStudentPaperReview copyTitle="PROGRAM HEAD'S COPY" vals={form.getValues()} programList={programList} />
-                  </div>
-
-                  {/* ── PAGE 2 (BACK) ── */}
-                  <div className="bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 min-h-[1056px] flex flex-col">
-                    {/* PAGE 2 — left-aligned tab */}
-                    <div className="flex items-center gap-0 mb-4 shrink-0">
-                      <span className="text-[11px] font-black uppercase tracking-widest text-white bg-[#0A2540] px-4 py-1.5 rounded-tl rounded-bl border border-[#0A2540]">
-                        PAGE 2
-                      </span>
-                      <div className="flex-1 h-px bg-slate-300 border-t border-slate-300" />
+                <div className="flex flex-col gap-8 overflow-x-auto pb-4 -mx-6 px-6 md:mx-0 md:px-0">
+                  <div className="min-w-[800px] flex flex-col gap-8">
+                    {/* ── PAGE 1 (FRONT) — Two copies ── */}
+                    <div className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200">
+                      <OldStudentPaperReview copyTitle="REGISTRAR'S COPY" vals={form.getValues()} programList={programList} />
+                      <div className="relative py-2 text-center">
+                        <div className="border-t-2 border-dashed border-slate-400 w-full absolute top-1/2" />
+                        <span className="relative bg-white px-3 text-[9px] uppercase font-bold text-slate-400 tracking-widest">✂ Cut along dotted line</span>
+                      </div>
+                      <OldStudentPaperReview copyTitle="PROGRAM HEAD'S COPY" vals={form.getValues()} programList={programList} />
                     </div>
 
-                    <OldStudentBackPage vals={form.getValues()} />
+                    {/* ── PAGE 2 (BACK) ── */}
+                    <div className="bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 min-h-[1056px] flex flex-col">
+                      {/* PAGE 2 — left-aligned tab */}
+                      <div className="flex items-center gap-0 mb-4 shrink-0">
+                        <span className="text-[11px] font-black uppercase tracking-widest text-white bg-[#0A2540] px-4 py-1.5 rounded-tl rounded-bl border border-[#0A2540]">
+                          PAGE 2
+                        </span>
+                        <div className="flex-1 h-px bg-slate-300 border-t border-slate-300" />
+                      </div>
+
+                      <OldStudentBackPage vals={form.getValues()} />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1288,8 +1308,8 @@ function OldStudentSubjectsSection({ form }: { form: any }) {
         Enter the subjects you are enrolling in for this semester.
       </p>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+      <div className="overflow-x-auto pb-4 -mx-6 px-6 md:mx-0 md:px-0">
+        <table className="w-full text-sm border-collapse min-w-[700px]">
           <thead>
             <tr className="bg-muted/40">
               <th className="border px-3 py-2 text-left font-semibold text-muted-foreground w-8">#</th>
