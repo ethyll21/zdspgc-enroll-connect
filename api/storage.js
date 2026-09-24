@@ -12,7 +12,7 @@ const AVATAR_BUCKET = 'avatars';
 let _supabase = null;
 function getClient() {
   if (_supabase) return _supabase;
-  const url = process.env.SUPABASE_URL;
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key || key === 'your-supabase-service-role-key-here') {
     throw new Error(
