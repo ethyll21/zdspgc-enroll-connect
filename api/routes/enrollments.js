@@ -94,7 +94,16 @@ router.post('/', requireAuth, async (req, res) => {
           [
             adminRow.user_id,
             'New Application Submitted',
-            'A new enrollment application has been submitted and is waiting for your review.',
+            JSON.stringify({
+              isRichCard: true,
+              type: 'admin_new_application',
+              appNo: `APP-${enrollment.id.split('-')[0].toUpperCase()}`,
+              program: enrollment.program_name || enrollment.program_code || 'N/A',
+              schoolYear: enrollment.school_year,
+              semester: enrollment.semester,
+              date: new Date().toISOString(),
+              fallbackMessage: 'A new enrollment application has been submitted and is waiting for your review.'
+            }),
             `/admin/review/${enrollment.id}`
           ]
         );
@@ -141,7 +150,13 @@ router.post('/:id/notify-resubmit', requireAuth, async (req, res) => {
           [
             adminRow.user_id,
             'Document Resubmitted',
-            'A student has resubmitted a document for their application.',
+            JSON.stringify({
+              isRichCard: true,
+              type: 'admin_doc_resubmit',
+              appNo: `APP-${req.params.id.split('-')[0].toUpperCase()}`,
+              date: new Date().toISOString(),
+              fallbackMessage: 'A student has resubmitted a document for their application.'
+            }),
             `/admin/review/${req.params.id}`
           ]
         );
@@ -294,7 +309,7 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
 
     // Notify the student
     const studentRes = await client.query(
-      `SELECT s.user_id FROM public.students s
+      `SELECT s.user_id, s.first_name, s.last_name FROM public.students s
        JOIN public.enrollments e ON e.student_id = s.id
        WHERE e.id = $1`,
       [req.params.id]
@@ -306,13 +321,29 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
         under_review: 'Under Review',
         pending: 'Pending'
       };
+      let notifMessage = remarks || `Your enrollment for ${rows[0].school_year} ${rows[0].semester} has been ${status}.`;
+      
+      if (status === 'approved' || status === 'rejected' || status === 'under_review') {
+        notifMessage = JSON.stringify({
+          isRichCard: true,
+          type: status,
+          studentName: `${studentRes.rows[0].first_name} ${studentRes.rows[0].last_name}`.trim(),
+          appNo: `APP-${req.params.id.split('-')[0].toUpperCase()}`,
+          program: rows[0].program_name || rows[0].program_code || "N/A",
+          reviewedBy: 'Registrar',
+          date: new Date().toISOString(),
+          remarks: remarks || "",
+          fallbackMessage: `Your enrollment has been set to ${status.replace('_', ' ')}.`
+        });
+      }
+
       await client.query(
         `INSERT INTO public.notifications (user_id, title, message, link)
          VALUES ($1, $2, $3, $4)`,
         [
           studentRes.rows[0].user_id,
-          `Enrollment ${statusLabels[status]}`,
-          remarks || `Your enrollment for ${rows[0].school_year} ${rows[0].semester} has been ${status}.`,
+          status === 'approved' ? 'Application Approved' : status === 'rejected' ? 'Application Rejected' : `Enrollment ${statusLabels[status]}`,
+          notifMessage,
           `/applications/${req.params.id}`
         ]
       );

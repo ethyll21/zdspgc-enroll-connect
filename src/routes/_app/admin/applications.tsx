@@ -56,7 +56,8 @@ function AdminApplications() {
     return allEnrollments.filter((e) => {
       if (filter !== "all" && e.status !== filter) return false;
       if (q) {
-        const hay = `${e.first_name ?? ""} ${e.last_name ?? ""} ${e.student_email ?? ""} ${e.program_name ?? ""} ${e.program_code ?? ""} ${e.student_no ?? ""}`.toLowerCase();
+        const appNo = e.id ? `app-${e.id.split('-')[0]}` : "";
+        const hay = `${appNo} ${e.id} ${e.first_name ?? ""} ${e.last_name ?? ""} ${e.student_email ?? ""} ${e.program_name ?? ""} ${e.program_code ?? ""} ${e.student_no ?? ""}`.toLowerCase();
         if (!hay.includes(q.toLowerCase())) return false;
       }
       return true;
@@ -238,7 +239,7 @@ function AdminApplications() {
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search name, email, program…"
+              placeholder="Search app no, name, email…"
               className="pl-9 h-10 rounded-xl border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-primary/20"
             />
           </div>
@@ -257,6 +258,7 @@ function AdminApplications() {
         <table className="w-full text-sm whitespace-nowrap">
           <thead className="bg-muted/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
+              <th className="px-4 py-3">App. No.</th>
               <th className="px-4 py-3">Student</th>
               <th className="px-4 py-3 hidden md:table-cell">Program</th>
               <th className="px-4 py-3 hidden md:table-cell">Period</th>
@@ -267,14 +269,19 @@ function AdminApplications() {
           </thead>
           <tbody className="divide-y">
             {isLoading ? (
-              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Loading…</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No enrollments match this filter.</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No enrollments match this filter.</td></tr>
             ) : filtered.map((e) => {
               const meta = STATUS_META[e.status] ?? { label: e.status, tone: "" };
               return (
                 <>
                   <tr key={e.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <span className="px-3 py-1.5 bg-slate-50 text-slate-700 rounded-full text-[11px] font-semibold font-mono border border-slate-200 uppercase tracking-widest shadow-sm">
+                        APP-{e.id.split('-')[0]}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {(e as any).avatar_url ? (

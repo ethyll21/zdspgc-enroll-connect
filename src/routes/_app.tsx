@@ -207,14 +207,7 @@ function AppLayout() {
 
           {/* Right: user info */}
           <div className="ml-auto flex items-center gap-3">
-            <div className="hidden text-right md:block">
-              <p className="text-xs font-semibold leading-none text-white">
-                {user?.full_name || user?.email}
-              </p>
-              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-gold/70">
-                {isAdmin ? "Registrar" : "Student"}
-              </p>
-            </div>
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button

@@ -336,10 +336,8 @@ function ApplicationDetail() {
         </div>
       ) : (
         /* ─── NEW STUDENT FORM: FULL DETAILED COLLEGE ENROLLMENT FORM ─── */
-        <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="min-w-[800px]">
-            <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
-              <div className="flex items-start justify-between gap-4 pb-2">
+        <div id="printable-application-form-new" className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
+          <div className="flex items-start justify-between gap-4 pb-2">
                 {/* Left Column: Header, Title, Direction, Course/Major */}
             <div className="flex-1 flex flex-col">
               {/* Logo & Header Text */}
@@ -504,16 +502,16 @@ function ApplicationDetail() {
             </div>
           </div>
         </div>
+      )}
+        </div>
       </div>
-    </div>
-  )}
-</div>
 
       {/* ══════════════════════════════════════════════════════════════════════════
           FUNCTIONAL / UPLOADED DOCUMENTS & ADMIN PANEL (Hidden on Print)
       ══════════════════════════════════════════════════════════════════════════ */}
       <div className="print:hidden space-y-6 mt-8">
-        {/* Uploaded Documents */}
+        {/* Uploaded Documents — hidden for old/returnee students on the student side */}
+        {(!isOldStudent || isAdmin) && (
         <Card title="Uploaded Verification Documents">
           {docs.length === 0 && missingDocs.length === 0 ? (
             <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
@@ -672,6 +670,7 @@ function ApplicationDetail() {
             </div>
           )}
         </Card>
+        )}
 
         {/* Admin decision panel */}
         {isAdmin && (

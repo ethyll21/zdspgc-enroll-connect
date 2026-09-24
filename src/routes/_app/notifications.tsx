@@ -1,18 +1,293 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
+import { Bell, CheckCircle2, AlertCircle, Trash2, CheckCircle, XCircle, ArrowRight, Eye } from "lucide-react";
 import { notifications } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
 import { formatDistanceToNow, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+
+// ─── Helper: parse or detect rich notification payload ──────────────────────────
+function parseRichPayload(title: string, message: string, createdAt: string) {
+  // Try JSON first — handles both application-level and document-level rich cards
+  try {
+    const parsed = JSON.parse(message);
+    if (parsed?.isRichCard) return parsed;
+  } catch {}
+
+  const t = title.toLowerCase();
+  const m = message.toLowerCase();
+
+  // Document-level detection: check if title contains a known doc type keyword
+  const docTypeMap: Record<string, string> = {
+    'psa birth certificate': 'PSA Birth Certificate',
+    'form 138': 'Form 138',
+    'good moral certificate': 'Good Moral Certificate',
+    'transfer certificate': 'Transfer Certificate',
+    'registration form': 'Registration Form',
+  };
+  for (const [key, label] of Object.entries(docTypeMap)) {
+    if (t.includes(key)) {
+      const type = t.includes('approv') ? 'doc_approved' : t.includes('reject') ? 'doc_rejected' : null;
+      if (type) {
+        return { isRichCard: true, type, docLabel: label, date: createdAt, fallbackMessage: message };
+      }
+    }
+  }
+
+  // Application-level detection (legacy plain text)
+  if (t.includes('approv') || (m.includes('enrollment') && m.includes('approved'))) {
+    return { isRichCard: true, type: 'approved', date: createdAt, fallbackMessage: message };
+  }
+  if (t.includes('application rejected') || t.includes('enrollment rejected') || (m.includes('enrollment') && m.includes('rejected'))) {
+    return { isRichCard: true, type: 'rejected', date: createdAt, fallbackMessage: message };
+  }
+  if (t.includes('under review') || t.includes('under_review') || (m.includes('enrollment') && m.includes('under review'))) {
+    return { isRichCard: true, type: 'under_review', date: createdAt, fallbackMessage: message };
+  }
+  return null;
+}
+
+function RichNotificationCard({ payload }: { payload: any }) {
+  // ── Admin-specific card types ─────────────────────────────────────────────
+  if (payload.type === 'admin_new_application') {
+    const rows = [
+      payload.appNo    ? { label: 'Application No.', value: payload.appNo }    : null,
+      payload.program  ? { label: 'Program',         value: payload.program }  : null,
+      payload.schoolYear ? { label: 'School Year',   value: payload.schoolYear } : null,
+      payload.semester ? { label: 'Semester',        value: payload.semester } : null,
+      { label: 'Status', badge: 'PENDING REVIEW', badgeColor: 'bg-blue-100 text-blue-700 border-blue-200', dotColor: 'bg-blue-500' },
+      payload.date     ? { label: 'Submitted',       value: format(new Date(payload.date), 'MMMM d, yyyy') } : null,
+    ].filter(Boolean) as any[];
+
+    return (
+      <div className="rounded-lg border border-blue-200 overflow-hidden">
+        <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-blue-100 bg-blue-50">
+          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-600">
+            <Bell className="w-3.5 h-3.5 text-white" />
+          </div>
+          <div className="h-4 w-px bg-slate-200" />
+          <h3 className="font-semibold text-sm text-slate-800">New Application Submitted</h3>
+        </div>
+        <div className="px-4 py-3 space-y-1.5 bg-white">
+          {rows.map((row: any) => (
+            <div key={row.label} className="flex items-center gap-3">
+              <span className="text-slate-400 text-xs w-28 shrink-0">{row.label}:</span>
+              {row.badge ? (
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
+                  <span className={`w-1 h-1 rounded-full ${row.dotColor}`} />
+                  {row.badge}
+                </span>
+              ) : (
+                <span className="font-semibold text-slate-800 text-xs">{row.value}</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 px-4 py-2 border-t border-blue-100 bg-blue-50/60">
+          <div className="flex items-center justify-center w-6 h-6 rounded-full border border-blue-400 text-blue-600">
+            <ArrowRight className="w-3 h-3" />
+          </div>
+          <div>
+            <p className="text-[9px] text-slate-400 uppercase font-semibold tracking-wide">Action:</p>
+            <p className="text-xs font-semibold text-slate-700">Open the application to begin review</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (payload.type === 'admin_doc_resubmit') {
+    const rows = [
+      payload.appNo      ? { label: 'Application No.', value: payload.appNo }      : null,
+      payload.studentName? { label: 'Student',         value: payload.studentName } : null,
+      payload.docLabel   ? { label: 'Document',        value: payload.docLabel }    : null,
+      { label: 'Status', badge: 'DOCUMENT RESUBMITTED', badgeColor: 'bg-amber-100 text-amber-700 border-amber-200', dotColor: 'bg-amber-500' },
+      payload.date       ? { label: 'Resubmitted',     value: format(new Date(payload.date), 'MMMM d, yyyy') } : null,
+    ].filter(Boolean) as any[];
+
+    return (
+      <div className="rounded-lg border border-amber-200 overflow-hidden">
+        <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-amber-100 bg-amber-50">
+          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-500">
+            <Bell className="w-3.5 h-3.5 text-white" />
+          </div>
+          <div className="h-4 w-px bg-slate-200" />
+          <h3 className="font-semibold text-sm text-slate-800">Document Resubmitted</h3>
+        </div>
+        <div className="px-4 py-3 space-y-1.5 bg-white">
+          {rows.map((row: any) => (
+            <div key={row.label} className="flex items-center gap-3">
+              <span className="text-slate-400 text-xs w-28 shrink-0">{row.label}:</span>
+              {row.badge ? (
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
+                  <span className={`w-1 h-1 rounded-full ${row.dotColor}`} />
+                  {row.badge}
+                </span>
+              ) : (
+                <span className="font-semibold text-slate-800 text-xs">{row.value}</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 px-4 py-2 border-t border-amber-100 bg-amber-50/60">
+          <div className="flex items-center justify-center w-6 h-6 rounded-full border border-amber-400 text-amber-600">
+            <ArrowRight className="w-3 h-3" />
+          </div>
+          <div>
+            <p className="text-[9px] text-slate-400 uppercase font-semibold tracking-wide">Action:</p>
+            <p className="text-xs font-semibold text-slate-700">Review the resubmitted document</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Under Review (student-facing) ───────────────────────────────────────
+  if (payload.type === 'under_review') {
+    const rows = [
+      payload.studentName ? { label: 'Student',         value: payload.studentName } : null,
+      payload.appNo       ? { label: 'Application No.', value: payload.appNo }       : null,
+      payload.program     ? { label: 'Program',         value: payload.program }     : null,
+      { label: 'Status', badge: 'UNDER REVIEW', badgeColor: 'bg-indigo-100 text-indigo-700 border-indigo-200', dotColor: 'bg-indigo-500' },
+      payload.reviewedBy  ? { label: 'Reviewed by',     value: payload.reviewedBy }  : null,
+      payload.date        ? { label: 'Date Updated',    value: format(new Date(payload.date), 'MMMM d, yyyy') } : null,
+    ].filter(Boolean) as any[];
+
+    return (
+      <div className="rounded-lg border border-indigo-200 overflow-hidden">
+        <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-indigo-100 bg-indigo-50">
+          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-600">
+            <Eye className="w-3.5 h-3.5 text-white" />
+          </div>
+          <div className="h-4 w-px bg-slate-200" />
+          <h3 className="font-semibold text-sm text-slate-800">Application Under Review</h3>
+        </div>
+        <div className="px-4 py-3 space-y-1.5 bg-white">
+          {rows.map((row: any) => (
+            <div key={row.label} className="flex items-center gap-3">
+              <span className="text-slate-400 text-xs w-28 shrink-0">{row.label}:</span>
+              {row.badge ? (
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
+                  <span className={`w-1 h-1 rounded-full ${row.dotColor}`} />
+                  {row.badge}
+                </span>
+              ) : (
+                <span className="font-semibold text-slate-800 text-xs">{row.value}</span>
+              )}
+            </div>
+          ))}
+          {payload.remarks && (
+            <div className="flex items-start gap-3">
+              <span className="text-slate-400 text-xs w-28 shrink-0">Remarks:</span>
+              <span className="text-slate-600 text-xs italic">{payload.remarks}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-3 px-4 py-2 border-t border-indigo-100 bg-indigo-50/60">
+          <div className="flex items-center justify-center w-6 h-6 rounded-full border border-indigo-400 text-indigo-600">
+            <ArrowRight className="w-3 h-3" />
+          </div>
+          <div>
+            <p className="text-[9px] text-slate-400 uppercase font-semibold tracking-wide">Action:</p>
+            <p className="text-xs font-semibold text-slate-700">Your application is currently being reviewed</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Student-facing card types ─────────────────────────────────────────────
+  const isDocCard = payload.type === 'doc_approved' || payload.type === 'doc_rejected' || payload.type === 'doc_pending';
+  const isApproved = payload.type === 'approved' || payload.type === 'doc_approved';
+  const isRejected = payload.type === 'rejected' || payload.type === 'doc_rejected';
+
+  const heading = isDocCard
+    ? isApproved ? `${payload.docLabel} Approved` : isRejected ? `${payload.docLabel} Rejected` : `${payload.docLabel} Updated`
+    : isApproved ? 'Application Approved' : 'Application Rejected';
+
+  const actionText = isDocCard
+    ? isApproved ? 'Your document has been verified. No further action needed.' : 'Please re-upload the rejected document to continue.'
+    : isApproved ? 'Proceed to the Official enrollment' : 'Review and re-upload required documents';
+
+  const gc = isApproved;
+  const borderCls   = gc ? 'border-green-200'               : 'border-red-200';
+  const headerBg    = gc ? 'border-green-100 bg-green-50'   : 'border-red-100 bg-red-50';
+  const iconBg      = gc ? 'bg-green-500'                   : 'bg-red-500';
+  const footerBg    = gc ? 'border-green-100 bg-green-50/60': 'border-red-100 bg-red-50/60';
+  const arrowCls    = gc ? 'border-blue-400 text-blue-600'  : 'border-slate-400 text-slate-600';
+  const badgeText   = isDocCard
+    ? (gc ? 'DOCUMENT APPROVED' : 'DOCUMENT REJECTED')
+    : (gc ? 'APPLICATION APPROVED' : 'APPLICATION REJECTED');
+  const badgeColor  = gc ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200';
+  const dotColor    = gc ? 'bg-green-500' : 'bg-red-500';
+
+  const rows = [
+    payload.studentName ? { label: 'Student',         value: payload.studentName } : null,
+    payload.appNo       ? { label: 'Application No.', value: payload.appNo }       : null,
+    isDocCard           ? { label: 'Document',        value: payload.docLabel }    : null,
+    payload.program     ? { label: 'Program',         value: payload.program }     : null,
+    { label: 'Status', badge: badgeText, badgeColor, dotColor },
+    payload.reviewedBy  ? { label: 'Reviewed by',     value: payload.reviewedBy }  : null,
+    payload.date        ? { label: gc ? 'Date Approved' : 'Date Reviewed', value: format(new Date(payload.date), 'MMMM d, yyyy') } : null,
+  ].filter(Boolean) as any[];
+
+  return (
+    <div className={`rounded-lg border overflow-hidden ${borderCls}`}>
+      {/* Header */}
+      <div className={`flex items-center gap-2.5 px-4 py-2.5 border-b ${headerBg}`}>
+        <div className={`flex items-center justify-center w-7 h-7 rounded-full ${iconBg}`}>
+          {isApproved ? <CheckCircle className="w-3.5 h-3.5 text-white" /> : <XCircle className="w-3.5 h-3.5 text-white" />}
+        </div>
+        <div className="h-4 w-px bg-slate-200" />
+        <h3 className="font-semibold text-sm text-slate-800">{heading}</h3>
+      </div>
+
+      {/* Details grid */}
+      <div className="px-4 py-3 space-y-1.5 bg-white">
+        {rows.map((row: any) => (
+          <div key={row.label} className="flex items-center gap-3">
+            <span className="text-slate-400 text-xs w-28 shrink-0">{row.label}:</span>
+            {row.badge ? (
+              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
+                <span className={`w-1 h-1 rounded-full ${row.dotColor}`} />
+                {row.badge}
+              </span>
+            ) : (
+              <span className="font-semibold text-slate-800 text-xs">{row.value}</span>
+            )}
+          </div>
+        ))}
+        {!payload.studentName && !isDocCard && payload.fallbackMessage && (
+          <div className="flex items-start gap-3">
+            <span className="text-slate-400 text-xs w-28 shrink-0">Message:</span>
+            <span className="text-slate-600 text-xs">{payload.fallbackMessage}</span>
+          </div>
+        )}
+        {payload.remarks && (
+          <div className="flex items-start gap-3">
+            <span className="text-slate-400 text-xs w-28 shrink-0">Remarks:</span>
+            <span className="text-slate-600 text-xs italic">{payload.remarks}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Action footer */}
+      <div className={`flex items-center gap-3 px-4 py-2 border-t ${footerBg}`}>
+        <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${arrowCls}`}>
+          <ArrowRight className="w-3 h-3" />
+        </div>
+        <div>
+          <p className="text-[9px] text-slate-400 uppercase font-semibold tracking-wide">Action:</p>
+          <p className="text-xs font-semibold text-slate-700">{actionText}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_app/notifications")({
@@ -148,21 +423,43 @@ function NotificationsPage() {
                 <div className="flex-1 min-w-0 pt-0.5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1.5 w-full">
-                      <div className="flex items-center justify-between gap-4">
-                        <p className={`text-[15px] tracking-tight ${
-                          !n.is_read ? "font-bold text-[#0A2540]" : "font-semibold text-slate-700"
-                        }`}>
-                          {n.title}
-                        </p>
-                        {!n.is_read && (
-                          <span className="flex h-2 w-2 rounded-full bg-blue-500 shrink-0 shadow-sm shadow-blue-500/50" />
-                        )}
-                      </div>
-                      <p className={`leading-relaxed ${
-                        !n.is_read ? "text-slate-600 text-sm" : "text-slate-500 text-sm"
-                      }`}>
-                        {n.message}
-                      </p>
+                      {(() => {
+                        let rich = parseRichPayload(n.title, n.message, n.created_at);
+                        // Inject appNo from the link if the card doesn't already have one
+                        if (rich && !rich.appNo && n.link) {
+                          const match = n.link.match(/\/applications\/([a-f0-9-]+)/i);
+                          if (match) {
+                            rich = { ...rich, appNo: `APP-${match[1].split('-')[0].toUpperCase()}` };
+                          }
+                        }
+                        return (
+                          <>
+                            {!rich && (
+                              <div className="flex items-center justify-between gap-4">
+                                <p className={`text-[15px] tracking-tight ${
+                                  !n.is_read ? "font-bold text-[#0A2540]" : "font-semibold text-slate-700"
+                                }`}>
+                                  {n.title}
+                                </p>
+                                {!n.is_read && (
+                                  <span className="flex h-2 w-2 rounded-full bg-blue-500 shrink-0 shadow-sm shadow-blue-500/50" />
+                                )}
+                              </div>
+                            )}
+                            {rich ? (
+                              <div className="mt-1">
+                                <RichNotificationCard payload={rich} />
+                              </div>
+                            ) : (
+                              <p className={`leading-relaxed ${
+                                !n.is_read ? "text-slate-600 text-sm" : "text-slate-500 text-sm"
+                              }`}>
+                                {n.message}
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
                       <div className="flex items-center justify-between gap-2 mt-3 pt-1">
                         <p className={`text-[10px] font-bold uppercase tracking-widest ${
                           !n.is_read ? "text-blue-500/70" : "text-slate-400"

@@ -193,10 +193,8 @@ function AdminReviewApplication() {
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="min-w-[800px]">
-            <div className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
-              <div className="flex items-start justify-between gap-4 pb-2">
+        <div id="printable-application-form-new" className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
+          <div className="flex items-start justify-between gap-4 pb-2">
                 {/* Left Column: Header, Title, Direction, Course/Major */}
             <div className="flex-1 flex flex-col">
               {/* Logo & Header Text */}
@@ -331,6 +329,8 @@ function AdminReviewApplication() {
           </div>
         </div>
       )}
+        </div>
+      </div>
 
       {/* Admin Panel (hidden on print) */}
       <div className="print:hidden space-y-6">

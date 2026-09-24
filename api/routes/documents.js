@@ -214,17 +214,24 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
         pending: 'Pending'
       };
       const docLabel = docTypeLabels[doc.doc_type] || 'Document';
-      const statusLabel = statusLabels[status] || status;
-      const title = `${docLabel} ${statusLabel}`;
-      const message = remarks
-        ? `Your ${docLabel} has been ${status}. Remark: ${remarks}`
-        : `Your ${docLabel} has been ${status} by the admin.`;
+      const title = status === 'approved' ? `${docLabel} Approved` : status === 'rejected' ? `${docLabel} Rejected` : `${docLabel} Updated`;
+
+      const richMessage = JSON.stringify({
+        isRichCard: true,
+        type: status === 'approved' ? 'doc_approved' : status === 'rejected' ? 'doc_rejected' : 'doc_pending',
+        docLabel,
+        date: new Date().toISOString(),
+        remarks: remarks || '',
+        fallbackMessage: remarks
+          ? `Your ${docLabel} has been ${status}. Remark: ${remarks}`
+          : `Your ${docLabel} has been ${status} by the admin.`
+      });
 
       try {
         await client.query(
           `INSERT INTO public.notifications (user_id, title, message, link)
            VALUES ($1, $2, $3, $4)`,
-          [studentRes.rows[0].user_id, title, message, doc.enrollment_id ? `/applications/${doc.enrollment_id}` : null]
+          [studentRes.rows[0].user_id, title, richMessage, doc.enrollment_id ? `/applications/${doc.enrollment_id}` : null]
         );
       } catch (notifErr) {
         console.warn('[Documents/review] Notification failed (non-fatal):', notifErr.message);
