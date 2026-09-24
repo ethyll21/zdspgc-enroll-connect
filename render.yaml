@@ -13,4 +13,8 @@ services:
         value: ""
       - key: DATABASE_URL
         sync: false   # Set this secret in the Render dashboard
+      - key: SUPABASE_URL
+        value: "https://ljumvqyecvqnjfloorvi.supabase.co"
+      - key: SUPABASE_SERVICE_KEY
+        sync: false   # Set this secret in the Render dashboard (Project Settings → API → service_role key)
     healthCheckPath: /api/health

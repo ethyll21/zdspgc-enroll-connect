@@ -1,33 +1,17 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const db = require('../db');
+const multer  = require('multer');
+const path    = require('path');
+const db      = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { uploadFile, deleteFile, downloadFile, DOCS_BUCKET } = require('../storage');
 
 const router = express.Router();
 
-// ─── File upload setup ────────────────────────────────────────────────────────
-const UPLOAD_DIR = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const userDir = path.join(UPLOAD_DIR, req.user.id);
-    if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
-    cb(null, userDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-    cb(null, safeName);
-  },
-});
-
+// ─── Multer — memory storage (no local disk) ──────────────────────────────────
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     const allowed = ['.pdf', '.jpg', '.jpeg', '.png'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (!allowed.includes(ext)) {
@@ -69,13 +53,10 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 
   const { doc_type } = req.body;
   const validDocTypes = [
-    // These match the document_type enum values in the database exactly
     'psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate',
     'registration_form', 'other',
   ];
   if (!doc_type || !validDocTypes.includes(doc_type)) {
-    // Clean up uploaded file
-    fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: `doc_type must be one of: ${validDocTypes.join(', ')}` });
   }
 
@@ -84,28 +65,35 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
       'SELECT id FROM public.students WHERE user_id = $1', [req.user.id]
     );
     if (studentRes.rows.length === 0) {
-      fs.unlinkSync(req.file.path);
       return res.status(404).json({ error: 'Student record not found' });
     }
     const student_id = studentRes.rows[0].id;
     const enrollment_id = req.body.enrollment_id || null;
 
-    const relativePath = path.relative(UPLOAD_DIR, req.file.path).replace(/\\/g, '/');
+    // Build Supabase storage path: userId/timestamp-random.ext
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    const storagePath = `${req.user.id}/${safeName}`;
 
-    // Use doc_type directly - the DB enum values match the frontend keys exactly:
-    // psa_birth_certificate, form_138, good_moral, transfer_certificate, other, registration_form
-    const dbDocType = doc_type;
+    // Upload buffer to Supabase Storage
+    const publicUrl = await uploadFile(
+      DOCS_BUCKET,
+      storagePath,
+      req.file.buffer,
+      req.file.mimetype
+    );
 
     const { rows } = await db.query(
       `INSERT INTO public.documents
          (student_id, enrollment_id, doc_type, file_path, file_name, mime_type, size_bytes, status)
        VALUES ($1, $2, $3::document_type, $4, $5, $6, $7, 'pending')
        RETURNING *`,
-      [student_id, enrollment_id, dbDocType, relativePath, req.file.originalname, req.file.mimetype, req.file.size]
+      [student_id, enrollment_id, doc_type, storagePath, req.file.originalname, req.file.mimetype, req.file.size]
     );
-    res.status(201).json({ document: rows[0] });
+
+    // file_url is the Supabase public URL — attach it for the response
+    res.status(201).json({ document: { ...rows[0], file_url: publicUrl } });
   } catch (err) {
-    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     console.error('[Documents/upload]', err.message);
     res.status(500).json({ error: 'Failed to save document', details: err.message });
   }
@@ -128,9 +116,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Delete file from disk
-    const filePath = path.join(UPLOAD_DIR, doc.file_path);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // Delete from Supabase Storage (non-blocking, best-effort)
+    await deleteFile(DOCS_BUCKET, doc.file_path);
 
     await db.query('DELETE FROM public.documents WHERE id = $1', [req.params.id]);
 
@@ -208,11 +195,6 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
         transfer_certificate: 'Transfer Certificate',
         other: 'Document'
       };
-      const statusLabels = {
-        approved: 'Approved ✓',
-        rejected: 'Rejected ✗',
-        pending: 'Pending'
-      };
       const docLabel = docTypeLabels[doc.doc_type] || 'Document';
       const title = status === 'approved' ? `${docLabel} Approved` : status === 'rejected' ? `${docLabel} Rejected` : `${docLabel} Updated`;
 
@@ -255,8 +237,8 @@ router.get('/', requireAdmin, async (req, res) => {
   try {
     const conditions = [];
     const params = [];
-    if (status) { params.push(status); conditions.push(`d.status = $${params.length}`); }
-    if (student_id) { params.push(student_id); conditions.push(`d.student_id = $${params.length}`); }
+    if (status)        { params.push(status);        conditions.push(`d.status = $${params.length}`); }
+    if (student_id)    { params.push(student_id);    conditions.push(`d.student_id = $${params.length}`); }
     if (enrollment_id) { params.push(enrollment_id); conditions.push(`d.enrollment_id = $${params.length}`); }
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -275,7 +257,8 @@ router.get('/', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── GET /api/documents/file/:id (serve file) ────────────────────────────────
+// ─── GET /api/documents/file/:id (proxy-serve from Supabase Storage) ─────────
+// We proxy through the API so auth is enforced — students can't access each other's files.
 router.get('/file/:id', requireAuth, async (req, res) => {
   console.log('[Documents/serve] Request for file id:', req.params.id, 'User:', req.user.id);
   try {
@@ -291,14 +274,20 @@ router.get('/file/:id', requireAuth, async (req, res) => {
     }
     const doc = docRes.rows[0];
     if (req.user.role !== 'admin' && doc.user_id !== req.user.id) {
-      console.log('[Documents/serve] Access denied. user_id:', doc.user_id, 'req.user.id:', req.user.id);
+      console.log('[Documents/serve] Access denied');
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const filePath = path.join(UPLOAD_DIR, doc.file_path);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
+    // Download from Supabase Storage and stream to client
+    const { data, error } = await downloadFile(DOCS_BUCKET, doc.file_path);
+    if (error || !data) {
+      return res.status(404).json({ error: 'File not found in storage' });
+    }
+
+    const buffer = Buffer.from(await data.arrayBuffer());
+    res.setHeader('Content-Type', doc.mime_type || 'application/octet-stream');
     res.setHeader('Content-Disposition', `inline; filename="${doc.file_name}"`);
-    res.sendFile(filePath);
+    res.send(buffer);
   } catch (err) {
     console.error('[Documents/serve]', err.message);
     res.status(500).json({ error: 'Failed to serve document', details: err.message });

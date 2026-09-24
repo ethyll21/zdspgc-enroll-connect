@@ -37,3 +37,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# User-uploaded student documents and avatars (stored in Supabase Storage, not Git)
+uploads/

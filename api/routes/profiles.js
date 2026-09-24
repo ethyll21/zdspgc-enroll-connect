@@ -1,27 +1,15 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const db = require('../db');
+const multer  = require('multer');
+const path    = require('path');
+const db      = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { uploadFile, deleteFile, AVATAR_BUCKET } = require('../storage');
 
 const router = express.Router();
 
-// ─── Avatar upload setup ──────────────────────────────────────────────────────
-const AVATAR_DIR = path.join(__dirname, '../../uploads/avatars');
-if (!fs.existsSync(AVATAR_DIR)) fs.mkdirSync(AVATAR_DIR, { recursive: true });
-
-const avatarStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, AVATAR_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const ts = Date.now();
-    cb(null, `avatar-${req.user.id}-${ts}${ext}`);
-  },
-});
-
+// ─── Multer — memory storage (no local disk) ──────────────────────────────────
 const avatarUpload = multer({
-  storage: avatarStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (_req, file, cb) => {
     const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
@@ -50,42 +38,49 @@ router.get('/me', requireAuth, async (req, res) => {
 // ─── POST /api/profiles/me/avatar ───────────────────────────────────────────
 router.post('/me/avatar', requireAuth, avatarUpload.single('avatar'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-  const avatarUrl = `/api/profiles/avatar/${req.file.filename}`;
   try {
-    // Delete the old avatar file to free disk space and prevent stale cache
+    // Delete old avatar from Supabase Storage (best-effort)
     const existing = await db.query(
       'SELECT avatar_url FROM public.profiles WHERE id = $1',
       [req.user.id]
     );
     if (existing.rows.length > 0 && existing.rows[0].avatar_url) {
-      const oldFilename = path.basename(existing.rows[0].avatar_url);
-      const oldPath = path.join(AVATAR_DIR, oldFilename);
-      if (fs.existsSync(oldPath)) {
-        try { fs.unlinkSync(oldPath); } catch (_) {}
+      const oldUrl = existing.rows[0].avatar_url;
+      // Extract storage path from URL: .../<bucket>/<path>
+      const bucketMarker = `/${AVATAR_BUCKET}/`;
+      const idx = oldUrl.indexOf(bucketMarker);
+      if (idx !== -1) {
+        const oldPath = oldUrl.slice(idx + bucketMarker.length);
+        await deleteFile(AVATAR_BUCKET, oldPath);
       }
     }
 
+    // Upload new avatar to Supabase Storage
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const storagePath = `${req.user.id}/avatar-${Date.now()}${ext}`;
+    const publicUrl = await uploadFile(
+      AVATAR_BUCKET,
+      storagePath,
+      req.file.buffer,
+      req.file.mimetype
+    );
+
     const { rows } = await db.query(
       `UPDATE public.profiles SET avatar_url = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-      [avatarUrl, req.user.id]
+      [publicUrl, req.user.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Profile not found' });
-    res.json({ profile: rows[0], avatar_url: avatarUrl });
+    res.json({ profile: rows[0], avatar_url: publicUrl });
   } catch (err) {
     console.error('[Profiles/avatar]', err.message);
     res.status(500).json({ error: 'Failed to save avatar', details: err.message });
   }
 });
 
-// ─── GET /api/profiles/avatar/:filename (public serve) ───────────────────────
-router.get('/avatar/:filename', (req, res) => {
-  const filePath = path.join(AVATAR_DIR, path.basename(req.params.filename));
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Avatar not found' });
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.sendFile(filePath);
-});
+// ─── NOTE: /api/profiles/avatar/:filename is no longer needed.
+// Avatar URLs are now permanent Supabase Storage public URLs stored in the DB.
+// The old local-serve route has been removed as part of the Supabase Storage migration.
+
 
 // ─── PATCH /api/profiles/me ──────────────────────────────────────────────────
 router.patch('/me', requireAuth, async (req, res) => {
