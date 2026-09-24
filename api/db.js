@@ -7,7 +7,7 @@ const pool = new Pool(
         ssl: { rejectUnauthorized: false },
         max: 20,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 20000,
       }
     : {
         host: process.env.PG_HOST || 'localhost',
@@ -17,7 +17,7 @@ const pool = new Pool(
         password: process.env.PG_PASSWORD || 'ANGELYN212121',
         max: 20,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 20000,
       }
 );
 
