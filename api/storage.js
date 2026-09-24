@@ -12,7 +12,7 @@ const AVATAR_BUCKET = 'avatars';
 let _supabase = null;
 function getClient() {
   if (_supabase) return _supabase;
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  let url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key || key === 'your-supabase-service-role-key-here') {
     throw new Error(
@@ -20,6 +20,11 @@ function getClient() {
       'Add it to your Render environment variables.'
     );
   }
+  
+  // Clean up URL to prevent "Invalid path specified in request URL" errors
+  // Trims spaces/newlines and removes any trailing slashes
+  url = url.trim().replace(/\/+$/, '');
+
   _supabase = createClient(url, key, { auth: { persistSession: false } });
   return _supabase;
 }
