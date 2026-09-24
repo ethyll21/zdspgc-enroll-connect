@@ -22,8 +22,8 @@ function getClient() {
   }
   
   // Clean up URL to prevent "Invalid path specified in request URL" errors
-  // Trims spaces/newlines and removes any trailing slashes
-  url = url.trim().replace(/\/+$/, '');
+  // Trims spaces/newlines, removes surrounding quotes, and removes trailing slashes
+  url = url.trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '');
 
   _supabase = createClient(url, key, { auth: { persistSession: false } });
   return _supabase;
@@ -33,11 +33,12 @@ function getClient() {
  * Upload a buffer to Supabase Storage.
  */
 async function uploadFile(bucket, storagePath, buffer, mimeType) {
+  const safePath = storagePath.trim().replace(/\\/g, '/');
   const { error } = await getClient().storage
     .from(bucket)
-    .upload(storagePath, buffer, { contentType: mimeType, upsert: true });
+    .upload(safePath, buffer, { contentType: mimeType, upsert: true });
   if (error) throw new Error(`Storage upload failed: ${error.message}`);
-  const { data } = getClient().storage.from(bucket).getPublicUrl(storagePath);
+  const { data } = getClient().storage.from(bucket).getPublicUrl(safePath);
   return data.publicUrl;
 }
 
