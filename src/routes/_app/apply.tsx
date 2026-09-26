@@ -14,6 +14,7 @@ import { z } from "zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FormScaleWrapper } from "@/components/FormScaleWrapper";
 
 export const Route = createFileRoute("/_app/apply")({
   component: ApplyPage,
@@ -932,11 +933,9 @@ function ApplyPage() {
           {/* Old Student Status Header */}
           {studentType === "old" && currentStepsList[currentStep].id === 'status' && (
             <Section title="Course & Major" icon={GraduationCap}>
-              <div className="overflow-x-auto pb-4 -mx-6 px-6 md:mx-0 md:px-0">
-                <div className="min-w-[800px]">
+              <FormScaleWrapper>
                   <OldStudentPaperFormHeader form={form} programList={programList} studentType={studentType} />
-                </div>
-              </div>
+              </FormScaleWrapper>
             </Section>
           )}
 
@@ -954,11 +953,9 @@ function ApplyPage() {
               {studentType === 'new' ? (
                 <div className="space-y-6">
                   <div className="rounded-lg border p-1 bg-slate-50 overflow-hidden shadow-md">
-                    <div className="overflow-x-auto">
-                      <div className="min-w-[800px]">
+                    <FormScaleWrapper>
                         <NewStudentPaperReview vals={form.getValues()} programList={programList} />
-                      </div>
-                    </div>
+                    </FormScaleWrapper>
                   </div>
                   <div className="rounded-lg border bg-white p-6 shadow-sm">
                     <h3 className="font-semibold text-slate-800 border-b pb-3 mb-4 flex items-center gap-2"><Paperclip className="h-5 w-5 text-primary" /> Documents to Submit</h3>
@@ -1006,8 +1003,8 @@ function ApplyPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-8 overflow-x-auto pb-4 -mx-6 px-6 md:mx-0 md:px-0">
-                  <div className="min-w-[800px] flex flex-col gap-8">
+                <FormScaleWrapper>
+                  <div className="flex flex-col gap-8">
                     {/* ── PAGE 1 (FRONT) — Two copies ── */}
                     <div className="space-y-6 bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200">
                       <OldStudentPaperReview copyTitle="REGISTRAR'S COPY" vals={form.getValues()} programList={programList} />
@@ -1031,7 +1028,8 @@ function ApplyPage() {
                       <OldStudentBackPage vals={form.getValues()} />
                     </div>
                   </div>
-                </div>
+                </FormScaleWrapper>
+
               )}
               <div className="mt-6 bg-primary/5 p-4 rounded-md border border-primary/20 text-center">
                 <p className="text-sm font-medium">Please verify all information above is correct before submitting your final application.</p>
