@@ -242,14 +242,6 @@ async function fixDocumentsTable(db) {
 async function fixApplicationDocuments(db) {
   try {
     console.log('[Startup] Checking application_documents table...');
-    
-    // Check if table exists first before altering
-    const tableCheck = await db.query(`SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'application_documents'`);
-    if (tableCheck.rows.length === 0) {
-      console.log('[Startup] application_documents table does not exist. Skipping schema alteration.');
-      return;
-    }
-
     // Check if document_status type exists before using it
     const typeCheck = await db.query(`SELECT 1 FROM pg_type WHERE typname = 'document_status'`);
     if (typeCheck.rows.length === 0) {
