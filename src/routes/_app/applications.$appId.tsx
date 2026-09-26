@@ -93,19 +93,29 @@ function ApplicationDetail() {
       }, 0);
     } else {
       const toastId = toast.loading("Generating PDF, please wait...");
+      // Track the form inner element so we can restore its transform on error too
+      const formInner = document.getElementById("printable-form-inner") as HTMLElement | null;
+      const prevTransform = formInner?.style.transform ?? "";
       try {
+        // ── Step 1: Temporarily remove CSS scale so html-to-image captures at full
+        //   800 px width, giving the same quality as the desktop version.
+        if (formInner) formInner.style.transform = "none";
+
         const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
 
-        // Collect printable sections: page1 and optionally page2
+        // Collect printable sections
         const page1El = document.getElementById("printable-application-form-page1");
         const page2El = document.getElementById("printable-application-form-page2");
-        const fallbackEl = document.getElementById("printable-application-form");
+        const newStudentEl = document.getElementById("printable-application-form-new");
+        const fallbackEl  = document.getElementById("printable-application-form");
 
         const elements: HTMLElement[] = [];
         if (page1El && page2El) {
           elements.push(page1El, page2El);
+        } else if (newStudentEl) {
+          elements.push(newStudentEl);
         } else if (fallbackEl) {
           elements.push(fallbackEl);
         }
@@ -128,9 +138,49 @@ function ApplicationDetail() {
           }
         }
 
-        pdf.save(`Enrollment_Form_${appId}.pdf`);
-        toast.success("PDF downloaded successfully!", { id: toastId });
+        // Restore the mobile scale transform before delivering the file
+        if (formInner) formInner.style.transform = prevTransform;
+
+        const fileName = `Enrollment_Form_${appId}.pdf`;
+        const pdfBlob  = pdf.output("blob");
+
+        // ── Step 2: Deliver the file ──────────────────────────────────────────
+        // On mobile we prefer the Web Share API: it opens the native OS share
+        // sheet so the user can pick WPS Office, Google Docs, Files, etc. and
+        // the PDF lands directly inside that app — no hunting through Downloads.
+        const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i
+          .test(navigator.userAgent);
+
+        if (isMobile && navigator.canShare) {
+          const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file], title: fileName });
+              // Share sheet closed — user either saved or cancelled; either way dismiss quietly
+              toast.dismiss(toastId);
+            } catch (shareErr: any) {
+              if (shareErr?.name === "AbortError") {
+                // User deliberately dismissed the share sheet — just clear the toast
+                toast.dismiss(toastId);
+              } else {
+                // Share API threw a real error; fall back to direct download
+                pdf.save(fileName);
+                toast.success("PDF saved! Open it from your Downloads folder.", { id: toastId });
+              }
+            }
+          } else {
+            // canShare() returned false (e.g. browser blocks file sharing)
+            pdf.save(fileName);
+            toast.success("PDF saved! Open it from your Downloads folder.", { id: toastId });
+          }
+        } else {
+          // Desktop (or mobile without Share API): standard jsPDF download
+          pdf.save(fileName);
+          toast.success("PDF downloaded successfully!", { id: toastId });
+        }
       } catch (err: any) {
+        // Always restore the transform even on error
+        if (formInner) formInner.style.transform = prevTransform;
         console.error("PDF generation error:", err);
         toast.error(`Failed to generate PDF: ${err?.message ?? "Unknown error"}`, { id: toastId });
       }
