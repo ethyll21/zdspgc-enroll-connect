@@ -225,7 +225,46 @@ function ApplicationDetail() {
           if (heightWrapper) heightWrapper.style.height = prevWrapperHeight;
         }
 
-        pdf.save(`Enrollment_Form_${appId}.pdf`);
+        const blob = pdf.output("blob");
+
+        // Try Web Share API first (best for mobile devices, iOS Safari, etc.)
+        const fileName = `Enrollment_Form_${appId}.pdf`;
+        let shared = false;
+
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], fileName, { type: "application/pdf" });
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: "Enrollment Form",
+              });
+              shared = true;
+            } catch (shareErr: any) {
+              // Ignore AbortError (user cancelled share sheet)
+              if (shareErr.name !== "AbortError") {
+                console.warn("Share API failed, falling back to standard download", shareErr);
+              } else {
+                // User cancelled, we don't need to show success or error
+                toast.dismiss(toastId);
+                return;
+              }
+            }
+          }
+        }
+
+        // Fallback to standard anchor tag download (Desktop / older mobile)
+        if (!shared) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
         toast.success("PDF downloaded successfully!", { id: toastId });
       } catch (err: any) {
         console.error("PDF generation error:", err);
