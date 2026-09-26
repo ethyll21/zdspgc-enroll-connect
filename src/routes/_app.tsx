@@ -252,6 +252,7 @@ function AppLayout() {
               <Link
                 key={item.to}
                 to={item.to}
+                params={item.params}
                 className={`relative flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
                   active ? "text-[#0A2540]" : "text-slate-400"
                 }`}

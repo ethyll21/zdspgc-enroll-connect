@@ -116,16 +116,14 @@ function ApplicationDetail() {
           const img = new Image();
           img.src = imgData;
           await new Promise((resolve) => { img.onload = resolve; });
-          const pdfHeight = (img.height * pdfWidth) / img.width;
 
-          let yOffset = 0;
-          let firstSlice = true;
-          while (yOffset < pdfHeight) {
-            if (!firstSlice || i > 0) pdf.addPage();
-            pdf.addImage(imgData, "JPEG", 0, -yOffset, pdfWidth, pdfHeight);
-            yOffset += pageHeight;
-            firstSlice = false;
-          }
+          // Scale the image to fit exactly one A4 page (no slicing)
+          const imgAspect = img.height / img.width;
+          const fittedWidth = pdfWidth;
+          const fittedHeight = Math.min(pdfWidth * imgAspect, pageHeight);
+
+          if (i > 0) pdf.addPage();
+          pdf.addImage(imgData, "JPEG", 0, 0, fittedWidth, fittedHeight);
         }
 
         pdf.save(`Enrollment_Form_${appId}.pdf`);
