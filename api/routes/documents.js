@@ -112,7 +112,10 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
     res.status(201).json({ document: { ...rows[0], file_url: publicUrl } });
   } catch (err) {
     console.error('[Documents/upload] ERROR:', err.message, err.stack);
-    res.status(500).json({ error: 'Failed to save document', details: err.message });
+    res.status(500).json({ 
+      error: err.message || 'Failed to save document', 
+      details: err.stack 
+    });
   }
 });
 
