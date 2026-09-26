@@ -98,14 +98,17 @@ function ApplicationDetail() {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
 
-        // Collect printable sections: page1 and optionally page2
+        // Collect printable sections
         const page1El = document.getElementById("printable-application-form-page1");
         const page2El = document.getElementById("printable-application-form-page2");
+        const newFormEl = document.getElementById("printable-application-form-new");
         const fallbackEl = document.getElementById("printable-application-form");
 
         const elements: HTMLElement[] = [];
         if (page1El && page2El) {
           elements.push(page1El, page2El);
+        } else if (newFormEl) {
+          elements.push(newFormEl);
         } else if (fallbackEl) {
           elements.push(fallbackEl);
         }
@@ -115,7 +118,10 @@ function ApplicationDetail() {
           const imgData = await toJpeg(el, { quality: 0.95, backgroundColor: "#ffffff", pixelRatio: 2 });
           const img = new Image();
           img.src = imgData;
-          await new Promise((resolve) => { img.onload = resolve; });
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = () => reject(new Error("Failed to load generated image data"));
+          });
 
           // Scale the image to fit exactly one A4 page (no slicing)
           const imgAspect = img.height / img.width;
