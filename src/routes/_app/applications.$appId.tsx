@@ -115,9 +115,21 @@ function ApplicationDetail() {
           return;
         }
 
-        // We no longer mutate the live DOM here to avoid visual glitches.
-        // The unscaling transform is applied securely inside the onclone handler.
+        // The inner wrapper may have a CSS scale() transform applied on mobile.
+        // html2canvas must see the element at its natural unscaled size, so we
+        // temporarily remove the transform and restore it in a finally block.
+        const innerWrapper = document.getElementById("printable-form-inner");
+        const prevTransform = innerWrapper ? innerWrapper.style.transform : "";
+        const heightWrapper = innerWrapper?.parentElement as HTMLElement | null;
+        const prevWrapperHeight = heightWrapper ? heightWrapper.style.height : "";
+
         try {
+          if (innerWrapper) {
+            innerWrapper.style.transform = "none";
+          }
+          if (heightWrapper) {
+            heightWrapper.style.height = "auto";
+          }
 
           for (let i = 0; i < elements.length; i++) {
             const el = elements[i];
@@ -132,13 +144,7 @@ function ApplicationDetail() {
               width: el.scrollWidth,     // capture full element width
               height: el.scrollHeight,   // capture full element height (no clipping)
               onclone: (clonedDoc) => {
-                // 1. Remove mobile scaling transforms on the clone so it renders at full resolution
-                const clonedInner = clonedDoc.getElementById("printable-form-inner");
-                const clonedHeightWrapper = clonedInner?.parentElement;
-                if (clonedInner) clonedInner.style.transform = "none";
-                if (clonedHeightWrapper) clonedHeightWrapper.style.height = "auto";
-
-                // 2. html2canvas fails on modern CSS colors like oklch(). 
+                // html2canvas fails on modern CSS colors like oklch(). 
                 // We render them to a temp canvas to extract the computed RGBA values.
                 const tempCanvas = clonedDoc.createElement('canvas');
                 tempCanvas.width = 1;
@@ -213,6 +219,12 @@ function ApplicationDetail() {
               }
             }
           }
+        } finally {
+          // Always restore the visual transform so the UI is not broken on error
+          if (innerWrapper) innerWrapper.style.transform = prevTransform;
+          if (heightWrapper) heightWrapper.style.height = prevWrapperHeight;
+        }
+
         const blob = pdf.output("blob");
 
         // Try Web Share API first (best for mobile devices, iOS Safari, etc.)
