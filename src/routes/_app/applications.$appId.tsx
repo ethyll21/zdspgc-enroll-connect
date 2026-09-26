@@ -356,12 +356,12 @@ function ApplicationDetail() {
       ══════════════════════════════════════════════════════════════════════════ */}
       <div id="printable-application-form" className="pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
         <div 
-          className="overflow-hidden flex justify-center transition-[height] duration-200" 
+          className="overflow-hidden origin-top-left transition-[height] duration-200" 
           style={{ height: formHeight }}
         >
           <div 
             id="printable-form-inner"
-            className="w-[800px] origin-top transition-transform duration-200" 
+            className="w-[800px] origin-top-left transition-transform duration-200" 
             style={{ transform: formScale < 1 ? `scale(${formScale})` : 'none' }}
           >
           {isOldStudent ? (
