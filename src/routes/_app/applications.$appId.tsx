@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import html2canvas from "html2canvas";
+import { toJpeg } from "html-to-image";
 import { jsPDF } from "jspdf";
 import { REQUIRED_DOCUMENTS } from "@/lib/enrollment-constants";
 
@@ -116,18 +116,29 @@ function ApplicationDetail() {
         for (let i = 0; i < elements.length; i++) {
           const el = elements[i];
           
-          // Use html2canvas which is much more stable with images
-          const canvas = await Promise.race([
-            html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }),
-            new Promise<null>((_, reject) => setTimeout(() => reject(new Error("Image generation timed out. Please try again.")), 15000))
+          // Reverting back to html-to-image (toJpeg) because html2canvas throws on Tailwind's oklch colors.
+          // Adding skipFonts and style overrides to bypass the infinite loops that caused it to hang initially.
+          const imgData = await Promise.race([
+            toJpeg(el, { 
+              quality: 0.95, 
+              backgroundColor: "#ffffff", 
+              pixelRatio: 2, 
+              cacheBust: true,
+              skipFonts: true,
+              style: { transform: 'none', transition: 'none', height: 'auto' }
+            }),
+            new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Image generation timed out. Please try again.")), 15000))
           ]);
 
-          if (!canvas) throw new Error("Failed to generate canvas");
-
-          const imgData = canvas.toDataURL("image/jpeg", 0.95);
+          const img = new Image();
+          img.src = imgData;
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = () => reject(new Error("Failed to load generated image data"));
+          });
 
           // Scale the image to fit exactly one A4 page (no slicing)
-          const imgAspect = canvas.height / canvas.width;
+          const imgAspect = img.height / img.width;
           const fittedWidth = pdfWidth;
           const fittedHeight = Math.min(pdfWidth * imgAspect, pageHeight);
 
