@@ -363,12 +363,14 @@ function ApplyPage() {
           try {
             await docsApi.upload(file, def.key, enrollmentId);
           } catch (uploadErr: any) {
-            console.warn(`[Submit] Document upload failed for ${def.key}:`, uploadErr?.message);
-            uploadErrors.push(String(def.label ?? def.key));
+            console.error(`[Submit] Document upload failed for ${def.key}:`, uploadErr);
+            uploadErrors.push(`${def.label ?? def.key} (Error: ${uploadErr?.message || 'Upload failed'})`);
           }
         }
         if (uploadErrors.length > 0) {
-          toast.warning(`Enrollment submitted, but some documents failed to upload: ${uploadErrors.join(", ")}. You can re-upload them from your application page.`);
+          const msg = `Enrollment submitted successfully, but the following documents FAILED to upload:\n\n${uploadErrors.join('\n')}\n\nThis is usually caused by an invalid SUPABASE_URL or missing SUPABASE_SERVICE_KEY in your Render environment variables. You must fix those on Render and then re-upload these files from your dashboard.`;
+          toast.error(msg, { duration: 15000 });
+          alert(msg);
         }
       }
 

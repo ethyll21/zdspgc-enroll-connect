@@ -485,9 +485,9 @@ export const documents = {
   },
   upload(file: File, doc_type: string, enrollment_id?: string) {
     const form = new FormData();
-    form.append('file', file);
     form.append('doc_type', doc_type);
     if (enrollment_id) form.append('enrollment_id', enrollment_id);
+    form.append('file', file);
     return apiUpload<{ document: Document }>('/api/documents/upload', form);
   },
   list(params?: { status?: string; student_id?: string; enrollment_id?: string }) {

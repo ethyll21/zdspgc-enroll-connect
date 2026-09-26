@@ -34,12 +34,24 @@ function getClient() {
  */
 async function uploadFile(bucket, storagePath, buffer, mimeType) {
   const safePath = storagePath.trim().replace(/\\/g, '/');
-  const { error } = await getClient().storage
-    .from(bucket)
-    .upload(safePath, buffer, { contentType: mimeType, upsert: true });
-  if (error) throw new Error(`Storage upload failed: ${error.message}`);
-  const { data } = getClient().storage.from(bucket).getPublicUrl(safePath);
-  return data.publicUrl;
+  
+  try {
+    const { error } = await getClient().storage
+      .from(bucket)
+      .upload(safePath, buffer, { contentType: mimeType, upsert: true });
+      
+    if (error) {
+      throw new Error(`Storage upload failed: ${error.message}`);
+    }
+    
+    const { data } = getClient().storage.from(bucket).getPublicUrl(safePath);
+    return data.publicUrl;
+  } catch (err) {
+    if (err.message.includes('fetch failed')) {
+      throw new Error('Supabase upload failed (fetch failed). Ensure your SUPABASE_URL in Render is correct and points to a valid active project, not a placeholder.');
+    }
+    throw err;
+  }
 }
 
 /**
