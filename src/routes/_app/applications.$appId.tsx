@@ -226,12 +226,18 @@ function ApplicationDetail() {
         }
 
         const blob = pdf.output("blob");
+        if (!blob || blob.size === 0) {
+          throw new Error("Generated PDF is empty or corrupted.");
+        }
 
-        // Try Web Share API first (best for mobile devices, iOS Safari, etc.)
         const fileName = `Enrollment_Form_${appId}.pdf`;
         let shared = false;
 
-        if (navigator.share && navigator.canShare) {
+        // Web Share API is excellent for iOS/Android, but can hang or fail on Desktop Windows.
+        // We strictly limit its usage to mobile devices to ensure a smooth desktop experience.
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (isMobile && navigator.share && navigator.canShare) {
           const file = new File([blob], fileName, { type: "application/pdf" });
           if (navigator.canShare({ files: [file] })) {
             try {
