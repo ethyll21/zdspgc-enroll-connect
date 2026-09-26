@@ -72,9 +72,9 @@ function RichNotificationCard({ payload }: { payload: any }) {
         <div className="px-4 py-3 space-y-1.5 bg-white">
           {rows.map((row: any) => (
             <div key={row.label} className="flex items-center gap-3">
-              <span className="text-slate-400 text-xs w-28 shrink-0">{row.label}:</span>
+              <span className="text-slate-400 text-xs w-24 sm:w-28 shrink-0">{row.label}:</span>
               {row.badge ? (
-                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
+                <span className={`inline-flex whitespace-nowrap items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
                   <span className={`w-1 h-1 rounded-full ${row.dotColor}`} />
                   {row.badge}
                 </span>
@@ -166,9 +166,9 @@ function RichNotificationCard({ payload }: { payload: any }) {
         <div className="px-4 py-3 space-y-1.5 bg-white">
           {rows.map((row: any) => (
             <div key={row.label} className="flex items-center gap-3">
-              <span className="text-slate-400 text-xs w-28 shrink-0">{row.label}:</span>
+              <span className="text-slate-400 text-xs w-24 sm:w-28 shrink-0">{row.label}:</span>
               {row.badge ? (
-                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
+                <span className={`inline-flex whitespace-nowrap items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
                   <span className={`w-1 h-1 rounded-full ${row.dotColor}`} />
                   {row.badge}
                 </span>
@@ -179,7 +179,7 @@ function RichNotificationCard({ payload }: { payload: any }) {
           ))}
           {payload.remarks && (
             <div className="flex items-start gap-3">
-              <span className="text-slate-400 text-xs w-28 shrink-0">Remarks:</span>
+              <span className="text-slate-400 text-xs w-24 sm:w-28 shrink-0">Remarks:</span>
               <span className="text-slate-600 text-xs italic">{payload.remarks}</span>
             </div>
           )}
@@ -247,9 +247,9 @@ function RichNotificationCard({ payload }: { payload: any }) {
       <div className="px-4 py-3 space-y-1.5 bg-white">
         {rows.map((row: any) => (
           <div key={row.label} className="flex items-center gap-3">
-            <span className="text-slate-400 text-xs w-28 shrink-0">{row.label}:</span>
+            <span className="text-slate-400 text-xs w-24 sm:w-28 shrink-0">{row.label}:</span>
             {row.badge ? (
-              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
+              <span className={`inline-flex whitespace-nowrap items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${row.badgeColor}`}>
                 <span className={`w-1 h-1 rounded-full ${row.dotColor}`} />
                 {row.badge}
               </span>
@@ -402,7 +402,7 @@ function NotificationsPage() {
                   if (!n.is_read) markRead.mutate(n.id);
                   if (n.link) navigate({ to: n.link });
                 }}
-                className={`group relative flex gap-5 items-start p-6 transition-all duration-300 cursor-pointer ${
+                className={`group relative flex gap-3 sm:gap-5 items-start p-4 sm:p-6 transition-all duration-300 cursor-pointer ${
                   !n.is_read 
                     ? "bg-blue-50/40 hover:bg-blue-50/80" 
                     : "bg-white hover:bg-slate-50/80"
