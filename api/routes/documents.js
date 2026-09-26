@@ -217,7 +217,7 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
 
     const { rows } = await client.query(
       `UPDATE public.documents
-       SET status = $1::document_status, remarks = $2, reviewed_at = NOW(), reviewed_by = $3
+       SET status = $1, remarks = $2, reviewed_at = NOW(), reviewed_by = $3
        WHERE id = $4 RETURNING *`,
       [status, remarks || null, req.user.id, req.params.id]
     );

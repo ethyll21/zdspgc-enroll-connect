@@ -192,11 +192,79 @@ async function fixEnrollmentsTable(db) {
   }
 }
 
+async function fixDocumentStatus(db) {
+  try {
+    console.log('[Startup] Checking document_status enum...');
+    // Check if document_status type exists at all
+    const typeCheck = await db.query(`SELECT 1 FROM pg_type WHERE typname = 'document_status'`);
+    if (typeCheck.rows.length === 0) {
+      // Create the enum if it doesn't exist
+      await db.query(`CREATE TYPE document_status AS ENUM ('pending', 'approved', 'rejected')`);
+      console.log('[Startup] Created document_status enum.');
+    } else {
+      // Ensure all values exist
+      const statusValues = ['pending', 'approved', 'rejected'];
+      for (const val of statusValues) {
+        try {
+          await db.query(`ALTER TYPE document_status ADD VALUE IF NOT EXISTS '${val}'`);
+        } catch (e) { /* already exists */ }
+      }
+      console.log('[Startup] document_status enum verified.');
+    }
+
+    // Also ensure the documents.status column uses it (or TEXT as fallback)
+    const colCheck = await db.query(`
+      SELECT udt_name FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='documents' AND column_name='status'
+    `);
+    if (colCheck.rows.length === 0) {
+      // Add missing status column
+      await db.query(`ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending'`);
+      console.log('[Startup] Added status column to documents table.');
+    }
+  } catch (err) {
+    console.error('[Startup] Failed to fix document_status (non-fatal):', err.message);
+  }
+}
+
+async function fixDocumentsTable(db) {
+  try {
+    console.log('[Startup] Checking documents table schema...');
+    // Add reviewed_at and reviewed_by columns if they don't exist
+    await db.query(`ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ`);
+    await db.query(`ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS reviewed_by UUID`);
+    console.log('[Startup] documents table schema verified/fixed.');
+  } catch (err) {
+    console.error('[Startup] Failed to fix documents table (non-fatal):', err.message);
+  }
+}
+
+async function fixApplicationDocuments(db) {
+  try {
+    console.log('[Startup] Checking application_documents table...');
+    // Check if document_status type exists before using it
+    const typeCheck = await db.query(`SELECT 1 FROM pg_type WHERE typname = 'document_status'`);
+    if (typeCheck.rows.length === 0) {
+      await db.query(`CREATE TYPE document_status AS ENUM ('pending', 'approved', 'rejected')`);
+    }
+    // Ensure status column exists in application_documents
+    await db.query(`ALTER TABLE public.application_documents ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending'`);
+    await db.query(`ALTER TABLE public.application_documents ADD COLUMN IF NOT EXISTS remarks TEXT`);
+    console.log('[Startup] application_documents table schema verified.');
+  } catch (err) {
+    console.error('[Startup] Failed to fix application_documents (non-fatal):', err.message);
+  }
+}
+
+
 async function safeRunMigrations() {
   try {
     const db = require('./db');
     await fixEnums(db);
     await fixEnrollmentsTable(db);
+    await fixDocumentStatus(db);
+    await fixDocumentsTable(db);
+    await fixApplicationDocuments(db);
     
     await Promise.race([
       runMigrations(),
