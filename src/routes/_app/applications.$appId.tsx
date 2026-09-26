@@ -253,16 +253,9 @@ function ApplicationDetail() {
           }
         }
 
-        // Fallback to standard anchor tag download (Desktop / older mobile)
+        // Fallback to standard jsPDF download (handles browser quirks automatically)
         if (!shared) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          pdf.save(fileName);
         }
 
         toast.success("PDF downloaded successfully!", { id: toastId });
