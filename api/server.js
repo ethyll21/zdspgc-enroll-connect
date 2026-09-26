@@ -176,48 +176,87 @@ safeRunMigrations();
 
 // ── One-time Supabase Storage migration (runs non-blocking after start) ────────
 // Uploads any DB-tracked document files that aren't yet in Supabase Storage.
-// Safe to run on every startup — skips files already uploaded (upsert: false check).
+// Safe to run on every startup — skips files already uploaded.
 async function migrateLocalFilesToSupabase() {
   if (!process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_KEY === 'your-supabase-service-role-key-here') {
     console.log('[StorageMigration] Skipping — SUPABASE_SERVICE_KEY not set');
     return;
   }
+
+  // ── Diagnostic: log the Supabase URL being used ─────────────────────────────
+  const rawUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '(not set)';
+  const cleanUrl = rawUrl.trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '');
+  console.log(`[StorageMigration] Supabase URL → "${cleanUrl}"`);
+  console.log(`[StorageMigration] SERVICE_KEY set? ${!!process.env.SUPABASE_SERVICE_KEY}`);
+
   const UPLOAD_DIR = path.join(__dirname, '../uploads');
-  if (!fs.existsSync(UPLOAD_DIR)) {
-    console.log('[StorageMigration] No local uploads/ folder found, skipping');
-    return;
-  }
+  const uploadDirExists = fs.existsSync(UPLOAD_DIR);
+  console.log(`[StorageMigration] Local uploads/ dir → "${UPLOAD_DIR}" (exists: ${uploadDirExists})`);
+
   try {
     const db = require('./db');
     const { rows: docs } = await db.query('SELECT id, file_path, file_name, mime_type FROM public.documents');
     if (docs.length === 0) { console.log('[StorageMigration] No document records found'); return; }
 
     console.log(`[StorageMigration] Checking ${docs.length} document(s) against Supabase Storage...`);
-    let uploaded = 0, skipped = 0;
+    let uploaded = 0, skipped = 0, failed = 0;
 
     for (const doc of docs) {
-      // Check if already in Supabase Storage
-      const { error: checkErr } = await downloadFile(DOCS_BUCKET, doc.file_path);
-      if (!checkErr) { skipped++; continue; } // already exists
+      const storagePath = (doc.file_path || '').trim().replace(/\\/g, '/');
+      console.log(`[StorageMigration] → doc id=${doc.id} file_path="${storagePath}" mime="${doc.mime_type}"`);
 
-      // Try local disk
-      const localPath = path.join(UPLOAD_DIR, doc.file_path.replace(/\//g, path.sep));
-      if (!fs.existsSync(localPath)) {
-        console.warn(`[StorageMigration] File missing locally and not in storage: ${doc.file_path}`);
+      if (!storagePath) {
+        console.warn(`[StorageMigration]   ⚠ Skipping doc ${doc.id} — empty file_path`);
+        failed++;
         continue;
       }
+
+      // ── Check if already in Supabase Storage (upsert:false will error if exists) ──
+      // We use downloadFile to check existence; catch fetch/network errors explicitly.
+      let alreadyInStorage = false;
+      try {
+        const { data, error: checkErr } = await downloadFile(DOCS_BUCKET, storagePath);
+        if (!checkErr && data) {
+          console.log(`[StorageMigration]   ✓ Already in storage: "${storagePath}"`);
+          alreadyInStorage = true;
+          skipped++;
+        } else {
+          console.log(`[StorageMigration]   Not in storage yet (check error: ${checkErr?.message || 'no data'})`);
+        }
+      } catch (checkEx) {
+        // Network/fetch error during the existence check itself
+        console.error(`[StorageMigration]   ⚠ Storage check threw (will try local upload): ${checkEx.message}`);
+      }
+
+      if (alreadyInStorage) continue;
+
+      // ── Try reading from local filesystem ────────────────────────────────────
+      const localPath = path.join(UPLOAD_DIR, storagePath.replace(/\//g, path.sep));
+      console.log(`[StorageMigration]   Local path → "${localPath}" (exists: ${fs.existsSync(localPath)})`);
+
+      if (!uploadDirExists || !fs.existsSync(localPath)) {
+        console.warn(`[StorageMigration]   ✗ File not found on local disk — it was likely stored on the old Render ephemeral disk and is now gone. Skipping (DB record kept).`);
+        failed++;
+        continue;
+      }
+
       try {
         const buffer = fs.readFileSync(localPath);
-        await uploadFile(DOCS_BUCKET, doc.file_path, buffer, doc.mime_type || 'application/octet-stream');
-        console.log(`[StorageMigration] ✅ Uploaded: ${doc.file_path}`);
+        console.log(`[StorageMigration]   Uploading ${buffer.length} bytes to Supabase path "${storagePath}"...`);
+        await uploadFile(DOCS_BUCKET, storagePath, buffer, doc.mime_type || 'application/octet-stream');
+        console.log(`[StorageMigration]   ✅ Uploaded: "${storagePath}"`);
         uploaded++;
-      } catch (err) {
-        console.error(`[StorageMigration] ❌ Failed ${doc.file_path}: ${err.message}`);
+      } catch (upErr) {
+        console.error(`[StorageMigration]   ✗ Upload failed for "${storagePath}": ${upErr.message}`);
+        console.error(`[StorageMigration]     Stack: ${upErr.stack}`);
+        failed++;
       }
     }
-    console.log(`[StorageMigration] Done — ${uploaded} uploaded, ${skipped} already in storage`);
+
+    console.log(`[StorageMigration] Done — ${uploaded} uploaded, ${skipped} already in storage, ${failed} failed/skipped`);
   } catch (err) {
     console.error('[StorageMigration] Error (non-fatal):', err.message);
+    console.error('[StorageMigration] Stack:', err.stack);
   }
 }
 
@@ -225,3 +264,5 @@ async function migrateLocalFilesToSupabase() {
 setTimeout(() => migrateLocalFilesToSupabase().catch(() => {}), 5000);
 
 module.exports = app;
+
+
