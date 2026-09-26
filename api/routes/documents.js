@@ -78,6 +78,11 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
     const raw_enrollment_id = req.body.enrollment_id;
     const enrollment_id = (raw_enrollment_id && raw_enrollment_id.trim()) ? raw_enrollment_id.trim() : null;
 
+    if (!enrollment_id) {
+      console.error('[Documents/upload] ERROR: enrollment_id is null or missing from req.body');
+      return res.status(400).json({ error: 'enrollment_id is required to upload a document.' });
+    }
+
     console.log('[Documents/upload] Saving doc: student_id=%s enrollment_id=%s doc_type=%s', student_id, enrollment_id, doc_type);
 
     // Build Supabase storage path: userId/timestamp-random.ext
