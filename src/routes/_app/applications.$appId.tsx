@@ -47,6 +47,11 @@ function ApplicationDetail() {
   const [statusSelection, setStatusSelection] = useState("pending");
   const [resubmittingDocId, setResubmittingDocId] = useState<string | null>(null);
 
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [pdfStatus, setPdfStatus] = useState<"idle" | "generating" | "ready" | "error">("idle");
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState("");
+
   const [formScale, setFormScale] = useState(1);
   const [formHeight, setFormHeight] = useState<number | 'auto'>('auto');
   
@@ -93,7 +98,11 @@ function ApplicationDetail() {
         window.print();
       }, 0);
     } else {
-      const toastId = toast.loading("Generating PDF, please wait...");
+      setIsPdfModalOpen(true);
+      setPdfStatus("generating");
+      setPdfBlobUrl(null);
+      setPdfError("");
+      
       try {
         const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -151,36 +160,12 @@ function ApplicationDetail() {
         const pdfBlob = pdf.output("blob");
         const blobUrl = URL.createObjectURL(pdfBlob);
         
-        // 1. Try automatic download
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = blobUrl;
-        a.download = `Enrollment_Form_${appId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-          if (document.body.contains(a)) document.body.removeChild(a);
-        }, 1000);
-
-        // 2. Provide a synchronous manual download button in the toast just in case the browser blocked it
-        toast.success("PDF ready!", { 
-          id: toastId,
-          description: "If it didn't download automatically, click the button.",
-          duration: 10000,
-          action: {
-            label: "Save File",
-            onClick: () => {
-              const fallbackA = document.createElement("a");
-              fallbackA.href = blobUrl;
-              fallbackA.download = `Enrollment_Form_${appId}.pdf`;
-              fallbackA.click();
-            }
-          }
-        });
+        setPdfBlobUrl(blobUrl);
+        setPdfStatus("ready");
       } catch (err: any) {
         console.error("PDF generation error:", err);
-        toast.error(`Failed to generate PDF: ${err?.message ?? "Unknown error"}`, { id: toastId });
+        setPdfError(err?.message ?? "Unknown error");
+        setPdfStatus("error");
       }
     }
   }, [isAdmin, appId]);
@@ -398,6 +383,45 @@ function ApplicationDetail() {
           )}
         </Button>
       </div>
+
+      <AlertDialog open={isPdfModalOpen} onOpenChange={(open) => !open && setIsPdfModalOpen(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pdfStatus === "generating" && "Generating PDF..."}
+              {pdfStatus === "ready" && "PDF Ready!"}
+              {pdfStatus === "error" && "Error generating PDF"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pdfStatus === "generating" && "Please wait while we prepare your enrollment form. This usually takes a few seconds."}
+              {pdfStatus === "ready" && "Your PDF has been successfully generated. Click the button below to download it to your device."}
+              {pdfStatus === "error" && `Failed to generate PDF: ${pdfError}`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {pdfStatus === "error" && (
+              <AlertDialogCancel onClick={() => setIsPdfModalOpen(false)}>Close</AlertDialogCancel>
+            )}
+            {pdfStatus === "ready" && pdfBlobUrl && (
+              <>
+                <AlertDialogCancel onClick={() => {
+                  setIsPdfModalOpen(false);
+                  URL.revokeObjectURL(pdfBlobUrl);
+                }}>Cancel</AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <a href={pdfBlobUrl} download={`Enrollment_Form_${appId}.pdf`} onClick={() => {
+                    setIsPdfModalOpen(false);
+                    // Add slight delay to revoke url
+                    setTimeout(() => URL.revokeObjectURL(pdfBlobUrl), 1000);
+                  }}>
+                    Save PDF File
+                  </a>
+                </AlertDialogAction>
+              </>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ══════════════════════════════════════════════════════════════════════════
           PRINTABLE / FORMAL APPLICATION VIEW
