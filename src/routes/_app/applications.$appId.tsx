@@ -45,6 +45,7 @@ function ApplicationDetail() {
   const [docRejectRemarks, setDocRejectRemarks] = useState("");
   const [statusSelection, setStatusSelection] = useState("pending");
   const [resubmittingDocId, setResubmittingDocId] = useState<string | null>(null);
+  const [pdfPreviewUri, setPdfPreviewUri] = useState<string | null>(null);
 
   const [formScale, setFormScale] = useState(1);
   const [formHeight, setFormHeight] = useState<number | 'auto'>('auto');
@@ -98,14 +99,22 @@ function ApplicationDetail() {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
 
+        // Temporarily remove CSS scale so html-to-image captures at full 800px width
+        const formInner = document.getElementById("printable-form-inner") as HTMLElement | null;
+        const prevTransform = formInner?.style.transform ?? "";
+        if (formInner) formInner.style.transform = "none";
+
         // Collect printable sections: page1 and optionally page2
         const page1El = document.getElementById("printable-application-form-page1");
         const page2El = document.getElementById("printable-application-form-page2");
+        const newStudentEl = document.getElementById("printable-application-form-new");
         const fallbackEl = document.getElementById("printable-application-form");
 
         const elements: HTMLElement[] = [];
         if (page1El && page2El) {
           elements.push(page1El, page2El);
+        } else if (newStudentEl) {
+          elements.push(newStudentEl);
         } else if (fallbackEl) {
           elements.push(fallbackEl);
         }
@@ -128,9 +137,28 @@ function ApplicationDetail() {
           }
         }
 
-        pdf.save(`Enrollment_Form_${appId}.pdf`);
-        toast.success("PDF downloaded successfully!", { id: toastId });
+        // Restore the scale transform
+        if (formInner) formInner.style.transform = prevTransform;
+
+        // Detect mobile / in-app browsers (Facebook Lite, etc.)
+        const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+
+        if (isMobile) {
+          // pdf.save() / a.download silently puts the file in Downloads with no open prompt
+          // in Facebook Lite and similar in-app browsers. Instead, show it inline so it
+          // opens immediately in the device's built-in PDF viewer via an iframe.
+          const dataUri = pdf.output("datauristring");
+          toast.dismiss(toastId);
+          setPdfPreviewUri(dataUri);
+        } else {
+          // Desktop: standard save/download
+          pdf.save(`Enrollment_Form_${appId}.pdf`);
+          toast.success("PDF downloaded successfully!", { id: toastId });
+        }
       } catch (err: any) {
+        // Make sure transform is restored even on error
+        const formInner = document.getElementById("printable-form-inner") as HTMLElement | null;
+        if (formInner) formInner.style.transform = "";
         console.error("PDF generation error:", err);
         toast.error(`Failed to generate PDF: ${err?.message ?? "Unknown error"}`, { id: toastId });
       }
@@ -297,6 +325,81 @@ function ApplicationDetail() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-20 print:pb-0 print:max-w-none print:m-0">
+
+      {/* ── Mobile PDF Inline Viewer ───────────────────────────────────────── */}
+      {pdfPreviewUri && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            display: "flex", flexDirection: "column",
+            background: "#0f172a",
+          }}
+        >
+          {/* Top bar */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "10px 14px", background: "#1e293b",
+            borderBottom: "1px solid #334155", flexShrink: 0, gap: 8,
+          }}>
+            <span style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 14, letterSpacing: 0.3 }}>
+              📄 Enrollment Form
+            </span>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              {/* Share / Save to Files — lets user save to device storage via native share sheet */}
+              <button
+                onClick={async () => {
+                  try {
+                    // Fetch the data URI back as a blob for the share API
+                    const res = await fetch(pdfPreviewUri);
+                    const blob = await res.blob();
+                    const file = new File([blob], `Enrollment_Form_${appId}.pdf`, { type: "application/pdf" });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                      await navigator.share({ files: [file], title: `Enrollment_Form_${appId}.pdf` });
+                    } else {
+                      // Fallback: trigger download via anchor
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url; a.download = `Enrollment_Form_${appId}.pdf`;
+                      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                      setTimeout(() => URL.revokeObjectURL(url), 2000);
+                    }
+                  } catch (e) { console.log("Share failed", e); }
+                }}
+                style={{
+                  background: "#2563eb", color: "#fff", border: "none",
+                  borderRadius: 7, padding: "7px 13px", fontWeight: 600,
+                  fontSize: 13, cursor: "pointer", whiteSpace: "nowrap",
+                }}
+              >
+                💾 Save / Share
+              </button>
+              <button
+                onClick={() => setPdfPreviewUri(null)}
+                style={{
+                  background: "#475569", color: "#fff", border: "none",
+                  borderRadius: 7, padding: "7px 13px", fontWeight: 600,
+                  fontSize: 13, cursor: "pointer",
+                }}
+              >
+                ✕ Close
+              </button>
+            </div>
+          </div>
+          {/* PDF rendered inline — data URI works in all browsers, no popup blocking needed */}
+          <iframe
+            src={pdfPreviewUri}
+            style={{ flex: 1, border: "none", width: "100%", background: "#fff" }}
+            title="Enrollment Form"
+          />
+          {/* Footer hint */}
+          <div style={{
+            textAlign: "center", padding: "8px", background: "#1e293b",
+            color: "#94a3b8", fontSize: 11, flexShrink: 0,
+          }}>
+            Tap <strong style={{ color: "#f1f5f9" }}>Save / Share</strong> to keep a copy on your device
+          </div>
+        </div>
+      )}
       {/* Action Header */}
       <div className="flex items-center justify-between print:hidden">
         <Link
