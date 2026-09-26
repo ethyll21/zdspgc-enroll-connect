@@ -3,6 +3,12 @@
 // NEVER expose SUPABASE_SERVICE_KEY to the browser.
 
 const { createClient } = require('@supabase/supabase-js');
+const dns = require('dns');
+
+// Fix Node.js 18+ native fetch IPv6 DNS bug on Render
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 // Bucket names
 const DOCS_BUCKET   = 'student-documents';
