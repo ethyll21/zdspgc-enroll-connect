@@ -156,11 +156,10 @@ function ApplicationDetail() {
           pdf.addImage(imgData, "JPEG", 0, 0, fittedWidth, fittedHeight);
         }
 
-        // Generate the PDF as a blob
-        const pdfBlob = pdf.output("blob");
-        const blobUrl = URL.createObjectURL(pdfBlob);
+        // Generate the PDF as a Data URI (Base64) to bypass blob restrictions on strict browsers
+        const pdfDataUri = pdf.output("datauristring");
         
-        setPdfBlobUrl(blobUrl);
+        setPdfBlobUrl(pdfDataUri);
         setPdfStatus("ready");
       } catch (err: any) {
         console.error("PDF generation error:", err);
@@ -385,7 +384,7 @@ function ApplicationDetail() {
       </div>
 
       <AlertDialog open={isPdfModalOpen} onOpenChange={(open) => !open && setIsPdfModalOpen(false)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {pdfStatus === "generating" && "Generating PDF..."}
@@ -394,11 +393,18 @@ function ApplicationDetail() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pdfStatus === "generating" && "Please wait while we prepare your enrollment form. This usually takes a few seconds."}
-              {pdfStatus === "ready" && "Your PDF has been successfully generated. Click the button below to download it to your device."}
+              {pdfStatus === "ready" && "Your PDF is ready! You can view it below and use the viewer's built-in controls to save or print it."}
               {pdfStatus === "error" && `Failed to generate PDF: ${pdfError}`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          
+          {pdfStatus === "ready" && pdfBlobUrl && (
+            <div className="w-full flex-1 min-h-[50vh] mt-4 border rounded overflow-hidden">
+               <iframe src={pdfBlobUrl} className="w-full h-full" title="PDF Preview" />
+            </div>
+          )}
+
+          <AlertDialogFooter className="mt-4">
             {pdfStatus === "error" && (
               <AlertDialogCancel onClick={() => setIsPdfModalOpen(false)}>Close</AlertDialogCancel>
             )}
@@ -406,8 +412,7 @@ function ApplicationDetail() {
               <>
                 <AlertDialogCancel onClick={() => {
                   setIsPdfModalOpen(false);
-                  URL.revokeObjectURL(pdfBlobUrl);
-                }}>Cancel</AlertDialogCancel>
+                }}>Close Preview</AlertDialogCancel>
                 <Button asChild>
                   <a 
                     href={pdfBlobUrl} 
@@ -416,7 +421,7 @@ function ApplicationDetail() {
                       setIsPdfModalOpen(false);
                     }}
                   >
-                    Save PDF File
+                    Force Download
                   </a>
                 </Button>
               </>
