@@ -143,6 +143,41 @@ function ApplicationDetail() {
               windowWidth: 900,          // tell html2canvas the effective viewport width
               width: el.scrollWidth,     // capture full element width
               height: el.scrollHeight,   // capture full element height (no clipping)
+              onclone: (clonedDoc) => {
+                // html2canvas fails on modern CSS colors like oklch(). 
+                // We render them to a temp canvas to extract the computed RGBA values.
+                const tempCanvas = clonedDoc.createElement('canvas');
+                tempCanvas.width = 1;
+                tempCanvas.height = 1;
+                const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
+                if (!ctx) return;
+
+                const colorProps = [
+                  'color', 'backgroundColor', 'borderColor', 'borderTopColor', 
+                  'borderRightColor', 'borderBottomColor', 'borderLeftColor', 
+                  'textDecorationColor', 'outlineColor'
+                ];
+
+                const elements = clonedDoc.querySelectorAll('*');
+                for (let i = 0; i < elements.length; i++) {
+                  const node = elements[i] as HTMLElement;
+                  const computedStyle = clonedDoc.defaultView?.getComputedStyle(node);
+                  if (!computedStyle) continue;
+
+                  for (const prop of colorProps) {
+                    const val = computedStyle[prop as any];
+                    if (val && (val.includes('oklch') || val.includes('oklab') || val.includes('color('))) {
+                      // Use canvas to convert the color
+                      ctx.clearRect(0, 0, 1, 1);
+                      ctx.fillStyle = val;
+                      ctx.fillRect(0, 0, 1, 1);
+                      const data = ctx.getImageData(0, 0, 1, 1).data;
+                      const rgba = `rgba(${data[0]}, ${data[1]}, ${data[2]}, ${data[3] / 255})`;
+                      node.style[prop as any] = rgba;
+                    }
+                  }
+                }
+              }
             });
 
             const imgData = canvas.toDataURL("image/jpeg", 0.92);
