@@ -160,8 +160,31 @@ function startServer() {
 }
 
 // Try migrations with a timeout; always start the server regardless
+async function fixEnums(db) {
+  try {
+    const values = ['psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate', 'other', 'registration_form'];
+    const colCheck = await db.query(`SELECT udt_name FROM information_schema.columns WHERE table_schema='public' AND table_name='documents' AND column_name='doc_type'`);
+    if (colCheck.rows.length > 0 && colCheck.rows[0].udt_name === 'document_type') {
+      console.log('[Startup] Checking document_type enum values...');
+      for (const val of values) {
+        try {
+          await db.query(`ALTER TYPE document_type ADD VALUE IF NOT EXISTS '${val}'`);
+        } catch (e) {
+          // Ignore errors if it already exists in some edge cases
+        }
+      }
+      console.log('[Startup] document_type enum verified/fixed.');
+    }
+  } catch (err) {
+    console.error('[Startup] Failed to check enums (non-fatal):', err.message);
+  }
+}
+
 async function safeRunMigrations() {
   try {
+    const db = require('./db');
+    await fixEnums(db);
+    
     await Promise.race([
       runMigrations(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Migration timeout after 30s')), 30000))
