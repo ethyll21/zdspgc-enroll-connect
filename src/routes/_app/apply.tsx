@@ -375,12 +375,7 @@ function ApplyPage() {
       toast.success("Enrollment submitted successfully!");
       queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
       queryClient.invalidateQueries({ queryKey: ["student-me"] });
-      if (enrollmentId) {
-        queryClient.invalidateQueries({ queryKey: ["enrollment-docs", enrollmentId] });
-        queryClient.invalidateQueries({ queryKey: ["enrollment-docs", enrollmentId, false] });
-      }
       navigate({ to: "/dashboard" });
-
     } catch (err: any) {
       toast.error(err.message ?? "Submission failed. Please try again.");
     } finally {

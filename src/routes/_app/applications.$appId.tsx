@@ -38,7 +38,7 @@ const DOC_LABELS: Record<string, string> = {
 function ApplicationDetail() {
   const { appId } = Route.useParams();
   const navigate = useNavigate();
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [remarks, setRemarks] = useState("");
   const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
@@ -116,14 +116,12 @@ function ApplicationDetail() {
     enabled: typeof window !== 'undefined' && !!data?.enrollment.student_id,
   });
 
-  const { data: myDocs, isLoading: isDocsLoading } = useQuery({
-    queryKey: ["enrollment-docs", appId, isAdmin],
-    queryFn: () => isAdmin
+  const { data: myDocs } = useQuery({
+    queryKey: ["enrollment-docs", appId],
+    queryFn: () => isAdmin 
       ? docsApi.list({ enrollment_id: appId })
       : docsApi.my(appId),
-    enabled: typeof window !== 'undefined' && !authLoading && !!data?.enrollment.student_id,
-    refetchOnWindowFocus: true,
-    staleTime: 0,
+    enabled: typeof window !== 'undefined' && !!data?.enrollment.student_id,
   });
 
   const reviewMutation = useMutation({
@@ -515,9 +513,7 @@ function ApplicationDetail() {
         {/* Uploaded Documents — hidden for old/returnee students on the student side */}
         {(!isOldStudent || isAdmin) && (
         <Card title="Uploaded Verification Documents">
-          {isDocsLoading ? (
-            <p className="text-sm text-muted-foreground">Loading documents…</p>
-          ) : docs.length === 0 && missingDocs.length === 0 ? (
+          {docs.length === 0 && missingDocs.length === 0 ? (
             <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
           ) : (
             <div className="grid grid-cols-1 gap-6">
