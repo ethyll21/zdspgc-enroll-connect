@@ -28,7 +28,7 @@ const STATUS_META: Record<string, { label: string; tone: string }> = {
 
 const DOC_LABELS: Record<string, string> = {
   registration_form:     "Registration Form / Evaluation Slip",
-  birth_certificate: "PSA Birth Certificate",
+  psa_birth_certificate: "PSA Birth Certificate",
   form_138:              "Form 138 (Report Card)",
   good_moral:            "Good Moral Certificate",
   transfer_certificate:  "Transfer Credentials",

@@ -59,7 +59,7 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 
   const { doc_type } = req.body;
   const validDocTypes = [
-    'birth_certificate', 'form_138', 'good_moral', 'transfer_certificate',
+    'psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate',
     'registration_form', 'other',
   ];
   if (!doc_type || !validDocTypes.includes(doc_type)) {
@@ -145,7 +145,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     if (isAdmin && doc.user_id !== req.user.id) {
       const docTypeLabels = {
         registration_form: 'Registration Form',
-        birth_certificate: 'PSA Birth Certificate',
+        psa_birth_certificate: 'PSA Birth Certificate',
         form_138: 'Form 138',
         good_moral: 'Good Moral Certificate',
         transfer_certificate: 'Transfer Certificate',
@@ -209,7 +209,7 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
     if (studentRes.rows.length > 0) {
       const docTypeLabels = {
         registration_form: 'Registration Form',
-        birth_certificate: 'PSA Birth Certificate',
+        psa_birth_certificate: 'PSA Birth Certificate',
         form_138: 'Form 138',
         good_moral: 'Good Moral Certificate',
         transfer_certificate: 'Transfer Certificate',

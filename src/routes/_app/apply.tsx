@@ -25,7 +25,7 @@ const CURRENT_SY  = "2026-2027";
 const CIVIL_STATUSES = ["Single", "Married", "Widower"];
 
 const REQUIRED_DOCUMENTS = [
-  { key: "birth_certificate", label: "PSA Birth Certificate",       required: true },
+  { key: "psa_birth_certificate", label: "PSA Birth Certificate",       required: true },
   { key: "form_138",              label: "Form 138 (Report Card)",       required: true },
   { key: "good_moral",            label: "Good Moral Certificate",       required: true },
   { key: "transfer_certificate",  label: "Transfer Credentials",         required: false },
