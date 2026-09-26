@@ -72,6 +72,8 @@ function AdminReviewApplication() {
     enabled: typeof window !== 'undefined' && isAdmin && !!id,
     queryKey: ["admin-documents", id],
     queryFn: () => documentsApi.list({ enrollment_id: id }).then((r) => r.documents),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const documents = useMemo(() => {
