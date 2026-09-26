@@ -51,19 +51,34 @@ if (fs.existsSync(CLIENT_DIST)) {
 }
 
 // ── Health check ───────────────────────────────────────────────────────────────
+// Always return HTTP 200 so Render's load balancer never marks this service
+// as unhealthy due to a slow/transient DB connection. DB status is reported
+// as a field so monitoring tools can still detect DB issues without causing 503s.
 app.get('/api/health', async (req, res) => {
+  let db_status = 'unknown';
+  let db_name = null;
+  let server_time = null;
   try {
     const db = require('./db');
-    const { rows } = await db.query('SELECT NOW() AS server_time, current_database() AS db_name');
-    res.json({
-      status: 'ok',
-      database: rows[0].db_name,
-      server_time: rows[0].server_time,
-      api_version: '1.0.0',
-    });
+    const result = await Promise.race([
+      db.query('SELECT NOW() AS server_time, current_database() AS db_name'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('DB ping timeout')), 5000)),
+    ]);
+    db_status = 'ok';
+    db_name = result.rows[0].db_name;
+    server_time = result.rows[0].server_time;
   } catch (err) {
-    res.status(503).json({ status: 'error', error: err.message });
+    db_status = `error: ${err.message}`;
+    console.warn('[Health] DB ping failed (non-fatal):', err.message);
   }
+  // Always 200 — Render must not cut off traffic due to a DB hiccup
+  res.json({
+    status: 'ok',
+    db_status,
+    database: db_name,
+    server_time,
+    api_version: '1.0.0',
+  });
 });
 
 // ── API Routes ─────────────────────────────────────────────────────────────────
