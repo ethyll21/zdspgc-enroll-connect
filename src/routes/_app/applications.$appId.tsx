@@ -543,9 +543,10 @@ function ApplicationDetail() {
             </div>
           </div>
         </div>
-      )}
-        </div>
-      </div>
+      )}{/* end isOldStudent ternary */}
+          </div>{/* end printable-form-inner */}
+        </div>{/* end height/overflow wrapper */}
+      </div>{/* end printable-application-form */}
 
       {/* ══════════════════════════════════════════════════════════════════════════
           FUNCTIONAL / UPLOADED DOCUMENTS & ADMIN PANEL (Hidden on Print)
