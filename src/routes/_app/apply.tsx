@@ -344,31 +344,53 @@ function ApplyPage() {
         ? values.subjects?.filter((s) => s.course_no?.trim() || s.descriptive_title?.trim() || s.units?.trim())
         : undefined;
 
-      // 2. Submit enrollment
-      const enrollmentResult = await enrollments.submit({ 
-        school_year: values.school_year, 
-        semester: values.semester,
-        student_type: values.student_type || studentType,
-        subjects: validSubjects,
-      });
-      const enrollmentId = enrollmentResult.enrollment?.id;
+      // 2. Submit enrollment (or get existing if duplicate)
+      let enrollmentId: string | undefined;
+      try {
+        const enrollmentResult = await enrollments.submit({ 
+          school_year: values.school_year, 
+          semester: values.semester,
+          student_type: values.student_type || studentType,
+          subjects: validSubjects,
+        });
+        enrollmentId = enrollmentResult.enrollment?.id;
+        console.log('[apply] enrollment created:', enrollmentId);
+      } catch (enrollErr: any) {
+        // If duplicate enrollment (409), fetch the existing one for this period
+        if (enrollErr.message?.includes('already have an active enrollment')) {
+          const existing = await enrollments.my();
+          const found = existing.enrollments?.find(
+            (e: any) => e.school_year === values.school_year && e.semester === values.semester
+          );
+          enrollmentId = found?.id;
+          console.log('[apply] using existing enrollment id:', enrollmentId);
+          if (!enrollmentId) throw enrollErr; // re-throw if can't find it
+        } else {
+          throw enrollErr; // re-throw other errors
+        }
+      }
+
+      if (!enrollmentId) {
+        throw new Error('Failed to get enrollment ID after submission. Please try again.');
+      }
 
       // 3. Upload documents (Only for New/Transferee/Returnee students)
-      // Non-blocking: if uploads fail, the enrollment is still saved. Student can re-upload from their dashboard.
       if (studentType !== "old") {
         const uploadErrors: string[] = [];
         for (const def of REQUIRED_DOCUMENTS) {
           const file = files[def.key];
           if (!file) continue;
           try {
+            console.log('[apply] uploading', def.key, 'for enrollment', enrollmentId);
             await docsApi.upload(file, def.key, enrollmentId);
+            console.log('[apply] uploaded', def.key, 'OK');
           } catch (uploadErr: any) {
-            console.error(`[Submit] Document upload failed for ${def.key}:`, uploadErr);
+            console.error(`[apply] Document upload failed for ${def.key}:`, uploadErr);
             uploadErrors.push(`${def.label ?? def.key} (Error: ${uploadErr?.message || 'Upload failed'})`);
           }
         }
         if (uploadErrors.length > 0) {
-          const msg = `Enrollment submitted successfully, but the following documents FAILED to upload:\n\n${uploadErrors.join('\n')}\n\nThis is usually caused by an invalid SUPABASE_URL or missing SUPABASE_SERVICE_KEY in your Render environment variables. You must fix those on Render and then re-upload these files from your dashboard.`;
+          const msg = `Enrollment submitted, but the following documents FAILED to upload:\n\n${uploadErrors.join('\n')}\n\nPlease re-upload them from your application page.`;
           toast.error(msg, { duration: 15000 });
           alert(msg);
         }
@@ -377,7 +399,7 @@ function ApplyPage() {
       toast.success("Enrollment submitted successfully!");
       queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
       queryClient.invalidateQueries({ queryKey: ["student-me"] });
-      navigate({ to: "/dashboard" });
+      navigate({ to: `/applications/${enrollmentId}` });
     } catch (err: any) {
       toast.error(err.message ?? "Submission failed. Please try again.");
     } finally {

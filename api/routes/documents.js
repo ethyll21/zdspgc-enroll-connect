@@ -49,6 +49,12 @@ router.get('/my', requireAuth, async (req, res) => {
 
 // ─── POST /api/documents/upload ───────────────────────────────────────────────
 router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
+  // ── DIAGNOSTIC LOGGING — remove once issue is resolved ──
+  console.log('[Documents/upload] req.body:', JSON.stringify(req.body));
+  console.log('[Documents/upload] file present:', !!req.file, 'size:', req.file?.size);
+  console.log('[Documents/upload] enrollment_id from body:', req.body.enrollment_id);
+  // ────────────────────────────────────────────────────────
+
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const { doc_type } = req.body;
@@ -68,7 +74,11 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
       return res.status(404).json({ error: 'Student record not found' });
     }
     const student_id = studentRes.rows[0].id;
-    const enrollment_id = req.body.enrollment_id || null;
+    // Trim whitespace just in case, treat empty string as null
+    const raw_enrollment_id = req.body.enrollment_id;
+    const enrollment_id = (raw_enrollment_id && raw_enrollment_id.trim()) ? raw_enrollment_id.trim() : null;
+
+    console.log('[Documents/upload] Saving doc: student_id=%s enrollment_id=%s doc_type=%s', student_id, enrollment_id, doc_type);
 
     // Build Supabase storage path: userId/timestamp-random.ext
     const ext = path.extname(req.file.originalname).toLowerCase();
@@ -91,10 +101,12 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
       [student_id, enrollment_id, doc_type, storagePath, req.file.originalname, req.file.mimetype, req.file.size]
     );
 
+    console.log('[Documents/upload] Saved doc id=%s enrollment_id=%s', rows[0].id, rows[0].enrollment_id);
+
     // file_url is the Supabase public URL — attach it for the response
     res.status(201).json({ document: { ...rows[0], file_url: publicUrl } });
   } catch (err) {
-    console.error('[Documents/upload]', err.message);
+    console.error('[Documents/upload] ERROR:', err.message, err.stack);
     res.status(500).json({ error: 'Failed to save document', details: err.message });
   }
 });
