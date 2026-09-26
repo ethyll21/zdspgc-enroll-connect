@@ -115,7 +115,13 @@ function ApplicationDetail() {
 
         for (let i = 0; i < elements.length; i++) {
           const el = elements[i];
-          const imgData = await toJpeg(el, { quality: 0.95, backgroundColor: "#ffffff", pixelRatio: 2 });
+          
+          // Wrap toJpeg in a timeout so it never hangs indefinitely
+          const imgData = await Promise.race([
+            toJpeg(el, { quality: 0.95, backgroundColor: "#ffffff", pixelRatio: 2, cacheBust: true }),
+            new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Image generation timed out. Please try again.")), 15000))
+          ]);
+
           const img = new Image();
           img.src = imgData;
           await new Promise((resolve, reject) => {
