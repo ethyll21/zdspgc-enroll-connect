@@ -147,16 +147,8 @@ function ApplicationDetail() {
           pdf.addImage(imgData, "JPEG", 0, 0, fittedWidth, fittedHeight);
         }
 
-        // Generate the PDF as a blob
-        const pdfBlob = pdf.output("blob");
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-
-        // Open the PDF in a new tab so the user can immediately view it
-        window.open(pdfUrl, "_blank");
-
-        // Also trigger the standard download as a backup
         pdf.save(`Enrollment_Form_${appId}.pdf`);
-        toast.success("PDF generated and opened successfully!", { id: toastId });
+        toast.success("PDF downloaded successfully! Check your Downloads folder.", { id: toastId });
       } catch (err: any) {
         console.error("PDF generation error:", err);
         toast.error(`Failed to generate PDF: ${err?.message ?? "Unknown error"}`, { id: toastId });
