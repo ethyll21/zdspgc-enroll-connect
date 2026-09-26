@@ -46,6 +46,39 @@ function ApplicationDetail() {
   const [statusSelection, setStatusSelection] = useState("pending");
   const [resubmittingDocId, setResubmittingDocId] = useState<string | null>(null);
 
+  const [formScale, setFormScale] = useState(1);
+  const [formHeight, setFormHeight] = useState<number | 'auto'>('auto');
+  
+  useEffect(() => {
+    const formElement = document.getElementById('printable-form-inner');
+    
+    const calculateScale = () => {
+      const availableWidth = window.innerWidth - 32;
+      const scale = availableWidth < 800 ? availableWidth / 800 : 1;
+      setFormScale(scale);
+      
+      if (formElement && scale < 1) {
+        setFormHeight(formElement.offsetHeight * scale);
+      } else {
+        setFormHeight('auto');
+      }
+    };
+
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+    
+    let observer: ResizeObserver | null = null;
+    if (formElement) {
+      observer = new ResizeObserver(() => calculateScale());
+      observer.observe(formElement);
+    }
+    
+    return () => {
+      window.removeEventListener('resize', calculateScale);
+      if (observer) observer.disconnect();
+    };
+  }, []);
+
   const handlePrint = useCallback(async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -288,8 +321,16 @@ function ApplicationDetail() {
       {/* ══════════════════════════════════════════════════════════════════════════
           PRINTABLE / FORMAL APPLICATION VIEW
       ══════════════════════════════════════════════════════════════════════════ */}
-      <div id="printable-application-form" className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="min-w-[800px]">
+      <div id="printable-application-form" className="pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div 
+          className="overflow-hidden origin-top-left transition-[height] duration-200" 
+          style={{ height: formHeight }}
+        >
+          <div 
+            id="printable-form-inner"
+            className="w-[800px] origin-top-left transition-transform duration-200" 
+            style={{ transform: formScale < 1 ? `scale(${formScale})` : 'none' }}
+          >
           {isOldStudent ? (
             /* ─── OLD STUDENT FORM: TWO-COPY OFFICIAL SLIP (REGISTRAR + PROGRAM HEAD) + PAGE 2 ─── */
             <div className="flex flex-col gap-4">
