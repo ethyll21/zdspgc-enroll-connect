@@ -130,6 +130,10 @@ function ApplicationDetail() {
           if (heightWrapper) {
             heightWrapper.style.height = "auto";
           }
+          
+          // Force a browser reflow and wait a moment so the CSS layout engine updates the bounds 
+          // to exactly 800px BEFORE html2canvas tries to read them. This fixes squished/cropped PDFs on mobile.
+          await new Promise(resolve => setTimeout(resolve, 150));
 
           for (let i = 0; i < elements.length; i++) {
             const el = elements[i];
@@ -159,8 +163,8 @@ function ApplicationDetail() {
                 ];
 
                 const elements = clonedDoc.querySelectorAll('*');
-                for (let i = 0; i < elements.length; i++) {
-                  const node = elements[i] as HTMLElement;
+                for (let j = 0; j < elements.length; j++) {
+                  const node = elements[j] as HTMLElement;
                   const computedStyle = clonedDoc.defaultView?.getComputedStyle(node);
                   if (!computedStyle) continue;
 
@@ -208,10 +212,10 @@ function ApplicationDetail() {
                 const sliceCanvas = document.createElement("canvas");
                 sliceCanvas.width = canvas.width;
                 sliceCanvas.height = sliceHeightPx;
-                const ctx = sliceCanvas.getContext("2d")!;
-                ctx.fillStyle = "#ffffff";
-                ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-                ctx.drawImage(canvas, 0, sliceYPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+                const sliceCtx = sliceCanvas.getContext("2d")!;
+                sliceCtx.fillStyle = "#ffffff";
+                sliceCtx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+                sliceCtx.drawImage(canvas, 0, sliceYPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
 
                 pdf.addImage(sliceCanvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pdfWidth, sliceHeightMm);
                 yOffsetMm += sliceHeightMm;
@@ -231,56 +235,26 @@ function ApplicationDetail() {
         }
 
         const fileName = `Enrollment_Form_${appId}.pdf`;
-        let shared = false;
 
-        // Web Share API is excellent for iOS/Android, but can hang or fail on Desktop Windows.
-        // We strictly limit its usage to mobile devices to ensure a smooth desktop experience.
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        if (isMobile && navigator.share && navigator.canShare) {
-          const file = new File([blob], fileName, { type: "application/pdf" });
-          if (navigator.canShare({ files: [file] })) {
-            try {
-              await navigator.share({
-                files: [file],
-                title: "Enrollment Form",
-              });
-              shared = true;
-            } catch (shareErr: any) {
-              // Ignore AbortError (user cancelled share sheet)
-              if (shareErr.name !== "AbortError") {
-                console.warn("Share API failed, falling back to standard download", shareErr);
-              } else {
-                // User cancelled, we don't need to show success or error
-                toast.dismiss(toastId);
-                return;
-              }
-            }
-          }
-        }
-
-        // Fallback to standard robust download
-        if (!shared) {
-          if (window.navigator && (window.navigator as any).msSaveOrOpenBlob) {
-            // IE/Edge specific fallback
-            (window.navigator as any).msSaveOrOpenBlob(blob, fileName);
-          } else {
-            const blobUrl = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.style.display = "none";
-            link.href = blobUrl;
-            link.download = fileName;
-            
-            // Appending to body is required for Firefox and some strict mobile browsers
-            document.body.appendChild(link);
-            link.click();
-            
-            // Clean up to prevent memory leaks
-            setTimeout(() => {
-              document.body.removeChild(link);
-              URL.revokeObjectURL(blobUrl);
-            }, 1000);
-          }
+        // We use a robust programmatic download for ALL platforms.
+        // Mobile browsers fully support direct blob downloads via ObjectURLs.
+        if (window.navigator && (window.navigator as any).msSaveOrOpenBlob) {
+          // IE/Edge specific fallback
+          (window.navigator as any).msSaveOrOpenBlob(blob, fileName);
+        } else {
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.style.display = "none";
+          link.href = blobUrl;
+          link.download = fileName;
+          
+          document.body.appendChild(link);
+          link.click();
+          
+          setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+          }, 1000);
         }
 
         toast.success("PDF downloaded successfully!", { id: toastId });
