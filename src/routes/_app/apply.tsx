@@ -1330,7 +1330,7 @@ function OldStudentSubjectsSection({ form }: { form: any }) {
         Enter the subjects you are enrolling in for this semester.
       </p>
 
-      <div className="overflow-x-auto pb-4 -mx-6 px-6 md:mx-0 md:px-0">
+      <FormScaleWrapper>
         <table className="w-full text-sm border-collapse min-w-[700px]">
           <thead>
             <tr className="bg-muted/40">
@@ -1425,7 +1425,7 @@ function OldStudentSubjectsSection({ form }: { form: any }) {
             </tfoot>
           )}
         </table>
-      </div>
+      </FormScaleWrapper>
 
       <div className="mt-4">
         <Button
