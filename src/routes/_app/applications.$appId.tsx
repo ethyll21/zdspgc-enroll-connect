@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ArrowLeft, Eye, CheckCircle2, XCircle, AlertCircle, ExternalLink, Printer, GraduationCap, School, Download, Upload } from "lucide-react";
+import { ArrowLeft, Eye, CheckCircle2, XCircle, AlertCircle, ExternalLink, Printer, GraduationCap, School, Download, Upload, RefreshCw } from "lucide-react";
 import { enrollments as enrollmentsApi, documents as docsApi, students as studentsApi } from "@/integrations/localdb/client";
 import type { SubjectScheduleItem, RotcWatcDetails } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
@@ -137,9 +137,13 @@ function ApplicationDetail() {
     }
   }, [isAdmin, appId]);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { user, loading: authLoading } = useAuth();
+
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["enrollment-detail", appId],
-    enabled: typeof window !== 'undefined',
+    // Wait for auth to finish initialising before firing — prevents 401 on mobile
+    enabled: typeof window !== 'undefined' && !authLoading && !!user,
+    retry: 1,
     queryFn: () => enrollmentsApi.getById(appId),
   });
 
@@ -270,8 +274,37 @@ function ApplicationDetail() {
     }
   }, [data?.enrollment.status]);
 
-  if (isLoading || !data) {
-    return <p className="p-6 text-muted-foreground">Loading enrollment details…</p>;
+  // Still waiting for auth to initialise or the query to fire
+  if (authLoading || isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 p-12">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        <p className="text-sm text-muted-foreground font-medium">Loading enrollment details…</p>
+      </div>
+    );
+  }
+
+  // Query finished but returned nothing (error or not found)
+  if (isError || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-12 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 border border-rose-100">
+          <AlertCircle className="h-7 w-7 text-rose-500" />
+        </div>
+        <div>
+          <p className="font-semibold text-slate-800">Could not load enrollment details</p>
+          <p className="text-sm text-slate-500 mt-1">
+            {(error as any)?.message ?? "The application could not be found or you don't have permission to view it."}
+          </p>
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="inline-flex items-center gap-2 rounded-md bg-[#0A2540] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C2D50] transition-colors"
+        >
+          <RefreshCw className="h-4 w-4" /> Try Again
+        </button>
+      </div>
+    );
   }
 
   const { enrollment } = data;
@@ -323,12 +356,12 @@ function ApplicationDetail() {
       ══════════════════════════════════════════════════════════════════════════ */}
       <div id="printable-application-form" className="pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
         <div 
-          className="overflow-hidden origin-top-left transition-[height] duration-200" 
+          className="overflow-hidden flex justify-center transition-[height] duration-200" 
           style={{ height: formHeight }}
         >
           <div 
             id="printable-form-inner"
-            className="w-[800px] origin-top-left transition-transform duration-200" 
+            className="w-[800px] origin-top transition-transform duration-200" 
             style={{ transform: formScale < 1 ? `scale(${formScale})` : 'none' }}
           >
           {isOldStudent ? (
