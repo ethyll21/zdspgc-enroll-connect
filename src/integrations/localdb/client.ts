@@ -204,7 +204,7 @@ export interface ValidationRecord {
 export interface Document {
   id: string;
   student_id: string;
-  doc_type: 'psa_birth_certificate' | 'form_138' | 'good_moral' | 'transfer_certificate' | 'other';
+  doc_type: 'birth_certificate' | 'form_138' | 'good_moral' | 'transfer_certificate' | 'other';
   file_path: string;
   file_name: string;
   mime_type: string | null;

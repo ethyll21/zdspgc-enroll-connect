@@ -34,10 +34,10 @@ router.get('/my', requireAuth, async (req, res) => {
     }
 
     const { rows } = await db.query(
-      `SELECT d.* FROM public.documents d
+      `SELECT d.*, d.created_at as uploaded_at FROM public.documents d
        JOIN public.students s ON s.id = d.student_id
        WHERE ${conditions.join(' AND ')}
-       ORDER BY d.uploaded_at DESC`,
+       ORDER BY d.created_at DESC`,
       params
     );
     res.json({ documents: rows });
@@ -59,7 +59,7 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 
   const { doc_type } = req.body;
   const validDocTypes = [
-    'psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate',
+    'birth_certificate', 'form_138', 'good_moral', 'transfer_certificate',
     'registration_form', 'other',
   ];
   if (!doc_type || !validDocTypes.includes(doc_type)) {
@@ -123,7 +123,7 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const docRes = await db.query(
-      `SELECT d.*, s.user_id FROM public.documents d
+      `SELECT d.*, d.created_at as uploaded_at, s.user_id FROM public.documents d
        JOIN public.students s ON s.id = d.student_id
        WHERE d.id = $1`,
       [req.params.id]
@@ -145,7 +145,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     if (isAdmin && doc.user_id !== req.user.id) {
       const docTypeLabels = {
         registration_form: 'Registration Form',
-        psa_birth_certificate: 'PSA Birth Certificate',
+        birth_certificate: 'PSA Birth Certificate',
         form_138: 'Form 138',
         good_moral: 'Good Moral Certificate',
         transfer_certificate: 'Transfer Certificate',
@@ -209,7 +209,7 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
     if (studentRes.rows.length > 0) {
       const docTypeLabels = {
         registration_form: 'Registration Form',
-        psa_birth_certificate: 'PSA Birth Certificate',
+        birth_certificate: 'PSA Birth Certificate',
         form_138: 'Form 138',
         good_moral: 'Good Moral Certificate',
         transfer_certificate: 'Transfer Certificate',
@@ -263,11 +263,11 @@ router.get('/', requireAdmin, async (req, res) => {
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const { rows } = await db.query(
-      `SELECT d.*, s.student_no, s.first_name, s.last_name
+      `SELECT d.*, d.created_at as uploaded_at, s.student_no, s.first_name, s.last_name
        FROM public.documents d
        JOIN public.students s ON s.id = d.student_id
        ${where}
-       ORDER BY d.uploaded_at DESC`,
+       ORDER BY d.created_at DESC`,
       params
     );
     res.json({ documents: rows });
@@ -283,7 +283,7 @@ router.get('/file/:id', requireAuth, async (req, res) => {
   console.log('[Documents/serve] Request for file id:', req.params.id, 'User:', req.user.id);
   try {
     const docRes = await db.query(
-      `SELECT d.*, s.user_id FROM public.documents d
+      `SELECT d.*, d.created_at as uploaded_at, s.user_id FROM public.documents d
        JOIN public.students s ON s.id = d.student_id
        WHERE d.id = $1`,
       [req.params.id]
