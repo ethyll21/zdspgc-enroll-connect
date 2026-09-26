@@ -180,10 +180,23 @@ async function fixEnums(db) {
   }
 }
 
+async function fixEnrollmentsTable(db) {
+  try {
+    console.log('[Startup] Checking enrollments table schema...');
+    // Add missing columns if they don't exist
+    await db.query(`ALTER TABLE public.enrollments ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ`);
+    await db.query(`ALTER TABLE public.enrollments ADD COLUMN IF NOT EXISTS reviewed_by UUID`);
+    console.log('[Startup] enrollments table schema verified/fixed.');
+  } catch (err) {
+    console.error('[Startup] Failed to check enrollments table schema (non-fatal):', err.message);
+  }
+}
+
 async function safeRunMigrations() {
   try {
     const db = require('./db');
     await fixEnums(db);
+    await fixEnrollmentsTable(db);
     
     await Promise.race([
       runMigrations(),
