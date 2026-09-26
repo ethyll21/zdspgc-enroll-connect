@@ -65,13 +65,13 @@ function AppLayout() {
       ? { to: "/applications/$appId", params: { appId: myEnrollments[0]?.id }, label: "Application", icon: FileSearch, badge: 0 } 
       : { to: "/apply", label: "Application", icon: FileSearch, badge: 0 },
     { to: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
-    { to: "/profile",    label: "My Profile",       icon: User, badge: 0 },
+    { to: "/profile",    label: "Profile",          icon: User, badge: 0 },
   ];
   const adminNav = [
     { to: "/admin",              label: "Dashboard",     icon: LayoutDashboard, badge: 0 },
     { to: "/admin/applications", label: "Applications",  icon: FileSearch, badge: 0 },
     { to: "/notifications",      label: "Notifications", icon: Bell, badge: unreadCount },
-    { to: "/profile",            label: "My Profile",    icon: User, badge: 0 },
+    { to: "/profile",            label: "Profile",       icon: User, badge: 0 },
   ];
   const nav = isAdmin ? adminNav : studentNav;
 
