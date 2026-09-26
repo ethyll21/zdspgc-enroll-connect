@@ -47,11 +47,6 @@ function ApplicationDetail() {
   const [statusSelection, setStatusSelection] = useState("pending");
   const [resubmittingDocId, setResubmittingDocId] = useState<string | null>(null);
 
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [pdfStatus, setPdfStatus] = useState<"idle" | "generating" | "ready" | "error">("idle");
-  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
-  const [pdfError, setPdfError] = useState("");
-
   const [formScale, setFormScale] = useState(1);
   const [formHeight, setFormHeight] = useState<number | 'auto'>('auto');
   
@@ -98,11 +93,7 @@ function ApplicationDetail() {
         window.print();
       }, 0);
     } else {
-      setIsPdfModalOpen(true);
-      setPdfStatus("generating");
-      setPdfBlobUrl(null);
-      setPdfError("");
-      
+      const toastId = toast.loading("Generating PDF, please wait...");
       try {
         const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -126,8 +117,6 @@ function ApplicationDetail() {
         for (let i = 0; i < elements.length; i++) {
           const el = elements[i];
           
-          // Reverting back to html-to-image (toJpeg) because html2canvas throws on Tailwind's oklch colors.
-          // Adding skipFonts and style overrides to bypass the infinite loops that caused it to hang initially.
           const imgData = await Promise.race([
             toJpeg(el, { 
               quality: 0.95, 
@@ -147,7 +136,7 @@ function ApplicationDetail() {
             img.onerror = () => reject(new Error("Failed to load generated image data"));
           });
 
-          // Scale the image to fit exactly one A4 page (no slicing)
+          // Scale the image to fit exactly one A4 page
           const imgAspect = img.height / img.width;
           const fittedWidth = pdfWidth;
           const fittedHeight = Math.min(pdfWidth * imgAspect, pageHeight);
@@ -156,15 +145,12 @@ function ApplicationDetail() {
           pdf.addImage(imgData, "JPEG", 0, 0, fittedWidth, fittedHeight);
         }
 
-        // Generate the PDF as a Data URI (Base64) to bypass blob restrictions on strict browsers
-        const pdfDataUri = pdf.output("datauristring");
-        
-        setPdfBlobUrl(pdfDataUri);
-        setPdfStatus("ready");
+        // Automatic background download
+        pdf.save(`Enrollment_Form_${appId}.pdf`);
+        toast.success("PDF downloaded successfully! Check your Downloads folder.", { id: toastId });
       } catch (err: any) {
         console.error("PDF generation error:", err);
-        setPdfError(err?.message ?? "Unknown error");
-        setPdfStatus("error");
+        toast.error(`Failed to generate PDF: ${err?.message ?? "Unknown error"}`, { id: toastId });
       }
     }
   }, [isAdmin, appId]);
@@ -382,53 +368,6 @@ function ApplicationDetail() {
           )}
         </Button>
       </div>
-
-      <AlertDialog open={isPdfModalOpen} onOpenChange={(open) => !open && setIsPdfModalOpen(false)}>
-        <AlertDialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pdfStatus === "generating" && "Generating PDF..."}
-              {pdfStatus === "ready" && "PDF Ready!"}
-              {pdfStatus === "error" && "Error generating PDF"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pdfStatus === "generating" && "Please wait while we prepare your enrollment form. This usually takes a few seconds."}
-              {pdfStatus === "ready" && "Your PDF is ready! You can view it below and use the viewer's built-in controls to save or print it."}
-              {pdfStatus === "error" && `Failed to generate PDF: ${pdfError}`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          
-          {pdfStatus === "ready" && pdfBlobUrl && (
-            <div className="w-full flex-1 min-h-[50vh] mt-4 border rounded overflow-hidden">
-               <iframe src={pdfBlobUrl} className="w-full h-full" title="PDF Preview" />
-            </div>
-          )}
-
-          <AlertDialogFooter className="mt-4">
-            {pdfStatus === "error" && (
-              <AlertDialogCancel onClick={() => setIsPdfModalOpen(false)}>Close</AlertDialogCancel>
-            )}
-            {pdfStatus === "ready" && pdfBlobUrl && (
-              <>
-                <AlertDialogCancel onClick={() => {
-                  setIsPdfModalOpen(false);
-                }}>Close Preview</AlertDialogCancel>
-                <Button asChild>
-                  <a 
-                    href={pdfBlobUrl} 
-                    download={`Enrollment_Form_${appId}.pdf`}
-                    onClick={() => {
-                      setIsPdfModalOpen(false);
-                    }}
-                  >
-                    Force Download
-                  </a>
-                </Button>
-              </>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* ══════════════════════════════════════════════════════════════════════════
           PRINTABLE / FORMAL APPLICATION VIEW
