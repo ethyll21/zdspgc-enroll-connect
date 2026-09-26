@@ -147,8 +147,37 @@ function ApplicationDetail() {
           pdf.addImage(imgData, "JPEG", 0, 0, fittedWidth, fittedHeight);
         }
 
-        pdf.save(`Enrollment_Form_${appId}.pdf`);
-        toast.success("PDF downloaded successfully! Check your Downloads folder.", { id: toastId });
+        // Generate the PDF as a blob
+        const pdfBlob = pdf.output("blob");
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        
+        // 1. Try automatic download
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = blobUrl;
+        a.download = `Enrollment_Form_${appId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+          if (document.body.contains(a)) document.body.removeChild(a);
+        }, 1000);
+
+        // 2. Provide a synchronous manual download button in the toast just in case the browser blocked it
+        toast.success("PDF ready!", { 
+          id: toastId,
+          description: "If it didn't download automatically, click the button.",
+          duration: 10000,
+          action: {
+            label: "Save File",
+            onClick: () => {
+              const fallbackA = document.createElement("a");
+              fallbackA.href = blobUrl;
+              fallbackA.download = `Enrollment_Form_${appId}.pdf`;
+              fallbackA.click();
+            }
+          }
+        });
       } catch (err: any) {
         console.error("PDF generation error:", err);
         toast.error(`Failed to generate PDF: ${err?.message ?? "Unknown error"}`, { id: toastId });
