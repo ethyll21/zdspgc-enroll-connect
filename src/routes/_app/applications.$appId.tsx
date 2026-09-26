@@ -128,61 +128,7 @@ function ApplicationDetail() {
           }
         }
 
-        const fileName = `Enrollment_Form_${appId}.pdf`;
-        const pdfBlob = pdf.output("blob");
-
-        // Detect mobile / in-app browsers (Facebook Lite, etc.)
-        const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-
-        if (isMobile) {
-          // 1. Try Web Share API (native share sheet) first — lets user save/open with any app
-          let shared = false;
-          if (navigator.canShare && navigator.share) {
-            try {
-              const file = new File([pdfBlob], fileName, { type: "application/pdf" });
-              if (navigator.canShare({ files: [file] })) {
-                await navigator.share({ files: [file], title: fileName });
-                shared = true;
-              }
-            } catch (err) {
-              console.log("Share cancelled or failed:", err);
-            }
-          }
-
-          // 2. If share didn't work, open the PDF in a new tab so the browser PDF viewer shows it
-          if (!shared) {
-            const url = URL.createObjectURL(pdfBlob);
-            const newTab = window.open(url, "_blank");
-            if (!newTab) {
-              // Popup blocked — fallback: convert to data URI and open
-              const reader = new FileReader();
-              reader.onload = () => {
-                const dataUri = reader.result as string;
-                const a = document.createElement("a");
-                a.href = dataUri;
-                a.target = "_blank";
-                a.rel = "noopener noreferrer";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-              };
-              reader.readAsDataURL(pdfBlob);
-            }
-            // Keep blob URL alive long enough for the tab to load
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
-          }
-        } else {
-          // Desktop: standard anchor download
-          const url = URL.createObjectURL(pdfBlob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }
-
+        pdf.save(`Enrollment_Form_${appId}.pdf`);
         toast.success("PDF downloaded successfully!", { id: toastId });
       } catch (err: any) {
         console.error("PDF generation error:", err);
