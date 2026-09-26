@@ -259,9 +259,28 @@ function ApplicationDetail() {
           }
         }
 
-        // Fallback to standard jsPDF download (handles browser quirks automatically)
+        // Fallback to standard robust download
         if (!shared) {
-          pdf.save(fileName);
+          if (window.navigator && (window.navigator as any).msSaveOrOpenBlob) {
+            // IE/Edge specific fallback
+            (window.navigator as any).msSaveOrOpenBlob(blob, fileName);
+          } else {
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.style.display = "none";
+            link.href = blobUrl;
+            link.download = fileName;
+            
+            // Appending to body is required for Firefox and some strict mobile browsers
+            document.body.appendChild(link);
+            link.click();
+            
+            // Clean up to prevent memory leaks
+            setTimeout(() => {
+              document.body.removeChild(link);
+              URL.revokeObjectURL(blobUrl);
+            }, 1000);
+          }
         }
 
         toast.success("PDF downloaded successfully!", { id: toastId });
