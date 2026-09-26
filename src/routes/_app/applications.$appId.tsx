@@ -45,6 +45,7 @@ function ApplicationDetail() {
   const [docRejectRemarks, setDocRejectRemarks] = useState("");
   const [statusSelection, setStatusSelection] = useState("pending");
   const [resubmittingDocId, setResubmittingDocId] = useState<string | null>(null);
+  const [pdfPreviewUri, setPdfPreviewUri] = useState<string | null>(null);
 
   const [formScale, setFormScale] = useState(1);
   const [formHeight, setFormHeight] = useState<number | 'auto'>('auto');
@@ -129,50 +130,19 @@ function ApplicationDetail() {
         }
 
         const fileName = `Enrollment_Form_${appId}.pdf`;
-        const pdfBlob = pdf.output("blob");
 
         // Detect mobile / in-app browsers (Facebook Lite, etc.)
         const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
         if (isMobile) {
-          // 1. Try Web Share API (native share sheet) first — lets user save/open with any app
-          let shared = false;
-          if (navigator.canShare && navigator.share) {
-            try {
-              const file = new File([pdfBlob], fileName, { type: "application/pdf" });
-              if (navigator.canShare({ files: [file] })) {
-                await navigator.share({ files: [file], title: fileName });
-                shared = true;
-              }
-            } catch (err) {
-              console.log("Share cancelled or failed:", err);
-            }
-          }
-
-          // 2. If share didn't work, open the PDF in a new tab so the browser PDF viewer shows it
-          if (!shared) {
-            const url = URL.createObjectURL(pdfBlob);
-            const newTab = window.open(url, "_blank");
-            if (!newTab) {
-              // Popup blocked — fallback: convert to data URI and open
-              const reader = new FileReader();
-              reader.onload = () => {
-                const dataUri = reader.result as string;
-                const a = document.createElement("a");
-                a.href = dataUri;
-                a.target = "_blank";
-                a.rel = "noopener noreferrer";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-              };
-              reader.readAsDataURL(pdfBlob);
-            }
-            // Keep blob URL alive long enough for the tab to load
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
-          }
+          // On mobile (especially in-app browsers), window.open() and a.download are blocked.
+          // Convert PDF to a data URI and show it inline in a modal — works in ALL browsers.
+          const dataUri = pdf.output("datauristring");
+          toast.dismiss(toastId);
+          setPdfPreviewUri(dataUri);
         } else {
           // Desktop: standard anchor download
+          const pdfBlob = pdf.output("blob");
           const url = URL.createObjectURL(pdfBlob);
           const a = document.createElement("a");
           a.href = url;
@@ -181,9 +151,8 @@ function ApplicationDetail() {
           a.click();
           document.body.removeChild(a);
           setTimeout(() => URL.revokeObjectURL(url), 1000);
+          toast.success("PDF downloaded successfully!", { id: toastId });
         }
-
-        toast.success("PDF downloaded successfully!", { id: toastId });
       } catch (err: any) {
         console.error("PDF generation error:", err);
         toast.error(`Failed to generate PDF: ${err?.message ?? "Unknown error"}`, { id: toastId });
@@ -351,6 +320,67 @@ function ApplicationDetail() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-20 print:pb-0 print:max-w-none print:m-0">
+
+      {/* ── Mobile PDF Preview Modal ─────────────────────────────────────── */}
+      {pdfPreviewUri && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "rgba(0,0,0,0.92)",
+            display: "flex", flexDirection: "column",
+          }}
+        >
+          {/* Header */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "12px 16px", background: "#1e293b", flexShrink: 0,
+          }}>
+            <span style={{ color: "#fff", fontWeight: 600, fontSize: 15 }}>Enrollment Form</span>
+            <div style={{ display: "flex", gap: 10 }}>
+              {/* Share button (best for saving on mobile) */}
+              {navigator.canShare && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(pdfPreviewUri);
+                      const blob = await res.blob();
+                      const file = new File([blob], `Enrollment_Form_${appId}.pdf`, { type: "application/pdf" });
+                      if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: `Enrollment_Form_${appId}.pdf` });
+                      }
+                    } catch (e) {
+                      console.log("Share failed", e);
+                    }
+                  }}
+                  style={{
+                    background: "#3b82f6", color: "#fff", border: "none",
+                    borderRadius: 8, padding: "8px 14px", fontWeight: 600, fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  Share / Save
+                </button>
+              )}
+              <button
+                onClick={() => setPdfPreviewUri(null)}
+                style={{
+                  background: "#475569", color: "#fff", border: "none",
+                  borderRadius: 8, padding: "8px 14px", fontWeight: 600, fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+          {/* PDF iframe — data URI works in all browsers, no popup blocking */}
+          <iframe
+            src={pdfPreviewUri}
+            style={{ flex: 1, border: "none", width: "100%" }}
+            title="Enrollment Form PDF"
+          />
+        </div>
+      )}
       {/* Action Header */}
       <div className="flex items-center justify-between print:hidden">
         <Link
