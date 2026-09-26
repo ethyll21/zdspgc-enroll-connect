@@ -101,7 +101,7 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO public.documents
          (student_id, enrollment_id, doc_type, file_path, file_name, mime_type, size_bytes, status)
-       VALUES ($1, $2, $3::document_type, $4, $5, $6, $7, 'pending')
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
        RETURNING *`,
       [student_id, enrollment_id, doc_type, storagePath, req.file.originalname, req.file.mimetype, req.file.size]
     );
