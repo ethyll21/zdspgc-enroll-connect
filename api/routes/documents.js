@@ -7,6 +7,36 @@ const { uploadFile, deleteFile, downloadFile, DOCS_BUCKET } = require('../storag
 
 const router = express.Router();
 
+// TEMPORARY: Route to fix the enum in the production database
+router.get('/fix-enum', async (req, res) => {
+  try {
+    const values = ['psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate', 'other', 'registration_form'];
+    const results = [];
+    
+    // Check if it's an enum
+    const colCheck = await db.query(`
+      SELECT udt_name 
+      FROM information_schema.columns 
+      WHERE table_schema='public' AND table_name='documents' AND column_name='doc_type'
+    `);
+    
+    if (colCheck.rows.length > 0 && colCheck.rows[0].udt_name === 'document_type') {
+      for (const val of values) {
+        try {
+          await db.query(`ALTER TYPE document_type ADD VALUE IF NOT EXISTS '${val}'`);
+          results.push(`Added ${val}`);
+        } catch (e) {
+          results.push(`Error adding ${val}: ${e.message}`);
+        }
+      }
+      res.json({ success: true, message: 'Enum fix attempted', results });
+    } else {
+      res.json({ success: true, message: 'doc_type is not an enum (is ' + (colCheck.rows[0]?.udt_name) + ')' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, stack: err.stack });
+  }
+});
 // ─── Multer — memory storage (no local disk) ──────────────────────────────────
 const upload = multer({
   storage: multer.memoryStorage(),
