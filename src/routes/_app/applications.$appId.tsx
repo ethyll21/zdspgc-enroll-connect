@@ -408,20 +408,16 @@ function ApplicationDetail() {
                   setIsPdfModalOpen(false);
                   URL.revokeObjectURL(pdfBlobUrl);
                 }}>Cancel</AlertDialogCancel>
-                <Button onClick={() => {
-                  // Radix UI intercepts standard <a> clicks, so we manually trigger it here
-                  const a = document.createElement('a');
-                  a.href = pdfBlobUrl;
-                  a.download = `Enrollment_Form_${appId}.pdf`;
-                  a.style.display = 'none';
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  
-                  setIsPdfModalOpen(false);
-                  setTimeout(() => URL.revokeObjectURL(pdfBlobUrl), 1000);
-                }}>
-                  Save PDF File
+                <Button asChild>
+                  <a 
+                    href={pdfBlobUrl} 
+                    download={`Enrollment_Form_${appId}.pdf`}
+                    onClick={() => {
+                      setIsPdfModalOpen(false);
+                    }}
+                  >
+                    Save PDF File
+                  </a>
                 </Button>
               </>
             )}
