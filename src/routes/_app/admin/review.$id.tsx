@@ -219,8 +219,8 @@ function AdminReviewApplication() {
 
               {/* Course & Major */}
               <div className="flex flex-col gap-2 pt-3 pb-2">
-                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">COURSE:</span> <span className="border border-black flex-1 px-2 py-0.5 font-semibold leading-tight min-h-[22px] flex items-center">{student?.program_name || enrollment.program_name || "—"}</span></div>
-                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">MAJOR:</span> <span className="border border-black flex-1 px-2 py-0.5 font-semibold leading-tight min-h-[22px] flex items-center">{(student as any)?.major || "N/A"}</span></div>
+                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">COURSE:</span> <span className="border border-black flex-1 px-2 pt-1 pb-1 font-semibold uppercase leading-snug min-h-[24px] flex items-center">{student?.program_name || enrollment.program_name || "—"}</span></div>
+                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">MAJOR:</span> <span className="border border-black flex-1 px-2 pt-1 pb-1 font-semibold uppercase leading-snug min-h-[24px] flex items-center">{(student as any)?.major || "N/A"}</span></div>
               </div>
             </div>
 
@@ -235,10 +235,10 @@ function AdminReviewApplication() {
             <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Personal Information</div>
             <div className="border border-black p-2 space-y-1">
               <div className="grid grid-cols-4 gap-2">
-                <div><span className="font-bold text-[10px]">LAST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{student?.last_name || "—"}</span></div>
-                <div><span className="font-bold text-[10px]">FIRST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{student?.first_name || "—"}</span></div>
-                <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{student?.middle_name || "—"}</span></div>
-                <div><span className="font-bold text-[10px]">SUFFIX:</span><br /><span className="border-b border-black block uppercase">{(student as any)?.suffix || "N/A"}</span></div>
+                <div><span className="font-bold text-[10px]">LAST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase pb-1 mt-0.5 leading-snug">{student?.last_name || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">FIRST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase pb-1 mt-0.5 leading-snug">{student?.first_name || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><br /><span className="border-b border-black block font-semibold uppercase pb-1 mt-0.5 leading-snug">{student?.middle_name || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">SUFFIX:</span><br /><span className="border-b border-black block uppercase pb-1 mt-0.5 leading-snug">{(student as any)?.suffix || "N/A"}</span></div>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div><span className="font-bold text-[10px]">DATE OF BIRTH:</span> <span>{student?.date_of_birth ? String(student.date_of_birth).slice(0, 10) : "—"}</span></div>
