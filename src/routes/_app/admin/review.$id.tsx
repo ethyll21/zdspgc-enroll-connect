@@ -234,23 +234,26 @@ function AdminReviewApplication() {
           <div>
             <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Personal Information</div>
             <div className="border border-black p-2 space-y-1">
-              <div className="grid grid-cols-4 gap-x-2 gap-y-1">
-                <div className="col-span-1"><span className="font-bold text-[10px]">LAST NAME:</span><br/><span className="border-b border-black block font-semibold">{student?.last_name || "—"}</span></div>
-                <div className="col-span-1"><span className="font-bold text-[10px]">FIRST NAME:</span><br/><span className="border-b border-black block font-semibold">{student?.first_name || "—"}</span></div>
-                <div className="col-span-1"><span className="font-bold text-[10px]">MIDDLE NAME:</span><br/><span className="border-b border-black block font-semibold">{student?.middle_name || "—"}</span></div>
-                <div className="col-span-1"><span className="font-bold text-[10px]">SUFFIX:</span><br/><span className="border-b border-black block">{(student as any)?.suffix || "N/A"}</span></div>
-                
-                <div className="col-span-1"><span className="font-bold text-[10px]">DATE OF BIRTH:</span> <span>{student?.date_of_birth ? String(student.date_of_birth).slice(0, 10) : "—"}</span></div>
-                <div className="col-span-1"><span className="font-bold text-[10px]">SEX:</span> <span className="uppercase font-semibold">{student?.gender || "—"}</span></div>
-                <div className="col-span-2"><span className="font-bold text-[10px]">CONTACT:</span> <span>{student?.contact_number || "—"}</span></div>
-                
-                <div className="col-span-1"><span className="font-bold text-[10px]">PLACE OF BIRTH:</span> <span>{(student as any)?.place_of_birth || "—"}</span></div>
-                <div className="col-span-1"><span className="font-bold text-[10px]">CITIZENSHIP:</span> <span>{(student as any)?.citizenship || "Filipino"}</span></div>
-                <div className="col-span-2"><span className="font-bold text-[10px]">PERMANENT ADDRESS:</span> <span>{student?.address || "—"}</span></div>
-                
-                <div className="col-span-1"><span className="font-bold text-[10px]">CIVIL STATUS:</span> <span>{(student as any)?.civil_status || "—"}</span></div>
-                <div className="col-span-1"><span className="font-bold text-[10px]">RELIGION:</span> <span>{(student as any)?.religion || "—"}</span></div>
-                <div className="col-span-2"><span className="font-bold text-[10px]">POSTAL CODE:</span> <span>{(student as any)?.postal_code || "—"}</span></div>
+              <div className="grid grid-cols-4 gap-2">
+                <div><span className="font-bold text-[10px]">LAST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{student?.last_name || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">FIRST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{student?.first_name || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{student?.middle_name || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">SUFFIX:</span><br /><span className="border-b border-black block uppercase">{(student as any)?.suffix || "N/A"}</span></div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><span className="font-bold text-[10px]">DATE OF BIRTH:</span> <span>{student?.date_of_birth ? String(student.date_of_birth).slice(0, 10) : "—"}</span></div>
+                <div><span className="font-bold text-[10px]">SEX:</span> <span className="uppercase font-semibold">{student?.gender || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">PLACE OF BIRTH:</span> <span className="uppercase">{(student as any)?.place_of_birth || "—"}</span></div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                <div><span className="font-bold text-[10px]">CIVIL STATUS:</span> <span className="uppercase">{(student as any)?.civil_status || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">RELIGION:</span> <span className="uppercase">{(student as any)?.religion || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">CITIZENSHIP:</span> <span className="uppercase">{(student as any)?.citizenship || "Filipino"}</span></div>
+                <div><span className="font-bold text-[10px]">CONTACT:</span> <span>{student?.contact_number || "—"}</span></div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="font-bold text-[10px]">PERMANENT ADDRESS:</span> <span className="uppercase">{student?.address || "—"}</span></div>
+                <div><span className="font-bold text-[10px]">POSTAL CODE:</span> <span>{(student as any)?.postal_code || "—"}</span></div>
               </div>
             </div>
           </div>
@@ -260,28 +263,31 @@ function AdminReviewApplication() {
               {(() => { const fb = (student as any)?.family_background || {}; return (
                 <>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-0.5">
+                    <div className="space-y-0.5 uppercase">
                       <div><span className="font-bold text-[10px]">FATHER'S NAME:</span> {fb.father_name || "—"}</div>
                       <div><span className="font-bold text-[10px]">OCCUPATION:</span> {fb.father_occupation || "—"}</div>
+                      <div><span className="font-bold text-[10px]">COMPANY:</span> {fb.father_company || "—"}</div>
                       <div><span className="font-bold text-[10px]">HOME ADDRESS:</span> {fb.father_address || "—"}</div>
                       <div><span className="font-bold text-[10px]">CONTACT NUMBER:</span> {fb.father_contact || "—"}</div>
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-0.5 uppercase">
                       <div><span className="font-bold text-[10px]">MOTHER'S NAME:</span> {fb.mother_name || "—"}</div>
                       <div><span className="font-bold text-[10px]">OCCUPATION:</span> {fb.mother_occupation || "—"}</div>
+                      <div><span className="font-bold text-[10px]">COMPANY:</span> {fb.mother_company || "—"}</div>
                       <div><span className="font-bold text-[10px]">HOME ADDRESS:</span> {fb.mother_address || "—"}</div>
                       <div><span className="font-bold text-[10px]">CONTACT NUMBER:</span> {fb.mother_contact || "—"}</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 mt-2 pt-1 border-t border-gray-400">
-                    <div className="space-y-0.5">
+                    <div className="space-y-0.5 uppercase">
                       <div><span className="font-bold text-[10px]">GUARDIAN:</span> {fb.guardian_name || "—"}</div>
                       <div><span className="font-bold text-[10px]">RELATIONSHIP:</span> {fb.guardian_relationship || "—"}</div>
                       <div><span className="font-bold text-[10px]">HOME ADDRESS:</span> {fb.guardian_address || "—"}</div>
                       <div><span className="font-bold text-[10px]">CONTACT NUMBER:</span> {fb.guardian_contact || "—"}</div>
                     </div>
-                    <div className="space-y-0.5">
-                      <div><span className="font-bold text-[10px]">EMERGENCY CONTACT PERSON:</span> {fb.emergency_contact_person || "—"}</div>
+                    <div className="space-y-0.5 uppercase">
+                      <div><span className="font-bold text-[10px]">INCASE OF EMERGENCY:</span></div>
+                      <div><span className="font-bold text-[10px]">CONTACT PERSON:</span> {fb.emergency_contact_person || "—"}</div>
                       <div><span className="font-bold text-[10px]">HOME ADDRESS:</span> {fb.emergency_contact_address || "—"}</div>
                       <div><span className="font-bold text-[10px]">CONTACT NUMBER:</span> {fb.emergency_contact_number || "—"}</div>
                     </div>
@@ -293,22 +299,22 @@ function AdminReviewApplication() {
           <div>
             <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Educational Background</div>
             <div className="border border-black">
-              <div className="grid grid-cols-3 divide-x divide-black">
+              <div className="grid grid-cols-3 divide-x divide-black uppercase">
                 {(() => { const eb = (student as any)?.educational_background || {}; return (<>
                   <div className="p-2 space-y-0.5">
-                    <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">ELEMENTARY<br/><span className="font-normal italic text-[9px]">(do not abbreviate)</span></div>
+                    <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">ELEMENTARY<br/><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
                     <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {eb.elementary_school || "—"}</div>
                     <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {eb.elementary_address || "—"}</div>
                     <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {eb.elementary_years || "—"}</div>
                   </div>
                   <div className="p-2 space-y-0.5">
-                    <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">JUNIOR HIGH SCHOOL<br/><span className="font-normal italic text-[9px]">(do not abbreviate)</span></div>
+                    <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">JUNIOR HIGH SCHOOL<br/><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
                     <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {eb.junior_high_school || "—"}</div>
                     <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {eb.junior_high_address || "—"}</div>
                     <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {eb.junior_high_years || "—"}</div>
                   </div>
                   <div className="p-2 space-y-0.5">
-                    <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">SENIOR HIGH SCHOOL<br/><span className="font-normal italic text-[9px]">(do not abbreviate)</span></div>
+                    <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">SENIOR HIGH SCHOOL<br/><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
                     <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {eb.senior_high_school || "—"}</div>
                     <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {eb.senior_high_address || "—"}</div>
                     <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {eb.senior_high_years || "—"}</div>

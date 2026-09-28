@@ -123,12 +123,15 @@ function ApplicationDetail() {
         const heightWrapper = innerWrapper?.parentElement as HTMLElement | null;
         const prevWrapperHeight = heightWrapper ? heightWrapper.style.height : "";
 
+        const prevWrapperOverflow = heightWrapper ? heightWrapper.style.overflow : "";
+
         try {
           if (innerWrapper) {
             innerWrapper.style.transform = "none";
           }
           if (heightWrapper) {
             heightWrapper.style.height = "auto";
+            heightWrapper.style.overflow = "visible";
           }
           
           // Force a browser reflow and wait a moment so the CSS layout engine updates the bounds 
@@ -226,7 +229,10 @@ function ApplicationDetail() {
         } finally {
           // Always restore the visual transform so the UI is not broken on error
           if (innerWrapper) innerWrapper.style.transform = prevTransform;
-          if (heightWrapper) heightWrapper.style.height = prevWrapperHeight;
+          if (heightWrapper) {
+            heightWrapper.style.height = prevWrapperHeight;
+            heightWrapper.style.overflow = prevWrapperOverflow;
+          }
         }
 
         const blob = pdf.output("blob");
@@ -582,24 +588,24 @@ function ApplicationDetail() {
                   <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Personal Information</div>
                   <div className="border border-black p-2 space-y-1">
                     <div className="grid grid-cols-4 gap-2">
-                      <div><span className="font-bold text-[10px]">LAST NAME:</span><br /><span className="border-b border-black block font-semibold">{studentData?.student.last_name || "—"}</span></div>
-                      <div><span className="font-bold text-[10px]">FIRST NAME:</span><br /><span className="border-b border-black block font-semibold">{studentData?.student.first_name || "—"}</span></div>
-                      <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><br /><span className="border-b border-black block font-semibold">{studentData?.student.middle_name || "—"}</span></div>
-                      <div><span className="font-bold text-[10px]">SUFFIX:</span><br /><span className="border-b border-black block">{(studentData?.student as any)?.suffix || "N/A"}</span></div>
+                      <div><span className="font-bold text-[10px]">LAST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{studentData?.student.last_name || "—"}</span></div>
+                      <div><span className="font-bold text-[10px]">FIRST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{studentData?.student.first_name || "—"}</span></div>
+                      <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><br /><span className="border-b border-black block font-semibold uppercase">{studentData?.student.middle_name || "—"}</span></div>
+                      <div><span className="font-bold text-[10px]">SUFFIX:</span><br /><span className="border-b border-black block uppercase">{(studentData?.student as any)?.suffix || "N/A"}</span></div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div><span className="font-bold text-[10px]">DATE OF BIRTH:</span> <span>{studentData?.student.date_of_birth ? studentData.student.date_of_birth.slice(0, 10) : "—"}</span></div>
                       <div><span className="font-bold text-[10px]">SEX:</span> <span className="uppercase font-semibold">{studentData?.student.gender || "—"}</span></div>
-                      <div><span className="font-bold text-[10px]">PLACE OF BIRTH:</span> <span>{(studentData?.student as any)?.place_of_birth || "—"}</span></div>
+                      <div><span className="font-bold text-[10px]">PLACE OF BIRTH:</span> <span className="uppercase">{(studentData?.student as any)?.place_of_birth || "—"}</span></div>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
-                      <div><span className="font-bold text-[10px]">CIVIL STATUS:</span> <span>{(studentData?.student as any)?.civil_status || "—"}</span></div>
-                      <div><span className="font-bold text-[10px]">RELIGION:</span> <span>{(studentData?.student as any)?.religion || "—"}</span></div>
-                      <div><span className="font-bold text-[10px]">CITIZENSHIP:</span> <span>{(studentData?.student as any)?.citizenship || "Filipino"}</span></div>
+                      <div><span className="font-bold text-[10px]">CIVIL STATUS:</span> <span className="uppercase">{(studentData?.student as any)?.civil_status || "—"}</span></div>
+                      <div><span className="font-bold text-[10px]">RELIGION:</span> <span className="uppercase">{(studentData?.student as any)?.religion || "—"}</span></div>
+                      <div><span className="font-bold text-[10px]">CITIZENSHIP:</span> <span className="uppercase">{(studentData?.student as any)?.citizenship || "Filipino"}</span></div>
                       <div><span className="font-bold text-[10px]">CONTACT:</span> <span>{studentData?.student.contact_number || "—"}</span></div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <div><span className="font-bold text-[10px]">PERMANENT ADDRESS:</span> <span>{studentData?.student.address || "—"}</span></div>
+                      <div><span className="font-bold text-[10px]">PERMANENT ADDRESS:</span> <span className="uppercase">{studentData?.student.address || "—"}</span></div>
                       <div><span className="font-bold text-[10px]">POSTAL CODE:</span> <span>{(studentData?.student as any)?.postal_code || "—"}</span></div>
                     </div>
                   </div>
@@ -610,7 +616,7 @@ function ApplicationDetail() {
                   <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Family Background</div>
                   <div className="border border-black p-2">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 uppercase">
                         {(() => {
                           const fb = (studentData?.student as any)?.family_background || {}; return (<>
                             <div><span className="font-bold text-[10px]">FATHER'S NAME:</span> {fb.father_name || "—"}</div>
@@ -621,7 +627,7 @@ function ApplicationDetail() {
                           </>);
                         })()}
                       </div>
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 uppercase">
                         {(() => {
                           const fb = (studentData?.student as any)?.family_background || {}; return (<>
                             <div><span className="font-bold text-[10px]">MOTHER'S NAME:</span> {fb.mother_name || "—"}</div>
@@ -634,7 +640,7 @@ function ApplicationDetail() {
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 mt-2 pt-1 border-t border-gray-400">
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 uppercase">
                         {(() => {
                           const fb = (studentData?.student as any)?.family_background || {}; return (<>
                             <div><span className="font-bold text-[10px]">GUARDIAN:</span> {fb.guardian_name || "—"}</div>
@@ -644,7 +650,7 @@ function ApplicationDetail() {
                           </>);
                         })()}
                       </div>
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 uppercase">
                         {(() => {
                           const fb = (studentData?.student as any)?.family_background || {}; return (<>
                             <div><span className="font-bold text-[10px]">INCASE OF EMERGENCY:</span></div>
@@ -662,24 +668,24 @@ function ApplicationDetail() {
                 <div>
                   <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Educational Background</div>
                   <div className="border border-black">
-                    <div className="grid grid-cols-3 divide-x divide-black">
+                    <div className="grid grid-cols-3 divide-x divide-black uppercase">
                       {(() => {
                         const eb = (studentData?.student as any)?.educational_background || {};
                         return (<>
                           <div className="p-2 space-y-0.5">
-                            <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">ELEMENTARY<br /><span className="font-normal italic text-[9px]">(do not abbreviate)</span></div>
+                            <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">ELEMENTARY<br /><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
                             <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {eb.elementary_school || "—"}</div>
                             <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {eb.elementary_address || "—"}</div>
                             <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {eb.elementary_years || "—"}</div>
                           </div>
                           <div className="p-2 space-y-0.5">
-                            <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">JUNIOR HIGH SCHOOL<br /><span className="font-normal italic text-[9px]">(do not abbreviate)</span></div>
+                            <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">JUNIOR HIGH SCHOOL<br /><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
                             <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {eb.junior_high_school || "—"}</div>
                             <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {eb.junior_high_address || "—"}</div>
                             <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {eb.junior_high_years || "—"}</div>
                           </div>
                           <div className="p-2 space-y-0.5">
-                            <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">SENIOR HIGH SCHOOL<br /><span className="font-normal italic text-[9px]">(do not abbreviate)</span></div>
+                            <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">SENIOR HIGH SCHOOL<br /><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
                             <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {eb.senior_high_school || "—"}</div>
                             <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {eb.senior_high_address || "—"}</div>
                             <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {eb.senior_high_years || "—"}</div>

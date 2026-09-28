@@ -1669,40 +1669,44 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
       </div>
 
       {/* Top Student Box */}
-      <div className="border-b border-black py-1.5 pr-6 grid grid-cols-12 gap-1 text-[9px]">
+      <div className="border-b border-black py-2.5 pr-6 grid grid-cols-12 gap-1 text-[10px]">
+        {/* Name Section */}
         <div className="col-span-6 flex flex-col justify-end border-r border-black pr-2">
-          <div className="flex items-baseline gap-1 mb-0.5">
-            <div className="flex justify-between flex-1 uppercase font-bold text-[10px] px-1">
+          <div className="flex items-baseline gap-1 mb-1">
+            <span className="font-bold text-[10px] shrink-0 mr-1">NAME:</span>
+            <div className="flex justify-between flex-1 uppercase font-bold text-[12px] px-1">
               <span className="text-left w-1/3 truncate">{vals.last_name || ""}</span>
               <span className="text-center w-1/3 truncate">{vals.first_name || ""}</span>
               <span className="text-right w-1/3 truncate">{vals.middle_name || ""}</span>
             </div>
           </div>
-          <div className="flex justify-between text-[7px] text-slate-500 pt-0.5 px-1 border-t border-slate-300">
+          <div className="flex justify-between text-[8px] text-slate-500 pt-0.5 px-1 border-t border-slate-300 ml-10">
             <span className="text-left w-1/3">Last Name</span>
             <span className="text-center w-1/3">First Name</span>
             <span className="text-right w-1/3">Middle Name</span>
           </div>
         </div>
-        <div className="col-span-6 grid grid-cols-3 gap-1 pl-1">
+
+        {/* Course, Major, Student Number */}
+        <div className="col-span-6 grid grid-cols-3 gap-1 pl-2">
           <div>
-            <span className="font-bold text-[8px] block">COURSE:</span>
-            <span className="font-bold text-[9px] uppercase">{courseCode}</span>
+            <span className="font-bold text-[9px] block">COURSE:</span>
+            <span className="font-bold text-[11px] uppercase">{courseCode}</span>
           </div>
           <div>
-            <span className="font-bold text-[8px] block">MAJOR:</span>
-            <span className="font-bold text-[9px] uppercase">{vals.major || "N/A"}</span>
+            <span className="font-bold text-[9px] block">MAJOR:</span>
+            <span className="font-bold text-[11px] uppercase">{vals.major || "N/A"}</span>
           </div>
           <div>
-            <span className="font-bold text-[8px] block">STUDENT NUMBER:</span>
-            <span className="font-mono font-bold text-[9.5px] uppercase">{vals.student_no || "—"}</span>
+            <span className="font-bold text-[9px] block">STUDENT NUMBER:</span>
+            <span className="font-mono font-bold text-[11px] uppercase">{vals.student_no || "—"}</span>
           </div>
         </div>
       </div>
 
       {/* Term & Registration Details Grid */}
-      <div className="border-b border-black py-1.5 pr-6 grid grid-cols-12 gap-2 text-[8.5px]">
-        <div className="col-span-5 space-y-0.5 border-r border-black pr-2">
+      <div className="border-b border-black py-2 pr-6 grid grid-cols-12 gap-2 text-[10px]">
+        <div className="col-span-5 space-y-1 border-r border-black pr-2">
           <div className="flex justify-between">
             <span><strong>Semester:</strong> {vals.semester?.includes("1st") ? "[✔] 1st" : vals.semester?.includes("2nd") ? "[✔] 2nd" : vals.semester}</span>
             <span><strong>Summer:</strong> {vals.semester === "Summer" ? "[✔]" : "____"}</span>
@@ -1713,9 +1717,9 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
           </div>
           <div><strong>Date Enrolled:</strong> {vals.date_enrolled ? new Date(vals.date_enrolled + "T00:00:00").toLocaleDateString() : new Date().toLocaleDateString()}</div>
         </div>
-        <div className="col-span-5 space-y-0.5 border-r border-black pr-2">
-          <span className="font-bold uppercase text-[8px] block">STATUS OF REGISTRATION</span>
-          <div className="grid grid-cols-2 gap-0.5 text-[8px]">
+        <div className="col-span-5 space-y-1 border-r border-black pr-2">
+          <span className="font-bold uppercase text-[10px] block">STATUS OF REGISTRATION</span>
+          <div className="grid grid-cols-2 gap-0.5 text-[10px]">
             <span>[ ] New Student</span>
             <span>[ ] Transferee</span>
             <span>[✔] Old Student</span>
@@ -1723,8 +1727,8 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
           </div>
         </div>
         <div className="col-span-2 flex flex-col justify-center">
-          <span className="font-bold uppercase text-[8px] block">SEX</span>
-          <div className="text-[8px] space-y-0.5">
+          <span className="font-bold uppercase text-[10px] block">SEX</span>
+          <div className="text-[10px] space-y-0.5">
             <span>{vals.gender === "male" ? "[✔]" : "[ ]"} Male</span><br/>
             <span>{vals.gender === "female" ? "[✔]" : "[ ]"} Female</span>
           </div>
