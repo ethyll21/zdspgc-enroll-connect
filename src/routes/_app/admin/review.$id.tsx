@@ -208,7 +208,7 @@ function AdminReviewApplication() {
               </div>
 
               {/* Title Bar */}
-              <div className="bg-black text-white text-center py-1 font-bold text-[13px] tracking-wider uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+              <div className="bg-black text-white text-center font-bold text-[13px] h-[24px] leading-[24px] tracking-wider uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
                 College Enrollment Form
               </div>
 
@@ -219,8 +219,8 @@ function AdminReviewApplication() {
 
               {/* Course & Major */}
               <div className="flex flex-col gap-2 pt-3 pb-2">
-                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">COURSE:</span> <span className="border border-black flex-1 px-2 font-semibold uppercase min-h-[24px] flex items-center">{student?.program_name || enrollment.program_name || "—"}</span></div>
-                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">MAJOR:</span> <span className="border border-black flex-1 px-2 font-semibold uppercase min-h-[24px] flex items-center">{(student as any)?.major || "N/A"}</span></div>
+                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">COURSE:</span> <span className="border border-black flex-1 px-2 font-semibold uppercase h-6 leading-[22px] block">{student?.program_name || enrollment.program_name || "—"}</span></div>
+                <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">MAJOR:</span> <span className="border border-black flex-1 px-2 font-semibold uppercase h-6 leading-[22px] block">{(student as any)?.major || "N/A"}</span></div>
               </div>
             </div>
 
@@ -232,13 +232,13 @@ function AdminReviewApplication() {
             </div>
           </div>
           <div>
-            <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Personal Information</div>
+            <div className="bg-black text-white text-center font-bold h-[20px] leading-[20px] text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Personal Information</div>
             <div className="border border-black p-2 space-y-1">
               <div className="grid grid-cols-4 gap-2">
-                <div><span className="font-bold text-[10px]">LAST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase pb-0 mt-1 leading-none">{student?.last_name || "—"}</span></div>
-                <div><span className="font-bold text-[10px]">FIRST NAME:</span><br /><span className="border-b border-black block font-semibold uppercase pb-0 mt-1 leading-none">{student?.first_name || "—"}</span></div>
-                <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><br /><span className="border-b border-black block font-semibold uppercase pb-0 mt-1 leading-none">{student?.middle_name || "—"}</span></div>
-                <div><span className="font-bold text-[10px]">SUFFIX:</span><br /><span className="border-b border-black block uppercase pb-0 mt-1 leading-none">{(student as any)?.suffix || "N/A"}</span></div>
+                <div><span className="font-bold text-[10px]">LAST NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[14px]">{student?.last_name || "—"}</div><div className="border-b border-black"></div></div>
+                <div><span className="font-bold text-[10px]">FIRST NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[14px]">{student?.first_name || "—"}</div><div className="border-b border-black"></div></div>
+                <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[14px]">{student?.middle_name || "—"}</div><div className="border-b border-black"></div></div>
+                <div><span className="font-bold text-[10px]">SUFFIX:</span><div className="uppercase mt-0.5 min-h-[14px]">{(student as any)?.suffix || "N/A"}</div><div className="border-b border-black"></div></div>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div><span className="font-bold text-[10px]">DATE OF BIRTH:</span> <span>{student?.date_of_birth ? String(student.date_of_birth).slice(0, 10) : "—"}</span></div>
@@ -258,7 +258,7 @@ function AdminReviewApplication() {
             </div>
           </div>
           <div>
-            <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Family Background</div>
+            <div className="bg-black text-white text-center font-bold h-[20px] leading-[20px] text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Family Background</div>
             <div className="border border-black p-2">
               {(() => { const fb = (student as any)?.family_background || {}; return (
                 <>
@@ -297,14 +297,14 @@ function AdminReviewApplication() {
             </div>
           </div>
           <div>
-            <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Educational Background</div>
+            <div className="bg-black text-white text-center font-bold h-[20px] leading-[20px] text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Educational Background</div>
             <div className="border border-black">
               <div className="grid grid-cols-3 divide-x divide-black uppercase">
                 {(() => { const eb = (student as any)?.educational_background || {}; return (<>
                   <div className="p-2 space-y-0.5">
                     <div className="text-center border-b border-black pb-1 mb-1">
                       <div className="font-bold text-[10px]">ELEMENTARY</div>
-                      <div className="font-normal italic text-[9px] lowercase leading-none">(do not abbreviate)</div>
+                      <div className="font-normal italic text-[9px] lowercase">(do not abbreviate)</div>
                     </div>
                     <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {eb.elementary_school || "—"}</div>
                     <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {eb.elementary_address || "—"}</div>
@@ -313,7 +313,7 @@ function AdminReviewApplication() {
                   <div className="p-2 space-y-0.5">
                     <div className="text-center border-b border-black pb-1 mb-1">
                       <div className="font-bold text-[10px]">JUNIOR HIGH SCHOOL</div>
-                      <div className="font-normal italic text-[9px] lowercase leading-none">(do not abbreviate)</div>
+                      <div className="font-normal italic text-[9px] lowercase">(do not abbreviate)</div>
                     </div>
                     <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {eb.junior_high_school || "—"}</div>
                     <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {eb.junior_high_address || "—"}</div>
@@ -322,7 +322,7 @@ function AdminReviewApplication() {
                   <div className="p-2 space-y-0.5">
                     <div className="text-center border-b border-black pb-1 mb-1">
                       <div className="font-bold text-[10px]">SENIOR HIGH SCHOOL</div>
-                      <div className="font-normal italic text-[9px] lowercase leading-none">(do not abbreviate)</div>
+                      <div className="font-normal italic text-[9px] lowercase">(do not abbreviate)</div>
                     </div>
                     <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {eb.senior_high_school || "—"}</div>
                     <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {eb.senior_high_address || "—"}</div>
