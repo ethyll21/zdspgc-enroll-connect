@@ -768,18 +768,19 @@ function AdminBackPageDisplay({ student }: { student: any }) {
   // Helper: renders a value inside a bordered box with robust table layout
   const Box = ({ value }: { value?: string | number | null }) => (
     <div className="table-cell w-full align-bottom border-b border-black pb-0.5">
-      <div className="text-center font-semibold text-[10px] uppercase px-1 break-words leading-tight">
+      <div className="text-center font-semibold text-[10px] uppercase px-1 break-words leading-none pb-0.5">
         {value || "\u00A0"}
       </div>
     </div>
   );
 
   const F = ({ label, value }: { label: string | React.ReactNode; value: any }) => (
-    <div className="table w-full h-full mb-1">
+    <div className="table w-full mb-1">
       <div className="table-row">
-        <div className="table-cell whitespace-nowrap font-bold pr-1 align-top pt-[2px] w-[1%] leading-tight">
+        <div className="table-cell whitespace-nowrap font-bold align-bottom w-[1%] pb-[3px]">
           {label}
         </div>
+        <div className="table-cell w-[4px]"></div>
         <Box value={value} />
       </div>
     </div>
@@ -820,18 +821,18 @@ function AdminBackPageDisplay({ student }: { student: any }) {
           </div>
 
           {/* Citizenship */}
-          <div className="flex items-start gap-2 mb-2">
-            <span className="font-bold uppercase mt-[1px]">CITIZENSHIP:</span>{" "}
-            <span className="mr-2 mt-[1px]">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
+          <div className="flex items-end gap-2 mb-2">
+            <span className="font-bold uppercase mb-0.5">CITIZENSHIP:</span>{" "}
+            <span className="mr-2 mb-0.5">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
             <F label={`${!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:`} value={!isFilipinoOrBlank ? citizenship : ""} />
           </div>
 
           {/* Religious Affiliation */}
-          <div className="flex items-start gap-2 mb-2">
-            <span className="font-bold mt-[1px]">Religious Affiliation:</span>{" "}
-            <span className="mr-2 mt-[1px]">{isIslam ? "[✔]" : "[ ]"} Islam</span>
-            <span className="mr-2 mt-[1px]">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
-            <span className="mr-2 mt-[1px]">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
+          <div className="flex items-end gap-2 mb-2">
+            <span className="font-bold mb-0.5">Religious Affiliation:</span>{" "}
+            <span className="mr-2 mb-0.5">{isIslam ? "[✔]" : "[ ]"} Islam</span>
+            <span className="mr-2 mb-0.5">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
+            <span className="mr-2 mb-0.5">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
             <F label={`${isOtherReligion ? "[✔]" : "[ ]"} Other:`} value={isOtherReligion ? religion : ""} />
           </div>
 

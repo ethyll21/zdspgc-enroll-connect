@@ -1829,18 +1829,19 @@ function OldStudentBackPage({ vals }: { vals: any }) {
   // Helper: renders a value inside a bordered box with robust table layout
   const Box = ({ value }: { value?: string | number | null }) => (
     <div className="table-cell w-full align-bottom border-b border-black pb-0.5">
-      <div className="text-center font-semibold text-[10px] uppercase px-1 break-words leading-tight">
+      <div className="text-center font-semibold text-[10px] uppercase px-1 break-words leading-none pb-0.5">
         {value || "\u00A0"}
       </div>
     </div>
   );
 
   const F = ({ label, value }: { label: string | React.ReactNode; value: any }) => (
-    <div className="table w-full h-full mb-1">
+    <div className="table w-full mb-1">
       <div className="table-row">
-        <div className="table-cell whitespace-nowrap font-bold pr-1 align-top pt-[2px] w-[1%] leading-tight">
+        <div className="table-cell whitespace-nowrap font-bold align-bottom w-[1%] pb-[3px]">
           {label}
         </div>
+        <div className="table-cell w-[4px]"></div>
         <Box value={value} />
       </div>
     </div>
