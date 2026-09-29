@@ -1061,7 +1061,7 @@ function OldStudentSlipCopy({
           <div className="flex mb-0">
             <span className="font-bold text-[10px] shrink-0 mr-1 mt-auto">NAME:</span>
             <div className="flex-1">
-              <div className="flex justify-between uppercase font-bold text-[12px] px-1 h-[16px] leading-[16px]">
+              <div className="flex justify-between uppercase font-bold text-[12px] px-1 pb-1">
                 <span className="text-left w-1/3 truncate">{student?.last_name || enrollment.last_name || ""}</span>
                 <span className="text-center w-1/3 truncate">{student?.first_name || enrollment.first_name || ""}</span>
                 <span className="text-right w-1/3 truncate">{student?.middle_name || enrollment.middle_name || ""}</span>
@@ -1148,14 +1148,14 @@ function OldStudentSlipCopy({
           <tbody>
             {paddedSubjects.map((sub, idx) => (
               <tr key={idx}>
-                <td className="border border-black p-0.5 px-1 font-mono uppercase font-bold h-[16px]">{sub.course_no || ""}</td>
-                <td className="border border-black p-0.5 px-1 truncate max-w-[200px] h-[16px]">{sub.descriptive_title || ""}</td>
-                <td className="border border-black p-0.5 text-center font-semibold h-[16px]">{sub.units || ""}</td>
-                <td className="border border-black p-0.5 px-1 h-[16px]">{sub.time || ""}</td>
-                <td className="border border-black p-0.5 px-1 uppercase h-[16px]">{sub.days || ""}</td>
-                <td className="border border-black p-0.5 px-1 h-[16px]">{sub.room || ""}</td>
-                <td className="border border-black p-0.5 text-center h-[16px]">{sub.final_grade || ""}</td>
-                <td className="border border-black p-0.5 px-1 h-[16px]">{sub.posted_by || ""}</td>
+                <td className="border border-black px-1 py-1 font-mono uppercase font-bold">{sub.course_no || ""}</td>
+                <td className="border border-black px-1 py-1 truncate max-w-[200px]">{sub.descriptive_title || ""}</td>
+                <td className="border border-black px-1 py-1 text-center font-semibold">{sub.units || ""}</td>
+                <td className="border border-black px-1 py-1">{sub.time || ""}</td>
+                <td className="border border-black px-1 py-1 uppercase">{sub.days || ""}</td>
+                <td className="border border-black px-1 py-1">{sub.room || ""}</td>
+                <td className="border border-black px-1 py-1 text-center">{sub.final_grade || ""}</td>
+                <td className="border border-black px-1 py-1">{sub.posted_by || ""}</td>
               </tr>
             ))}
           </tbody>
@@ -1171,7 +1171,7 @@ function OldStudentSlipCopy({
           <div className="col-span-4">
             <span className="font-bold text-[7px] uppercase block text-slate-500">ADVISED BY:</span>
             <div className="inline-block text-center mt-2">
-              <p className="font-bold uppercase text-[8.5px] border-b border-black">
+              <p className="font-bold uppercase text-[8.5px] pb-1 border-b border-black">
                 {enrollment.advised_by || "JOANNAH LEA S. LAMBAN"}
               </p>
               <span className="text-[7px] block">DSA</span>
@@ -1180,7 +1180,7 @@ function OldStudentSlipCopy({
           <div className="col-span-4">
             <span className="font-bold text-[7px] uppercase block text-slate-500">APPROVED BY:</span>
             <div className="inline-block text-center mt-2">
-              <p className="font-bold uppercase text-[8.5px] border-b border-black">
+              <p className="font-bold uppercase text-[8.5px] pb-1 border-b border-black">
                 {enrollment.approved_by || "JEFFRYL DAVE S. ALBELLAR"}
               </p>
               <span className="text-[7px] block">Registrar</span>
