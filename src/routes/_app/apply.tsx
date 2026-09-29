@@ -1827,22 +1827,16 @@ function OldStudentBackPage({ vals }: { vals: any }) {
   const isOtherReligion = vals.religion && !isIslam && !isProtestant && !isCatholic;
 
   // Helper: renders a value inside a bordered box (mimics a paper form input)
-  const Box = ({ value, wide }: { value?: string | number | null; wide?: boolean }) => (
-    <span
-      style={{
-        flex: "1 1 auto",
-        minWidth: 0,
-        maxWidth: "100%",
-        borderBottom: "1.5px solid #000",
-        padding: "0 4px",
-        lineHeight: "1.4",
-      }}
-    >
-      {value ?? ""}
-    </span>
+  const Box = ({ value }: { value?: string | number | null; wide?: boolean }) => (
+    <div className="flex-1 flex flex-col justify-end">
+      <div className="text-center px-1 uppercase font-semibold text-[10px] leading-tight break-all">
+        {value ?? "\u00A0"}
+      </div>
+      <div className="border-b border-black w-full"></div>
+    </div>
   );
   const F = ({ children }: { children: React.ReactNode }) => (
-    <div style={{ display: "flex", alignItems: "baseline", gap: "4px", minWidth: 0, overflow: "hidden" }}>{children}</div>
+    <div className="flex items-end gap-1 mb-2">{children}</div>
   );
 
   return (
@@ -1882,33 +1876,33 @@ function OldStudentBackPage({ vals }: { vals: any }) {
           </div>
 
           {/* Citizenship */}
-          <div>
-            <span className="font-bold uppercase">CITIZENSHIP:</span>{" "}
-            <span className="mr-2">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
-            <span style={{display:"inline-flex",alignItems:"baseline",gap:"4px",flexWrap:"wrap"}}>
-              {!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:
-              <Box value={!isFilipinoOrBlank ? vals.citizenship : ""} wide />
-            </span>
+          <div className="flex items-end gap-2 mb-2">
+            <span className="font-bold uppercase mb-0.5">CITIZENSHIP:</span>{" "}
+            <span className="mr-2 mb-0.5">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
+            <div className="flex items-end gap-1 flex-1">
+              <span className="mb-0.5">{!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:</span>
+              <Box value={!isFilipinoOrBlank ? vals.citizenship : ""} />
+            </div>
           </div>
 
           {/* Religious Affiliation */}
-          <div>
-            <span className="font-bold">Religious Affiliation:</span>{" "}
-            <span className="mr-2">{isIslam ? "[✔]" : "[ ]"} Islam</span>
-            <span className="mr-2">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
-            <span className="mr-2">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
-            <span style={{display:"inline-flex",alignItems:"baseline",gap:"4px"}}>
-              {isOtherReligion ? "[✔]" : "[ ]"} Other:
-              <Box value={isOtherReligion ? vals.religion : ""} wide />
-            </span>
+          <div className="flex items-end gap-2 mb-2">
+            <span className="font-bold mb-0.5">Religious Affiliation:</span>{" "}
+            <span className="mr-2 mb-0.5">{isIslam ? "[✔]" : "[ ]"} Islam</span>
+            <span className="mr-2 mb-0.5">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
+            <span className="mr-2 mb-0.5">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
+            <div className="flex items-end gap-1 flex-1">
+              <span className="mb-0.5">{isOtherReligion ? "[✔]" : "[ ]"} Other:</span>
+              <Box value={isOtherReligion ? vals.religion : ""} />
+            </div>
           </div>
 
           <div className="border-t border-slate-400 my-1" />
 
           {/* Employer */}
-          <div className="flex flex-wrap gap-x-2 items-baseline">
-            <span className="font-bold">Name &amp; Address of Employer (If Employed):</span>
-            <Box value="" wide />
+          <div className="flex items-end gap-1 mb-2">
+            <span className="font-bold mb-0.5">Name &amp; Address of Employer (If Employed):</span>
+            <Box value="" />
           </div>
 
           {/* Father */}
