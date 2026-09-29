@@ -1236,9 +1236,9 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
     return raw;
   })();
 
-  const dob = s.date_of_birth || "";
-  const age = dob
-    ? Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+  const dob = s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString() : "—";
+  const age = s.date_of_birth
+    ? Math.floor((Date.now() - new Date(s.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
     : "—";
 
   const citizenship = s.citizenship || "";
@@ -1249,15 +1249,21 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
   const isCatholic = religion.toLowerCase() === "catholic";
   const isOtherReligion = religion && !isIslam && !isProtestant && !isCatholic;
 
-  // Helper: renders a value inside a bordered box (mimics a paper form input)
-  const Box = ({ value }: { value?: string | number | null; wide?: boolean }) => (
-    <div className="flex-1 border-b border-black text-center px-1 pb-0.5 uppercase font-semibold text-[10px] leading-none break-all">
-      {value ?? "\u00A0"}
+  // Helper: renders a value inside a bordered box with robust top-down flex layout
+  const Box = ({ value }: { value?: string | number | null }) => (
+    <div className="flex-1 flex flex-col min-w-0">
+      <div className="text-center font-semibold text-[10px] uppercase px-1 leading-tight break-words min-h-[14px]">
+        {value || "\u00A0"}
+      </div>
+      <div className="border-b border-black w-full mt-px shrink-0" />
     </div>
   );
 
-  const F = ({ children }: { children: React.ReactNode }) => (
-    <div className="flex items-end gap-1 mb-2">{children}</div>
+  const F = ({ label, value }: { label: string | React.ReactNode; value: any }) => (
+    <div className="flex items-start gap-1 w-full">
+      <span className="font-bold whitespace-nowrap leading-tight mt-[1px]">{label}</span>
+      <Box value={value} />
+    </div>
   );
   return (
     <div className="border border-black p-6 text-xs leading-relaxed font-sans flex-1 flex flex-col">
@@ -1267,92 +1273,83 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
         <div className="col-span-8 space-y-3 text-[11px]">
 
           {/* Age / Sex / Civil Status */}
-          <div className="grid grid-cols-3 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Age:</span><Box value={age} /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Sex:</span><Box value={s.gender ? s.gender.charAt(0).toUpperCase() + s.gender.slice(1) : ""} /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Civil Status:</span><Box value={s.civil_status} wide /></F>
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            <F label="Age:" value={age} />
+            <F label="Sex:" value={s.gender ? s.gender.charAt(0).toUpperCase() + s.gender.slice(1) : ""} />
+            <F label="Civil Status:" value={s.civil_status} />
           </div>
 
           {/* Place of Birth / Zip */}
-          <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Place of Birth:</span><Box value={s.place_of_birth} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Zip Code:</span><Box value={s.postal_code} /></F>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <F label="Place of Birth:" value={s.place_of_birth} />
+            <F label="Zip Code:" value={s.postal_code} />
           </div>
 
           {/* Birthdate */}
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Birthdate:</span><Box value={dob} wide /></F>
+          <div className="mb-2"><F label="Birthdate:" value={dob} /></div>
 
           {/* Home Address */}
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Home Address:</span><Box value={s.address} wide /></F>
+          <div className="mb-2"><F label="Home Address:" value={s.address} /></div>
 
           {/* Present Address */}
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Present Address:</span><Box value={s.address} wide /></F>
+          <div className="mb-2"><F label="Present Address:" value={s.address} /></div>
 
           {/* Contact / Email */}
-          <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Contact Number:</span><Box value={s.contact_number} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Email Address:</span><Box value={s.email} wide /></F>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <F label="Contact Number:" value={s.contact_number} />
+            <F label="Email Address:" value={s.email} />
           </div>
 
           {/* Citizenship */}
-          <div className="flex items-end gap-2 mb-2">
-            <span className="font-bold uppercase mb-0.5">CITIZENSHIP:</span>{" "}
-            <span className="mr-2 mb-0.5">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
-            <div className="flex items-end gap-1 flex-1">
-              <span className="mb-0.5">{!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:</span>
-              <Box value={!isFilipinoOrBlank ? citizenship : ""} />
-            </div>
+          <div className="flex items-start gap-2 mb-2">
+            <span className="font-bold uppercase mt-[1px]">CITIZENSHIP:</span>{" "}
+            <span className="mr-2 mt-[1px]">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
+            <F label={`${!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:`} value={!isFilipinoOrBlank ? citizenship : ""} />
           </div>
 
           {/* Religious Affiliation */}
-          <div className="flex items-end gap-2 mb-2">
-            <span className="font-bold mb-0.5">Religious Affiliation:</span>{" "}
-            <span className="mr-2 mb-0.5">{isIslam ? "[✔]" : "[ ]"} Islam</span>
-            <span className="mr-2 mb-0.5">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
-            <span className="mr-2 mb-0.5">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
-            <div className="flex items-end gap-1 flex-1">
-              <span className="mb-0.5">{isOtherReligion ? "[✔]" : "[ ]"} Other:</span>
-              <Box value={isOtherReligion ? religion : ""} />
-            </div>
+          <div className="flex items-start gap-2 mb-2">
+            <span className="font-bold mt-[1px]">Religious Affiliation:</span>{" "}
+            <span className="mr-2 mt-[1px]">{isIslam ? "[✔]" : "[ ]"} Islam</span>
+            <span className="mr-2 mt-[1px]">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
+            <span className="mr-2 mt-[1px]">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
+            <F label={`${isOtherReligion ? "[✔]" : "[ ]"} Other:`} value={isOtherReligion ? religion : ""} />
           </div>
 
-          <div className="border-t border-slate-400 my-1" />
+          <div className="border-t border-slate-400 my-1.5" />
 
           {/* Employer */}
-          <div className="flex items-end gap-1 mb-2">
-            <span className="font-bold mb-0.5">Name &amp; Address of Employer (If Employed):</span>
-            <Box value="" />
-          </div>
+          <div className="mb-2"><F label="Name & Address of Employer (If Employed):" value="" /></div>
 
           {/* Father */}
-          <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Father's Complete Name:</span><Box value={fb.father_name} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Occupation:</span><Box value={fb.father_occupation} wide /></F>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <F label="Father's Complete Name:" value={fb.father_name} />
+            <F label="Occupation:" value={fb.father_occupation} />
           </div>
-          <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Monthly Income:</span><Box value={fb.father_company} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Contact Number:</span><Box value={fb.father_contact} wide /></F>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <F label="Monthly Income:" value={fb.father_company} />
+            <F label="Contact Number:" value={fb.father_contact} />
           </div>
 
           {/* Mother */}
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Mother's Complete Maiden Name:</span><Box value={fb.mother_name} wide /></F>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Contact No.:</span><Box value={fb.mother_contact} wide /></F>
-          <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Occupation:</span><Box value={fb.mother_occupation} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Monthly Income:</span><Box value={fb.mother_company} wide /></F>
+          <div className="mb-2"><F label="Mother's Complete Maiden Name:" value={fb.mother_name} /></div>
+          <div className="mb-2"><F label="Contact No.:" value={fb.mother_contact} /></div>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <F label="Occupation:" value={fb.mother_occupation} />
+            <F label="Monthly Income:" value={fb.mother_company} />
           </div>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Parents' Address:</span><Box value={fb.father_address || fb.mother_address} wide /></F>
+          <div className="mb-2"><F label="Parents' Address:" value={fb.father_address || fb.mother_address} /></div>
 
           {/* Guardian */}
-          <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Guardian's Name:</span><Box value={fb.guardian_name} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Contact Number:</span><Box value={fb.guardian_contact} wide /></F>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <F label="Guardian's Name:" value={fb.guardian_name} />
+            <F label="Contact Number:" value={fb.guardian_contact} />
           </div>
-          <div className="grid grid-cols-2 gap-1">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Monthly Income:</span><Box value="" wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Relationship:</span><Box value={fb.guardian_relationship} wide /></F>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <F label="Monthly Income:" value="" />
+            <F label="Relationship:" value={fb.guardian_relationship} />
           </div>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Address:</span><Box value={fb.guardian_address} wide /></F>
+          <div className="mb-2"><F label="Address:" value={fb.guardian_address} /></div>
         </div>
 
         {/* ── Right Column — Student's Pledge Box ── */}
@@ -1385,28 +1382,28 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
           <div className="font-bold uppercase text-[12px]">Educational Background:</div>
 
           {/* Elementary */}
-          <div className="grid grid-cols-2 gap-6">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Elementary:</span><Box value={eb.elementary_school} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Year Graduated:</span><Box value={eb.elementary_years} /></F>
+          <div className="grid grid-cols-2 gap-6 mb-2">
+            <F label="Elementary:" value={eb.elementary_school} />
+            <F label="Year Graduated:" value={eb.elementary_years} />
           </div>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Address:</span><Box value={eb.elementary_address} wide /></F>
+          <div className="mb-2"><F label="Address:" value={eb.elementary_address} /></div>
 
           {/* Secondary (Senior HS) */}
-          <div className="grid grid-cols-2 gap-6">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Secondary (Senior HS):</span><Box value={eb.junior_high_school} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Year Graduated:</span><Box value={eb.junior_high_years} /></F>
+          <div className="grid grid-cols-2 gap-6 mb-2">
+            <F label="Secondary (Senior HS):" value={eb.junior_high_school} />
+            <F label="Year Graduated:" value={eb.junior_high_years} />
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Address:</span><Box value={eb.junior_high_address} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Track:</span><Box value={eb.senior_high_track} wide /></F>
+          <div className="grid grid-cols-2 gap-6 mb-2">
+            <F label="Address:" value={eb.junior_high_address} />
+            <F label="Track:" value={eb.senior_high_track} />
           </div>
 
           {/* School Last Attended (College) */}
-          <div className="grid grid-cols-2 gap-6">
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>School Last Attended (COLLEGE):</span><Box value={eb.senior_high_school} wide /></F>
-            <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Course &amp; Year:</span><Box value={eb.senior_high_years} wide /></F>
+          <div className="grid grid-cols-2 gap-6 mb-2">
+            <F label="School Last Attended (COLLEGE):" value={eb.senior_high_school} />
+            <F label="Course & Year:" value={eb.senior_high_years} />
           </div>
-          <F><span className="font-bold" style={{ whiteSpace: "nowrap" }}>Address:</span><Box value={eb.senior_high_address} wide /></F>
+          <div className="mb-2"><F label="Address:" value={eb.senior_high_address} /></div>
         </div>
       </div>
 
