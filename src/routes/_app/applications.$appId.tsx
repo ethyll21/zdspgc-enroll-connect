@@ -1147,15 +1147,15 @@ function OldStudentSlipCopy({
           </thead>
           <tbody>
             {paddedSubjects.map((sub, idx) => (
-              <tr key={idx}>
-                <td className="border border-black px-1 py-1 font-mono uppercase font-bold">{sub.course_no || ""}</td>
-                <td className="border border-black px-1 py-1 truncate max-w-[200px]">{sub.descriptive_title || ""}</td>
-                <td className="border border-black px-1 py-1 text-center font-semibold">{sub.units || ""}</td>
-                <td className="border border-black px-1 py-1">{sub.time || ""}</td>
-                <td className="border border-black px-1 py-1 uppercase">{sub.days || ""}</td>
-                <td className="border border-black px-1 py-1">{sub.room || ""}</td>
-                <td className="border border-black px-1 py-1 text-center">{sub.final_grade || ""}</td>
-                <td className="border border-black px-1 py-1">{sub.posted_by || ""}</td>
+              <tr key={idx} className="h-[20px]">
+                <td className="border border-black px-1 pb-1 pt-0.5 font-mono uppercase font-bold align-bottom">{sub.course_no || "\u00A0"}</td>
+                <td className="border border-black px-1 pb-1 pt-0.5 truncate max-w-[200px] align-bottom">{sub.descriptive_title || "\u00A0"}</td>
+                <td className="border border-black px-1 pb-1 pt-0.5 text-center font-semibold align-bottom">{sub.units || "\u00A0"}</td>
+                <td className="border border-black px-1 pb-1 pt-0.5 align-bottom">{sub.time || "\u00A0"}</td>
+                <td className="border border-black px-1 pb-1 pt-0.5 uppercase align-bottom">{sub.days || "\u00A0"}</td>
+                <td className="border border-black px-1 pb-1 pt-0.5 align-bottom">{sub.room || "\u00A0"}</td>
+                <td className="border border-black px-1 pb-1 pt-0.5 text-center align-bottom">{sub.final_grade || "\u00A0"}</td>
+                <td className="border border-black px-1 pb-1 pt-0.5 align-bottom">{sub.posted_by || "\u00A0"}</td>
               </tr>
             ))}
           </tbody>
