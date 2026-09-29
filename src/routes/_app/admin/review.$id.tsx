@@ -767,11 +767,8 @@ function AdminBackPageDisplay({ student }: { student: any }) {
 
   // Helper: renders a value inside a bordered box (mimics a paper form input)
   const Box = ({ value }: { value?: string | number | null; wide?: boolean }) => (
-    <div className="flex-1 flex flex-col justify-end">
-      <div className="text-center px-1 uppercase font-semibold text-[10px] leading-tight break-all">
-        {value ?? "\u00A0"}
-      </div>
-      <div className="border-b border-black w-full"></div>
+    <div className="flex-1 border-b border-black text-center px-1 pb-0.5 uppercase font-semibold text-[10px] leading-none break-all">
+      {value ?? "\u00A0"}
     </div>
   );
 
