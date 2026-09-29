@@ -1826,20 +1826,23 @@ function OldStudentBackPage({ vals }: { vals: any }) {
   const isCatholic = (vals.religion || "").toLowerCase() === "catholic";
   const isOtherReligion = vals.religion && !isIslam && !isProtestant && !isCatholic;
 
-  // Helper: renders a value inside a bordered box (mimics a paper form input)
-  const Box = ({ value }: { value?: string | number | null; wide?: boolean }) => (
-    <div className="flex-1 flex flex-col min-w-0">
-      <div className="text-center font-semibold text-[10px] uppercase px-1 leading-tight break-words min-h-[14px]">
+  // Helper: renders a value inside a bordered box with robust table layout
+  const Box = ({ value }: { value?: string | number | null }) => (
+    <div className="table-cell w-full align-bottom border-b border-black pb-0.5">
+      <div className="text-center font-semibold text-[10px] uppercase px-1 break-words leading-tight">
         {value || "\u00A0"}
       </div>
-      <div className="border-b border-black w-full mt-px shrink-0" />
     </div>
   );
 
   const F = ({ label, value }: { label: string | React.ReactNode; value: any }) => (
-    <div className="flex items-start gap-1 w-full">
-      <span className="font-bold whitespace-nowrap leading-tight mt-[1px]">{label}</span>
-      <Box value={value} />
+    <div className="table w-full h-full mb-1">
+      <div className="table-row">
+        <div className="table-cell whitespace-nowrap font-bold pr-1 align-top pt-[2px] w-[1%] leading-tight">
+          {label}
+        </div>
+        <Box value={value} />
+      </div>
     </div>
   );
 
