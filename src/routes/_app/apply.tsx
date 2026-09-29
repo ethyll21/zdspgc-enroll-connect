@@ -1092,7 +1092,7 @@ function NewStudentPaperReview({ vals, programList }: { vals: any; programList: 
           </div>
 
           {/* Title Bar */}
-          <div className="bg-black text-white text-center py-1 font-bold text-[13px] tracking-wider uppercase print:bg-black print:text-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+          <div className="bg-black text-white text-center font-bold text-[13px] h-[24px] leading-[24px] tracking-wider uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
             College Enrollment Form
           </div>
 
@@ -1103,8 +1103,8 @@ function NewStudentPaperReview({ vals, programList }: { vals: any; programList: 
 
           {/* Course & Major */}
           <div className="flex flex-col gap-2 pt-3 pb-2">
-            <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">COURSE:</span> <span className="border border-black flex-1 px-2 pt-1 pb-1 font-semibold uppercase leading-snug min-h-[24px] flex items-center">{courseName}</span></div>
-            <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">MAJOR:</span> <span className="border border-black flex-1 px-2 pt-1 pb-1 font-semibold uppercase leading-snug min-h-[24px] flex items-center">{vals.major || "N/A"}</span></div>
+            <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">COURSE:</span> <span className="border border-black flex-1 px-2 font-semibold uppercase h-6 leading-[22px] block">{courseName}</span></div>
+            <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">MAJOR:</span> <span className="border border-black flex-1 px-2 font-semibold uppercase h-6 leading-[22px] block">{vals.major || "N/A"}</span></div>
           </div>
         </div>
 
@@ -1118,13 +1118,13 @@ function NewStudentPaperReview({ vals, programList }: { vals: any; programList: 
 
       {/* Personal Information */}
       <div>
-        <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Personal Information</div>
+        <div className="bg-black text-white text-center font-bold h-[20px] leading-[20px] text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Personal Information</div>
         <div className="border border-black p-2 space-y-1">
           <div className="grid grid-cols-4 gap-2">
-            <div><span className="font-bold text-[10px]">LAST NAME:</span><br/><span className="border-b border-black block font-semibold uppercase pb-1 mt-0.5 leading-snug">{vals.last_name || "—"}</span></div>
-            <div><span className="font-bold text-[10px]">FIRST NAME:</span><br/><span className="border-b border-black block font-semibold uppercase pb-1 mt-0.5 leading-snug">{vals.first_name || "—"}</span></div>
-            <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><br/><span className="border-b border-black block font-semibold uppercase pb-1 mt-0.5 leading-snug">{vals.middle_name || "—"}</span></div>
-            <div><span className="font-bold text-[10px]">SUFFIX:</span><br/><span className="border-b border-black block uppercase pb-1 mt-0.5 leading-snug">{vals.suffix || "N/A"}</span></div>
+            <div><span className="font-bold text-[10px]">LAST NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[14px]">{vals.last_name || "—"}</div><div className="border-b border-black"></div></div>
+            <div><span className="font-bold text-[10px]">FIRST NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[14px]">{vals.first_name || "—"}</div><div className="border-b border-black"></div></div>
+            <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[14px]">{vals.middle_name || "—"}</div><div className="border-b border-black"></div></div>
+            <div><span className="font-bold text-[10px]">SUFFIX:</span><div className="uppercase mt-0.5 min-h-[14px]">{vals.suffix || "N/A"}</div><div className="border-b border-black"></div></div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div><span className="font-bold text-[10px]">DATE OF BIRTH:</span> <span>{vals.date_of_birth ? vals.date_of_birth.slice(0, 10) : "—"}</span></div>
@@ -1146,7 +1146,7 @@ function NewStudentPaperReview({ vals, programList }: { vals: any; programList: 
 
       {/* Family Background */}
       <div>
-        <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Family Background</div>
+        <div className="bg-black text-white text-center font-bold h-[20px] leading-[20px] text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Family Background</div>
         <div className="border border-black p-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-0.5 uppercase">
@@ -1183,23 +1183,32 @@ function NewStudentPaperReview({ vals, programList }: { vals: any; programList: 
 
       {/* Educational Background */}
       <div>
-        <div className="bg-black text-white text-center font-bold py-0.5 text-xs uppercase">Educational Background</div>
+        <div className="bg-black text-white text-center font-bold h-[20px] leading-[20px] text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Educational Background</div>
         <div className="border border-black">
           <div className="grid grid-cols-3 divide-x divide-black uppercase">
             <div className="p-2 space-y-0.5">
-              <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">ELEMENTARY<br/><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
+              <div className="text-center border-b border-black pb-1 mb-1">
+                <div className="font-bold text-[10px]">ELEMENTARY</div>
+                <div className="font-normal italic text-[9px] lowercase">(do not abbreviate)</div>
+              </div>
               <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {vals.elementary_school || "—"}</div>
               <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {vals.elementary_address || "—"}</div>
               <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {vals.elementary_years || "—"}</div>
             </div>
             <div className="p-2 space-y-0.5">
-              <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">JUNIOR HIGH SCHOOL<br/><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
+              <div className="text-center border-b border-black pb-1 mb-1">
+                <div className="font-bold text-[10px]">JUNIOR HIGH SCHOOL</div>
+                <div className="font-normal italic text-[9px] lowercase">(do not abbreviate)</div>
+              </div>
               <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {vals.junior_high_school || "—"}</div>
               <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {vals.junior_high_address || "—"}</div>
               <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {vals.junior_high_years || "—"}</div>
             </div>
             <div className="p-2 space-y-0.5">
-              <div className="font-bold text-center text-[10px] border-b border-black pb-0.5 mb-1">SENIOR HIGH SCHOOL<br/><span className="font-normal italic text-[9px] lowercase">(do not abbreviate)</span></div>
+              <div className="text-center border-b border-black pb-1 mb-1">
+                <div className="font-bold text-[10px]">SENIOR HIGH SCHOOL</div>
+                <div className="font-normal italic text-[9px] lowercase">(do not abbreviate)</div>
+              </div>
               <div><span className="font-bold text-[10px]">NAME OF SCHOOL:</span> {vals.senior_high_school || "—"}</div>
               <div><span className="font-bold text-[10px]">SCHOOL ADDRESS:</span> {vals.senior_high_address || "—"}</div>
               <div><span className="font-bold text-[10px]">INCLUSIVE YEARS:</span> {vals.senior_high_years || "—"}</div>
