@@ -1655,7 +1655,7 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
   return (
     <div className="border border-black p-3.5 relative text-[10px] leading-tight font-sans">
       {/* Right Margin Vertical Copy Indicator */}
-      <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold tracking-widest uppercase [writing-mode:vertical-rl] rotate-180 text-black border-l border-black pl-1 h-36 flex items-center justify-center">
+      <div className="absolute right-[-48px] top-[50%] text-[9px] font-bold tracking-widest uppercase text-black border-t border-black pt-1 w-36 text-center" style={{ transform: 'translateY(-50%) rotate(-90deg)', transformOrigin: 'center' }}>
         {copyTitle}
       </div>
 
@@ -1681,18 +1681,21 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
       <div className="border-b border-black py-2.5 pr-6 grid grid-cols-12 gap-1 text-[10px]">
         {/* Name Section */}
         <div className="col-span-6 flex flex-col justify-end border-r border-black pr-2">
-          <div className="flex items-baseline gap-1 mb-1">
-            <span className="font-bold text-[10px] shrink-0 mr-1">NAME:</span>
-            <div className="flex justify-between flex-1 uppercase font-bold text-[12px] px-1">
-              <span className="text-left w-1/3 truncate">{vals.last_name || ""}</span>
-              <span className="text-center w-1/3 truncate">{vals.first_name || ""}</span>
-              <span className="text-right w-1/3 truncate">{vals.middle_name || ""}</span>
+          <div className="flex mb-0">
+            <span className="font-bold text-[10px] shrink-0 mr-1 mt-auto">NAME:</span>
+            <div className="flex-1">
+              <div className="flex justify-between uppercase font-bold text-[12px] px-1 h-[16px] leading-[16px]">
+                <span className="text-left w-1/3 truncate">{vals.last_name || ""}</span>
+                <span className="text-center w-1/3 truncate">{vals.first_name || ""}</span>
+                <span className="text-right w-1/3 truncate">{vals.middle_name || ""}</span>
+              </div>
+              <div className="border-t border-black h-[1px] w-full"></div>
+              <div className="flex justify-between text-[8px] text-slate-500 pt-[2px] px-1">
+                <span className="text-left w-1/3">Last Name</span>
+                <span className="text-center w-1/3">First Name</span>
+                <span className="text-right w-1/3">Middle Name</span>
+              </div>
             </div>
-          </div>
-          <div className="flex justify-between text-[8px] text-slate-500 pt-0.5 px-1 border-t border-slate-300 ml-10">
-            <span className="text-left w-1/3">Last Name</span>
-            <span className="text-center w-1/3">First Name</span>
-            <span className="text-right w-1/3">Middle Name</span>
           </div>
         </div>
 
@@ -1748,28 +1751,28 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
       <div className="pr-6 pt-1">
         <table className="w-full text-left border-collapse border border-black text-[8px]">
           <thead>
-            <tr className="bg-slate-100 divide-x divide-black border-b border-black font-bold text-center">
-              <th className="p-1 w-20">Course No.</th>
-              <th className="p-1">Descriptive Title</th>
-              <th className="p-1 w-10">Units</th>
-              <th className="p-1 w-24">Time</th>
-              <th className="p-1 w-14">Days</th>
-              <th className="p-1 w-14">Room</th>
-              <th className="p-1 w-16">Final Grade</th>
-              <th className="p-1 w-20">Posted by</th>
+            <tr className="bg-slate-100 font-bold text-center print:bg-slate-100 print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+              <th className="border border-black p-1 w-20">Course No.</th>
+              <th className="border border-black p-1">Descriptive Title</th>
+              <th className="border border-black p-1 w-10">Units</th>
+              <th className="border border-black p-1 w-24">Time</th>
+              <th className="border border-black p-1 w-14">Days</th>
+              <th className="border border-black p-1 w-14">Room</th>
+              <th className="border border-black p-1 w-16">Final Grade</th>
+              <th className="border border-black p-1 w-20">Posted by</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-black">
+          <tbody>
             {paddedSubjects.map((sub, idx) => (
-              <tr key={idx} className="divide-x divide-black h-4.5">
-                <td className="p-0.5 px-1 font-mono uppercase font-bold">{sub.course_no || ""}</td>
-                <td className="p-0.5 px-1 truncate max-w-[200px]">{sub.descriptive_title || ""}</td>
-                <td className="p-0.5 text-center font-semibold">{sub.units || ""}</td>
-                <td className="p-0.5 px-1">{sub.time || ""}</td>
-                <td className="p-0.5 px-1 uppercase">{sub.days || ""}</td>
-                <td className="p-0.5 px-1">{sub.room || ""}</td>
-                <td className="p-0.5 text-center">{sub.final_grade || ""}</td>
-                <td className="p-0.5 px-1">{sub.posted_by || ""}</td>
+              <tr key={idx}>
+                <td className="border border-black p-0.5 px-1 font-mono uppercase font-bold h-[16px]">{sub.course_no || ""}</td>
+                <td className="border border-black p-0.5 px-1 truncate max-w-[200px] h-[16px]">{sub.descriptive_title || ""}</td>
+                <td className="border border-black p-0.5 text-center font-semibold h-[16px]">{sub.units || ""}</td>
+                <td className="border border-black p-0.5 px-1 h-[16px]">{sub.time || ""}</td>
+                <td className="border border-black p-0.5 px-1 uppercase h-[16px]">{sub.days || ""}</td>
+                <td className="border border-black p-0.5 px-1 h-[16px]">{sub.room || ""}</td>
+                <td className="border border-black p-0.5 text-center h-[16px]">{sub.final_grade || ""}</td>
+                <td className="border border-black p-0.5 px-1 h-[16px]">{sub.posted_by || ""}</td>
               </tr>
             ))}
           </tbody>
