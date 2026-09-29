@@ -1838,10 +1838,9 @@ function OldStudentBackPage({ vals }: { vals: any }) {
   const F = ({ label, value }: { label: string | React.ReactNode; value: any }) => (
     <div className="table w-full mb-1">
       <div className="table-row">
-        <div className="table-cell whitespace-nowrap font-bold align-bottom w-[1%] pb-[3px]">
+        <div className="table-cell whitespace-nowrap font-bold align-bottom w-[1%] pb-[3px] pr-2">
           {label}
         </div>
-        <div className="table-cell w-[4px]"></div>
         <Box value={value} />
       </div>
     </div>

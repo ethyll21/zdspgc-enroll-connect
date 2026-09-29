@@ -1261,10 +1261,9 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
   const F = ({ label, value }: { label: string | React.ReactNode; value: any }) => (
     <div className="table w-full mb-1">
       <div className="table-row">
-        <div className="table-cell whitespace-nowrap font-bold align-bottom w-[1%] pb-[3px]">
+        <div className="table-cell whitespace-nowrap font-bold align-bottom w-[1%] pb-[3px] pr-2">
           {label}
         </div>
-        <div className="table-cell w-[4px]"></div>
         <Box value={value} />
       </div>
     </div>
@@ -1305,18 +1304,18 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
           </div>
 
           {/* Citizenship */}
-          <div className="flex items-end gap-2 mb-2">
-            <span className="font-bold uppercase mb-0.5">CITIZENSHIP:</span>{" "}
-            <span className="mr-2 mb-0.5">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-bold uppercase mt-1">CITIZENSHIP:</span>
+            <span className="mr-2 mt-1 whitespace-nowrap">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
             <F label={`${!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:`} value={!isFilipinoOrBlank ? citizenship : ""} />
           </div>
 
           {/* Religious Affiliation */}
-          <div className="flex items-end gap-2 mb-2">
-            <span className="font-bold mb-0.5">Religious Affiliation:</span>{" "}
-            <span className="mr-2 mb-0.5">{isIslam ? "[✔]" : "[ ]"} Islam</span>
-            <span className="mr-2 mb-0.5">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
-            <span className="mr-2 mb-0.5">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-bold mt-1">Religious Affiliation:</span>
+            <span className="mr-1 mt-1 whitespace-nowrap">{isIslam ? "[✔]" : "[ ]"} Islam</span>
+            <span className="mr-1 mt-1 whitespace-nowrap">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
+            <span className="mr-1 mt-1 whitespace-nowrap">{isCatholic ? "[✔]" : "[ ]"} Catholic</span>
             <F label={`${isOtherReligion ? "[✔]" : "[ ]"} Other:`} value={isOtherReligion ? religion : ""} />
           </div>
 
