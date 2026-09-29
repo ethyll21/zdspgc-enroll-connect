@@ -1830,7 +1830,7 @@ function OldStudentBackPage({ vals }: { vals: any }) {
   const Box = ({ value }: { value?: string | number | null }) => (
     <div className="table-cell w-full align-bottom">
       <div className="border-b border-black w-full">
-        <div className="text-center font-semibold text-[10px] uppercase px-1 break-words leading-tight mb-1">
+        <div className="text-center font-semibold text-[10px] uppercase px-1 break-words leading-tight mb-2">
           {value || "\u00A0"}
         </div>
       </div>
