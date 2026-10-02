@@ -166,8 +166,8 @@ function AdminReviewApplication() {
       </div>
 
       {/* Formal Enrollment Form */}
-      <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="min-w-[800px]">
+      <div className="overflow-x-auto print:overflow-visible pb-4 -mx-4 px-4 print:mx-0 print:px-0 sm:mx-0 sm:px-0">
+        <div className="min-w-[800px] print:min-w-0 print:w-full">
           {isOldStudent ? (
             <div className="flex flex-col gap-4">
               {/* PAGE 1 — Two copies */}

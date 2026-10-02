@@ -214,3 +214,87 @@
   border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
 }
+
+/* ── Print styles ────────────────────────────────────────────────────────────
+   Ensure the full enrollment form prints without clipping, scaling, or
+   overflow cutting. These rules target both the admin review page
+   (review.$id.tsx) and the student applications page (applications.$appId.tsx).
+─────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* 1. Reset page body so there are no inherited margins / backgrounds */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 2. Neutralise the overflow-x-auto scroll container used on the admin
+        review page — this is the primary cause of right-side cut-off. */
+  .overflow-x-auto,
+  .overflow-hidden {
+    overflow: visible !important;
+  }
+
+  /* 3. Remove the CSS scale() transform that shrinks the inner form wrapper
+        on narrow viewports (applications.$appId.tsx #printable-form-inner). */
+  #printable-form-inner {
+    transform: none !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  /* 4. Remove height constraint imposed by the scale wrapper's parent. */
+  #printable-form-inner + *,
+  #printable-form-inner {
+    height: auto !important;
+  }
+
+  /* 5. The outer page container — remove max-width / margins so the form
+        can use the full printable area. */
+  #printable-application-form,
+  .print\:max-w-none {
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* 6. Ensure each printable form section uses full width with no clipping. */
+  #printable-application-form-page1,
+  #printable-application-form-page2,
+  #printable-application-form-new {
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* 7. Force black section headers to actually print with black background. */
+  .bg-black {
+    background-color: #000 !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 8. On the admin review page the scroll wrapper uses min-w-[800px];
+        let it auto-size to the paper width. */
+  .min-w-\[800px\] {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 9. Page margins – give a small gutter so content doesn't touch the edge. */
+  @page {
+    margin: 12mm 10mm;
+    size: A4 portrait;
+  }
+}

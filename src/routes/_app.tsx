@@ -84,7 +84,7 @@ function AppLayout() {
     <div className="flex min-h-screen bg-background">
 
       {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-white/10 bg-[#0A2540] md:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-white/10 bg-[#0A2540] md:flex print:hidden">
 
         {/* Logo / brand */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
@@ -194,7 +194,7 @@ function AppLayout() {
       <main className="flex-1 overflow-x-hidden flex flex-col">
 
         {/* Top bar */}
-        <header className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#0C2D50] px-4 py-3 md:px-8">
+        <header className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#0C2D50] px-4 py-3 md:px-8 print:hidden">
           {/* Mobile: logo */}
           <div className="flex items-center gap-2 md:hidden">
             <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-white p-0.5 shadow-sm">
@@ -240,7 +240,7 @@ function AppLayout() {
         </div>
 
         {/* Mobile bottom nav */}
-        <nav className="fixed bottom-0 left-0 right-0 z-20 flex justify-around border-t bg-white py-2 shadow-lg md:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-20 flex justify-around border-t bg-white py-2 shadow-lg md:hidden print:hidden">
           {nav.map((item) => {
             const active =
               pathname === item.to ||
