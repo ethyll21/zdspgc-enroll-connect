@@ -787,49 +787,49 @@ function AdminBackPageDisplay({ student }: { student: any }) {
     </div>
   );
   return (
-    <div className="w-full min-w-full self-stretch border border-black p-4 text-xs leading-tight font-sans flex-1 flex flex-col">
-      <div className="grid grid-cols-12 gap-4 flex-1">
+    <div className="w-full min-w-full self-stretch border border-black p-6 text-xs leading-relaxed font-sans flex-1 flex flex-col">
+      <div className="grid grid-cols-12 gap-6 flex-1">
 
         {/* ── Left Column ── */}
-        <div className="col-span-8 space-y-1 text-[11px]">
+        <div className="col-span-8 space-y-3 text-[11px]">
 
           {/* Age / Sex / Civil Status */}
-          <div className="grid grid-cols-3 gap-2 mb-1">
+          <div className="grid grid-cols-3 gap-2 mb-2">
             <F label="Age:" value={age} />
             <F label="Sex:" value={s.gender ? s.gender.charAt(0).toUpperCase() + s.gender.slice(1) : ""} />
             <F label="Civil Status:" value={s.civil_status} />
           </div>
 
           {/* Place of Birth / Zip */}
-          <div className="grid grid-cols-2 gap-2 mb-1">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <F label="Place of Birth:" value={s.place_of_birth} />
             <F label="Zip Code:" value={s.postal_code} />
           </div>
 
           {/* Birthdate */}
-          <div className="mb-1"><F label="Birthdate:" value={dob} /></div>
+          <div className="mb-2"><F label="Birthdate:" value={dob} /></div>
 
           {/* Home Address */}
-          <div className="mb-1"><F label="Home Address:" value={s.address} /></div>
+          <div className="mb-2"><F label="Home Address:" value={s.address} /></div>
 
           {/* Present Address */}
-          <div className="mb-1"><F label="Present Address:" value={s.address} /></div>
+          <div className="mb-2"><F label="Present Address:" value={s.address} /></div>
 
           {/* Contact / Email */}
-          <div className="grid grid-cols-2 gap-2 mb-1">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <F label="Contact Number:" value={s.contact_number} />
             <F label="Email Address:" value={s.email} />
           </div>
 
           {/* Citizenship */}
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-2">
             <span className="font-bold uppercase mt-1">CITIZENSHIP:</span>
             <span className="mr-2 mt-1 whitespace-nowrap">{isFilipinoOrBlank ? "[✔]" : "[ ]"} Filipino</span>
             <F label={`${!isFilipinoOrBlank ? "[✔]" : "[ ]"} If Alien, ACR No.:`} value={!isFilipinoOrBlank ? citizenship : ""} />
           </div>
 
           {/* Religious Affiliation */}
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-2">
             <span className="font-bold mt-1">Religious Affiliation:</span>
             <span className="mr-1 mt-1 whitespace-nowrap">{isIslam ? "[✔]" : "[ ]"} Islam</span>
             <span className="mr-1 mt-1 whitespace-nowrap">{isProtestant ? "[✔]" : "[ ]"} Protestant</span>
@@ -837,44 +837,44 @@ function AdminBackPageDisplay({ student }: { student: any }) {
             <F label={`${isOtherReligion ? "[✔]" : "[ ]"} Other:`} value={isOtherReligion ? religion : ""} />
           </div>
 
-          <div className="border-t border-slate-400 my-0.5" />
+          <div className="border-t border-slate-400 my-1.5" />
 
           {/* Employer */}
-          <div className="mb-1"><F label="Name & Address of Employer (If Employed):" value="" /></div>
+          <div className="mb-2"><F label="Name & Address of Employer (If Employed):" value="" /></div>
 
           {/* Father */}
-          <div className="grid grid-cols-2 gap-2 mb-1">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <F label="Father's Complete Name:" value={fb.father_name} />
             <F label="Occupation:" value={fb.father_occupation} />
           </div>
-          <div className="grid grid-cols-2 gap-2 mb-1">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <F label="Monthly Income:" value={fb.father_company} />
             <F label="Contact Number:" value={fb.father_contact} />
           </div>
 
           {/* Mother */}
-          <div className="mb-1"><F label="Mother's Complete Maiden Name:" value={fb.mother_name} /></div>
-          <div className="mb-1"><F label="Contact No.:" value={fb.mother_contact} /></div>
-          <div className="grid grid-cols-2 gap-2 mb-1">
+          <div className="mb-2"><F label="Mother's Complete Maiden Name:" value={fb.mother_name} /></div>
+          <div className="mb-2"><F label="Contact No.:" value={fb.mother_contact} /></div>
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <F label="Occupation:" value={fb.mother_occupation} />
             <F label="Monthly Income:" value={fb.mother_company} />
           </div>
-          <div className="mb-1"><F label="Parents' Address:" value={fb.father_address || fb.mother_address} /></div>
+          <div className="mb-2"><F label="Parents' Address:" value={fb.father_address || fb.mother_address} /></div>
 
           {/* Guardian */}
-          <div className="grid grid-cols-2 gap-2 mb-1">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <F label="Guardian's Name:" value={fb.guardian_name} />
             <F label="Contact Number:" value={fb.guardian_contact} />
           </div>
-          <div className="grid grid-cols-2 gap-2 mb-1">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <F label="Monthly Income:" value="" />
             <F label="Relationship:" value={fb.guardian_relationship} />
           </div>
-          <div className="mb-1"><F label="Address:" value={fb.guardian_address} /></div>
+          <div className="mb-2"><F label="Address:" value={fb.guardian_address} /></div>
         </div>
 
         {/* ── Right Column — Student's Pledge Box ── */}
-        <div className="col-span-4 flex flex-col justify-end pb-4">
+        <div className="col-span-4 flex flex-col justify-end pb-36">
           <div className="border border-black p-4 text-[10px] leading-relaxed flex flex-col">
             <p className="font-bold text-center text-[11px] uppercase mb-3">STUDENT'S PLEDGE</p>
             <p className="text-justify">
@@ -899,37 +899,37 @@ function AdminBackPageDisplay({ student }: { student: any }) {
         <div className="col-span-12 border-t border-slate-400" />
 
         {/* ── Educational Background — full width ── */}
-        <div className="col-span-12 space-y-1 text-[11px]">
+        <div className="col-span-12 space-y-3 text-[11px]">
           <div className="font-bold uppercase text-[12px]">Educational Background:</div>
 
           {/* Elementary */}
-          <div className="grid grid-cols-2 gap-4 mb-1">
+          <div className="grid grid-cols-2 gap-6 mb-2">
             <F label="Elementary:" value={eb.elementary_school} />
             <F label="Year Graduated:" value={eb.elementary_years} />
           </div>
-          <div className="mb-1"><F label="Address:" value={eb.elementary_address} /></div>
+          <div className="mb-2"><F label="Address:" value={eb.elementary_address} /></div>
 
           {/* Secondary (Senior HS) */}
-          <div className="grid grid-cols-2 gap-4 mb-1">
+          <div className="grid grid-cols-2 gap-6 mb-2">
             <F label="Secondary (Senior HS):" value={eb.junior_high_school} />
             <F label="Year Graduated:" value={eb.junior_high_years} />
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-1">
+          <div className="grid grid-cols-2 gap-6 mb-2">
             <F label="Address:" value={eb.junior_high_address} />
             <F label="Track:" value={eb.senior_high_track} />
           </div>
 
           {/* School Last Attended (College) */}
-          <div className="grid grid-cols-2 gap-4 mb-1">
+          <div className="grid grid-cols-2 gap-6 mb-2">
             <F label="School Last Attended (COLLEGE):" value={eb.senior_high_school} />
             <F label="Course & Year:" value={eb.senior_high_years} />
           </div>
-          <div className="mb-1"><F label="Address:" value={eb.senior_high_address} /></div>
+          <div className="mb-2"><F label="Address:" value={eb.senior_high_address} /></div>
         </div>
       </div>
 
       {/* Bottom — Full Student's Pledge block */}
-      <div className="mt-auto pt-2"><div className="border-t border-black pr-6 pt-2">
+      <div className="mt-auto pt-4"><div className="border-t border-black pr-6 pt-3">
         <p className="font-bold text-center text-[13px] uppercase mb-2">STUDENT'S PLEDGE</p>
         <p className="text-[11px] text-justify leading-relaxed">
           In consideration of my admission to the ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE
@@ -937,13 +937,13 @@ function AdminBackPageDisplay({ student }: { student: any }) {
           pledge to abide by the rules and regulations laid down by competent authority of the state
           college and of the college in which I am enrolled.
         </p>
-        <div className="mt-4 flex justify-end">
+        <div className="mt-8 flex justify-end">
           <div className="text-center">
             <div className="border-b border-black w-56 mb-1" />
             <p className="text-[10px]">Student's Signature</p>
           </div>
         </div>
-        <p className="text-[9px] text-center mt-2 italic mb-1">
+        <p className="text-[9px] text-center mt-3 italic mb-2">
           *Refusal to take this pledge or any violation of its terms shall be sufficient cause for denial of the admission.
         </p>
       </div>
