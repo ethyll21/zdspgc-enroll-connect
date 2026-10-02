@@ -1819,6 +1819,7 @@ function OldStudentBackPage({ vals }: { vals: any }) {
   const age = vals.date_of_birth
     ? Math.floor((Date.now() - new Date(vals.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
     : "—";
+  const dob = vals.date_of_birth ? new Date(vals.date_of_birth).toLocaleDateString() : "—";
 
   const isFilipinoOrBlank = !vals.citizenship || vals.citizenship.trim().toLowerCase() === "filipino";
   const isIslam = (vals.religion || "").toLowerCase() === "islam";
