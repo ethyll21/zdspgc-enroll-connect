@@ -787,7 +787,7 @@ function AdminBackPageDisplay({ student }: { student: any }) {
     </div>
   );
   return (
-    <div className="w-full border border-black p-6 text-xs leading-relaxed font-sans flex-1 flex flex-col">
+    <div className="w-full min-w-full self-stretch border border-black p-6 text-xs leading-relaxed font-sans flex-1 flex flex-col">
       <div className="grid grid-cols-12 gap-6 flex-1">
 
         {/* ── Left Column ── */}
