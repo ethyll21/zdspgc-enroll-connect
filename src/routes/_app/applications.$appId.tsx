@@ -595,10 +595,10 @@ function ApplicationDetail() {
                   <div className="bg-black text-white text-center font-bold h-[20px] leading-[20px] text-xs uppercase print:bg-black print:text-white print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>Personal Information</div>
                   <div className="border border-black p-2 space-y-1">
                     <div className="grid grid-cols-4 gap-2">
-                      <div><span className="font-bold text-[10px]">LAST NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[14px]">{studentData?.student.last_name || "—"}</div><div className="border-b border-black"></div></div>
-                      <div><span className="font-bold text-[10px]">FIRST NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[14px]">{studentData?.student.first_name || "—"}</div><div className="border-b border-black"></div></div>
-                      <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[14px]">{studentData?.student.middle_name || "—"}</div><div className="border-b border-black"></div></div>
-                      <div><span className="font-bold text-[10px]">SUFFIX:</span><div className="uppercase mt-0.5 min-h-[14px]">{(studentData?.student as any)?.suffix || "N/A"}</div><div className="border-b border-black"></div></div>
+                      <div><span className="font-bold text-[10px]">LAST NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[18px] pb-1">{studentData?.student.last_name || "—"}</div><div className="border-b border-black"></div></div>
+                      <div><span className="font-bold text-[10px]">FIRST NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[18px] pb-1">{studentData?.student.first_name || "—"}</div><div className="border-b border-black"></div></div>
+                      <div><span className="font-bold text-[10px]">MIDDLE NAME:</span><div className="font-semibold uppercase mt-0.5 min-h-[18px] pb-1">{studentData?.student.middle_name || "—"}</div><div className="border-b border-black"></div></div>
+                      <div><span className="font-bold text-[10px]">SUFFIX:</span><div className="uppercase mt-0.5 min-h-[18px] pb-1">{(studentData?.student as any)?.suffix || "N/A"}</div><div className="border-b border-black"></div></div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div><span className="font-bold text-[10px]">DATE OF BIRTH:</span> <span>{studentData?.student.date_of_birth ? studentData.student.date_of_birth.slice(0, 10) : "—"}</span></div>
