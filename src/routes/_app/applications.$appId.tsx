@@ -539,13 +539,6 @@ function ApplicationDetail() {
 
                 {/* PAGE 2 — Back page (personal info, family background, educational background) */}
                 <div id="printable-application-form-page2" className="bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 min-h-[1056px] flex flex-col mt-4">
-                  {/* PAGE 2 tab */}
-                  <div className="flex items-center gap-0 mb-4 shrink-0">
-                    <span className="text-[11px] font-black uppercase tracking-widest text-white bg-[#0A2540] px-4 py-1.5 rounded-tl rounded-bl border border-[#0A2540]">
-                      PAGE 2
-                    </span>
-                    <div className="flex-1 h-px bg-slate-300 border-t border-slate-300" />
-                  </div>
                   <OldStudentBackPageDisplay student={studentData?.student} enrollment={enrollment} />
                 </div>
               </div>
@@ -1253,7 +1246,7 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
   const Box = ({ value }: { value?: string | number | null }) => (
     <div className="table-cell w-full align-bottom">
       <div className="border-b border-black w-full">
-        <div className="text-center font-semibold text-[10px] uppercase px-1 break-words leading-tight mb-2">
+        <div className="text-center font-semibold text-[10px] uppercase px-1 break-words leading-tight mb-0.5">
           {value || "\u00A0"}
         </div>
       </div>
@@ -1261,7 +1254,7 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
   );
 
   const F = ({ label, value }: { label: string | React.ReactNode; value: any }) => (
-    <div className="table w-full mb-2">
+    <div className="table w-full mb-1">
       <div className="table-row">
         <div className="table-cell whitespace-nowrap font-bold align-bottom w-[1%] pb-[3px] pr-1">
           {label}
@@ -1271,14 +1264,14 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
     </div>
   );
   return (
-    <div className="border border-black p-6 text-xs leading-relaxed font-sans flex-1 flex flex-col">
-      <div className="grid grid-cols-12 gap-6 flex-1">
+    <div className="border border-black p-3 text-xs leading-tight font-sans flex-1 flex flex-col">
+      <div className="grid grid-cols-12 gap-3 flex-1">
 
         {/* ── Left Column ── */}
-        <div className="col-span-8 space-y-3 text-[11px]">
+        <div className="col-span-8 space-y-0 text-[10px]">
 
           {/* Age / Sex / Civil Status */}
-          <div className="grid grid-cols-3 gap-2 mb-2">
+          <div className="grid grid-cols-3 gap-2 mb-1">
             <F label="Age:" value={age} />
             <F label="Sex:" value={s.gender ? s.gender.charAt(0).toUpperCase() + s.gender.slice(1) : ""} />
             <F label="Civil Status:" value={s.civil_status} />
@@ -1321,7 +1314,7 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
             <F label={`${isOtherReligion ? "[✔]" : "[ ]"} Other:`} value={isOtherReligion ? religion : ""} />
           </div>
 
-          <div className="border-t border-slate-400 my-1.5" />
+          <div className="border-t border-slate-400 my-0.5" />
 
           {/* Employer */}
           <div className="mb-2"><F label="Name & Address of Employer (If Employed):" value="" /></div>
@@ -1339,7 +1332,7 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
           {/* Mother */}
           <div className="mb-2"><F label="Mother's Complete Maiden Name:" value={fb.mother_name} /></div>
           <div className="mb-2"><F label="Contact No.:" value={fb.mother_contact} /></div>
-          <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="grid grid-cols-2 gap-2 mb-1">
             <F label="Occupation:" value={fb.mother_occupation} />
             <F label="Monthly Income:" value={fb.mother_company} />
           </div>
@@ -1358,9 +1351,9 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
         </div>
 
         {/* ── Right Column — Student's Pledge Box ── */}
-        <div className="col-span-4 flex flex-col justify-end pb-36">
-          <div className="border border-black p-4 text-[10px] leading-relaxed flex flex-col">
-            <p className="font-bold text-center text-[11px] uppercase mb-3">STUDENT'S PLEDGE</p>
+        <div className="col-span-4 flex flex-col justify-end pb-4">
+          <div className="border border-black p-3 text-[9px] leading-snug flex flex-col">
+            <p className="font-bold text-center text-[10px] uppercase mb-1">STUDENT'S PLEDGE</p>
             <p className="text-justify">
               In consideration of my admission to the{" "}
               <strong>ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE</strong>{" "}
@@ -1368,11 +1361,11 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
               I hereby pledge to abide by the rules and regulations laid down by the competent
               authority of the state college and of the college in which I am enrolled.
             </p>
-            <div className="mt-8">
+            <div className="mt-3">
               <div className="border-b border-black w-full mb-1" />
               <p className="text-center text-[9px]">Student's Signature</p>
             </div>
-            <p className="text-[9px] italic mt-4">
+            <p className="text-[8px] italic mt-2">
               * Refusal to take this pledge or any violation of its term shall be sufficient
               cause of denial of admission.
             </p>
@@ -1383,22 +1376,21 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
         <div className="col-span-12 border-t border-slate-400" />
 
         {/* ── Educational Background — full width ── */}
-        <div className="col-span-12 space-y-3 text-[11px]">
-          <div className="font-bold uppercase text-[12px]">Educational Background:</div>
+        <div className="col-span-12 space-y-1 text-[10px]">
+          <div className="font-bold uppercase text-[11px]">Educational Background:</div>
 
           {/* Elementary */}
-          <div className="grid grid-cols-2 gap-6 mb-2">
+          <div className="grid grid-cols-2 gap-3 mb-1">
             <F label="Elementary:" value={eb.elementary_school} />
             <F label="Year Graduated:" value={eb.elementary_years} />
           </div>
-          <div className="mb-2"><F label="Address:" value={eb.elementary_address} /></div>
 
           {/* Secondary (Senior HS) */}
-          <div className="grid grid-cols-2 gap-6 mb-2">
+          <div className="grid grid-cols-2 gap-3 mb-1">
             <F label="Secondary (Senior HS):" value={eb.junior_high_school} />
             <F label="Year Graduated:" value={eb.junior_high_years} />
           </div>
-          <div className="grid grid-cols-2 gap-6 mb-2">
+          <div className="grid grid-cols-2 gap-3 mb-1">
             <F label="Address:" value={eb.junior_high_address} />
             <F label="Track:" value={eb.senior_high_track} />
           </div>
@@ -1413,21 +1405,21 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
       </div>
 
       {/* Bottom — Full Student's Pledge block */}
-      <div className="mt-auto pt-4"><div className="border-t border-black pr-6 pt-3">
-        <p className="font-bold text-center text-[13px] uppercase mb-2">STUDENT'S PLEDGE</p>
-        <p className="text-[11px] text-justify leading-relaxed">
+      <div className="pt-2"><div className="border-t border-black pr-6 pt-2">
+        <p className="font-bold text-center text-[12px] uppercase mb-1">STUDENT'S PLEDGE</p>
+        <p className="text-[10px] text-justify leading-snug">
           In consideration of my admission to the ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE
           and of the privileges I will henceforth enjoy as a student of this institution, I hereby
           pledge to abide by the rules and regulations laid down by competent authority of the state
           college and of the college in which I am enrolled.
         </p>
-        <div className="mt-8 flex justify-end">
+        <div className="mt-4 flex justify-end">
           <div className="text-center">
-            <div className="border-b border-black w-56 mb-1" />
-            <p className="text-[10px]">Student's Signature</p>
+            <div className="border-b border-black w-48 mb-1" />
+            <p className="text-[9px]">Student's Signature</p>
           </div>
         </div>
-        <p className="text-[9px] text-center mt-3 italic mb-2">
+        <p className="text-[8px] text-center mt-2 italic mb-1">
           *Refusal to take this pledge or any violation of its terms shall be sufficient cause for denial of the admission.
         </p>
       </div>
