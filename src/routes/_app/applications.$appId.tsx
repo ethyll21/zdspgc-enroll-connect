@@ -538,7 +538,7 @@ function ApplicationDetail() {
                 </div>
 
                 {/* PAGE 2 — Back page (personal info, family background, educational background) */}
-                <div id="printable-application-form-page2" className="bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 min-h-[1056px] flex flex-col mt-4">
+                <div id="printable-application-form-page2" className="w-full bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 min-h-[1056px] flex flex-col mt-4">
                   {/* PAGE 2 tab */}
                   <div className="flex items-center gap-0 mb-4 shrink-0">
                     <span className="text-[11px] font-black uppercase tracking-widest text-white bg-[#0A2540] px-4 py-1.5 rounded-tl rounded-bl border border-[#0A2540]">
@@ -1271,7 +1271,7 @@ function OldStudentBackPageDisplay({ student, enrollment }: { student: any; enro
     </div>
   );
   return (
-    <div className="border border-black p-6 text-xs leading-relaxed font-sans flex-1 flex flex-col">
+    <div className="w-full border border-black p-6 text-xs leading-relaxed font-sans flex-1 flex flex-col">
       <div className="grid grid-cols-12 gap-6 flex-1">
 
         {/* ── Left Column ── */}
