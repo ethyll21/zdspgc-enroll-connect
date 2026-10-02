@@ -181,7 +181,7 @@ function AdminReviewApplication() {
               </div>
 
           {/* PAGE 2 — Back page */}
-          <div className="w-full bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 min-h-[1056px] flex flex-col mt-4">
+          <div className="w-full bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 min-h-[1056px] print:min-h-[24cm] print:h-[24cm] flex flex-col mt-4">
             {/* PAGE 2 tab */}
             <div className="flex items-center gap-0 mb-4 shrink-0">
               <span className="text-[11px] font-black uppercase tracking-widest text-white bg-[#0A2540] px-4 py-1.5 rounded-tl rounded-bl border border-[#0A2540]">
