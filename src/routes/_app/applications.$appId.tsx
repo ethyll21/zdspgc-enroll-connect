@@ -148,7 +148,7 @@ function ApplicationDetail() {
               backgroundColor: "#ffffff",
               logging: false,
               windowWidth: 900,          // tell html2canvas the effective viewport width
-              width: el.scrollWidth,     // capture full element width
+              width: Math.max(el.scrollWidth, 848), // capture full element width, ensuring at least 848px for consistency with the right-hanging absolute elements
               height: el.scrollHeight,   // capture full element height (no clipping)
               onclone: (clonedDoc) => {
                 // html2canvas fails on modern CSS colors like oklch(). 
