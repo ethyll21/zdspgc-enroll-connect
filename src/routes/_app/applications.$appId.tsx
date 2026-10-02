@@ -1170,8 +1170,8 @@ function OldStudentSlipCopy({
           </div>
           <div className="col-span-4">
             <span className="font-bold text-[7px] uppercase block text-slate-500">ADVISED BY:</span>
-            <div className="inline-block text-center mt-2">
-              <p className="font-bold uppercase text-[8.5px] pb-1 border-b border-black">
+            <div className="block text-center mt-2 w-full">
+              <p className="font-bold uppercase text-[8.5px] pb-1 border-b border-black w-full">
                 {enrollment.advised_by || "JOANNAH LEA S. LAMBAN"}
               </p>
               <span className="text-[7px] block">DSA</span>
@@ -1179,8 +1179,8 @@ function OldStudentSlipCopy({
           </div>
           <div className="col-span-4">
             <span className="font-bold text-[7px] uppercase block text-slate-500">APPROVED BY:</span>
-            <div className="inline-block text-center mt-2">
-              <p className="font-bold uppercase text-[8.5px] pb-1 border-b border-black">
+            <div className="block text-center mt-2 w-full">
+              <p className="font-bold uppercase text-[8.5px] pb-1 border-b border-black w-full">
                 {enrollment.approved_by || "JEFFRYL DAVE S. ALBELLAR"}
               </p>
               <span className="text-[7px] block">Registrar</span>
