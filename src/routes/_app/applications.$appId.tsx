@@ -1062,9 +1062,9 @@ function OldStudentSlipCopy({
             <span className="font-bold text-[10px] shrink-0 mr-1 mt-auto">NAME:</span>
             <div className="flex-1">
               <div className="flex justify-between uppercase font-bold text-[12px] px-1 pb-2">
-                <span className="text-left w-1/3 truncate">{student?.last_name || enrollment.last_name || ""}</span>
-                <span className="text-center w-1/3 truncate">{student?.first_name || enrollment.first_name || ""}</span>
-                <span className="text-right w-1/3 truncate">{student?.middle_name || enrollment.middle_name || ""}</span>
+                <span className="text-left w-1/3">{student?.last_name || enrollment.last_name || ""}</span>
+                <span className="text-center w-1/3">{student?.first_name || enrollment.first_name || ""}</span>
+                <span className="text-right w-1/3">{student?.middle_name || enrollment.middle_name || ""}</span>
               </div>
               <div className="border-t border-black h-[1px] w-full"></div>
               <div className="flex justify-between text-[8px] text-slate-500 pt-[2px] px-1">
