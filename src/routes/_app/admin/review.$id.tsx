@@ -181,7 +181,7 @@ function AdminReviewApplication() {
               </div>
 
           {/* PAGE 2 — Back page */}
-          <div className="bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 min-h-[1056px] flex flex-col mt-4">
+          <div className="bg-white text-black p-6 sm:p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 mt-4">
             {/* PAGE 2 tab */}
             <div className="flex items-center gap-0 mb-4 shrink-0">
               <span className="text-[11px] font-black uppercase tracking-widest text-white bg-[#0A2540] px-4 py-1.5 rounded-tl rounded-bl border border-[#0A2540]">
@@ -787,8 +787,8 @@ function AdminBackPageDisplay({ student }: { student: any }) {
     </div>
   );
   return (
-    <div className="border border-black p-6 text-xs leading-relaxed font-sans flex-1 flex flex-col">
-      <div className="grid grid-cols-12 gap-6 flex-1">
+    <div className="border border-black p-6 text-xs leading-relaxed font-sans">
+      <div className="grid grid-cols-12 gap-6">
 
         {/* ── Left Column ── */}
         <div className="col-span-8 space-y-3 text-[11px]">
@@ -928,26 +928,7 @@ function AdminBackPageDisplay({ student }: { student: any }) {
         </div>
       </div>
 
-      {/* Bottom — Full Student's Pledge block */}
-      <div className="mt-auto pt-4"><div className="border-t border-black pr-6 pt-3">
-        <p className="font-bold text-center text-[13px] uppercase mb-2">STUDENT'S PLEDGE</p>
-        <p className="text-[11px] text-justify leading-relaxed">
-          In consideration of my admission to the ZAMBOANGA DEL SUR PROVINCIAL GOVERNMENT COLLEGE
-          and of the privileges I will henceforth enjoy as a student of this institution, I hereby
-          pledge to abide by the rules and regulations laid down by competent authority of the state
-          college and of the college in which I am enrolled.
-        </p>
-        <div className="mt-8 flex justify-end">
-          <div className="text-center">
-            <div className="border-b border-black w-56 mb-1" />
-            <p className="text-[10px]">Student's Signature</p>
-          </div>
-        </div>
-        <p className="text-[9px] text-center mt-3 italic mb-2">
-          *Refusal to take this pledge or any violation of its terms shall be sufficient cause for denial of the admission.
-        </p>
-      </div>
-      </div>
+
     </div>
   );
 }
