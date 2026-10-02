@@ -551,8 +551,8 @@ function ApplicationDetail() {
               </div>
             ) : (
               /* ─── NEW STUDENT FORM: FULL DETAILED COLLEGE ENROLLMENT FORM ─── */
-              <div id="printable-application-form-new" className="space-y-4 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
-                <div className="flex items-start justify-between gap-4 pb-2">
+              <div id="printable-application-form-new" className="space-y-2 bg-white text-black p-8 text-[11px] leading-tight shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0">
+                <div className="flex items-start justify-between gap-4 pb-1">
                   {/* Left Column: Header, Title, Direction, Course/Major */}
                   <div className="flex-1 flex flex-col">
                     {/* Logo & Header Text */}
@@ -576,7 +576,7 @@ function ApplicationDetail() {
                     </div>
 
                     {/* Course & Major */}
-                    <div className="flex flex-col gap-2 pt-3 pb-2">
+                    <div className="flex flex-col gap-2 pt-1 pb-1">
                       <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">COURSE:</span> <span className="border border-black flex-1 px-2 font-semibold uppercase h-6 leading-[22px] block">{studentData?.student.program_name || "—"}</span></div>
                       <div className="flex gap-2 items-center"><span className="font-bold w-[60px]">MAJOR:</span> <span className="border border-black flex-1 px-2 font-semibold uppercase h-6 leading-[22px] block">{(studentData?.student as any)?.major || "N/A"}</span></div>
                     </div>
