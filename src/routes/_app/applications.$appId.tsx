@@ -1163,7 +1163,7 @@ function OldStudentSlipCopy({
       </div>
 
       {/* Bottom Signatories & ROTC Block */}
-      <div className="pr-6 pt-1.5 space-y-1 text-[8px]">
+      <div className="pr-6 pt-4 space-y-1 text-[8px]">
         <div className="grid grid-cols-12 gap-2 border-b border-black pb-1">
           <div className="col-span-4 flex items-center gap-1">
             <strong>Total Units:</strong> <span className="font-bold underline text-[9px]">{totalUnits || enrollment.total_units || "—"}</span>
