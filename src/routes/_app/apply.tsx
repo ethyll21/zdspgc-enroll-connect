@@ -652,7 +652,18 @@ function ApplyPage() {
                     <FormItem><FormLabel>Middle Name</FormLabel><FormControl><Input maxLength={80} {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
                   <FormField control={form.control} name="suffix" render={({ field }) => (
-                    <FormItem><FormLabel>Suffix</FormLabel><FormControl><Input maxLength={10} placeholder="Jr., Sr., III" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                      <FormLabel>Suffix</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="None / No Suffix" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">None / No Suffix</SelectItem>
+                          <SelectItem value="Jr.">Jr.</SelectItem>
+                          <SelectItem value="Sr.">Sr.</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )} />
                 </div>
               )}
