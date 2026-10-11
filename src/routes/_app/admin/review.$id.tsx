@@ -370,7 +370,7 @@ function AdminReviewApplication() {
                             <FileText className="h-6 w-6" />
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-800 capitalize text-base">{doc.doc_type.replace(/_/g, " ")}</p>
+                            <p className="font-semibold text-slate-800 text-base">{doc.doc_type.replace(/_/g, " ").replace(/\bpsa\b/gi, "PSA").replace(/\b\w/g, (c) => c.toUpperCase())}</p>
                             <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1.5">
                               <span className="truncate max-w-[200px] sm:max-w-[300px]">{doc.file_name}</span>
                               <span className="text-slate-300">•</span>
