@@ -52,7 +52,10 @@ const applySchema = z.object({
   civil_status: z.string().min(1, { message: "Please select Civil Status" }),
   religion: z.string().min(1, { message: "Please enter your Religion" }),
   citizenship: z.string().min(1, { message: "Please enter your Citizenship" }),
-  contact_number: z.string().regex(/^09\d{9}$/, { message: "Please enter a valid 11-digit mobile number starting with 09" }),
+  contact_number: z.string()
+    .min(11, { message: "Contact number must be exactly 11 digits" })
+    .max(11, { message: "Contact number must be exactly 11 digits" })
+    .regex(/^09\d{9}$/, { message: "Please enter a valid 11-digit mobile number starting with 09" }),
   email: z.string().min(1, { message: "Please enter your Email Address" }).email({ message: "Please enter a valid email address" }),
   address: z.string().min(1, { message: "Please enter your Permanent Address" }),
   postal_code: z.string().min(1, { message: "Please enter your Postal Code" }),
@@ -732,7 +735,22 @@ function ApplyPage() {
               {/* Row 5: Contact Number / Email Address */}
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField control={form.control} name="contact_number" render={({ field }) => (
-                  <FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input placeholder="09XXXXXXXXX" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Contact Number <span className="text-destructive ml-1">*</span></FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="09XXXXXXXXX"
+                        inputMode="numeric"
+                        maxLength={11}
+                        {...field}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 11);
+                          field.onChange(digitsOnly);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
