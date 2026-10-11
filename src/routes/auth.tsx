@@ -213,7 +213,7 @@ function AuthPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem className="space-y-2.5">
-                    <FormLabel className="font-medium">{mode === "signup" ? "New Password" : "Password"}</FormLabel>
+                    <FormLabel className="font-medium">Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -244,7 +244,7 @@ function AuthPage() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem className="space-y-2.5">
-                      <FormLabel className="font-medium">Confirm New Password</FormLabel>
+                      <FormLabel className="font-medium">Confirm Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input
