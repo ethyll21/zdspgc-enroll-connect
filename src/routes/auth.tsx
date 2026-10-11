@@ -28,8 +28,11 @@ export const Route = createFileRoute("/auth")({
 
 const getAuthSchema = (isSignup: boolean) => {
   const base = z.object({
-    fullName: isSignup 
-      ? z.string().min(1, { message: "Please enter your Full Name" }) 
+    firstName: isSignup
+      ? z.string().min(1, { message: "Please enter your First Name" })
+      : z.string().optional(),
+    lastName: isSignup
+      ? z.string().min(1, { message: "Please enter your Last Name" })
       : z.string().optional(),
     studentType: z.string().optional().default("new"),
     email: z.string().min(1, { message: "Please provide your Email Address" }).email({ message: "Please enter a valid email address" }),
@@ -58,7 +61,8 @@ function AuthPage() {
   const form = useForm<any>({
     resolver: zodResolver(getAuthSchema(mode === "signup")),
     defaultValues: {
-      fullName: "",
+      firstName: "",
+      lastName: "",
       studentType: "new" as any,
       email: "",
       password: "",
@@ -78,7 +82,8 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        await signUp(values.email, values.password, values.fullName || "", values.studentType);
+        const fullName = `${values.firstName || ""} ${values.lastName || ""}`.trim();
+        await signUp(values.email, values.password, fullName, values.studentType);
         toast.success("Account created! Welcome to ZDSPGC.");
         navigate({ to: "/dashboard", replace: true });
       } else {
@@ -145,25 +150,42 @@ function AuthPage() {
             <form onSubmit={form.handleSubmit(submit)} className="mt-8 space-y-5">
               {mode === "signup" && (
                 <>
-                  <FormField
-                    control={form.control}
-                    name="fullName"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2.5">
-                        <FormLabel className="font-medium">Full Name</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Juan Dela Cruz"
-                            className="h-12 rounded-xl transition-shadow focus-visible:shadow-md"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2.5">
+                          <FormLabel className="font-medium">First Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Juan"
+                              className="h-12 rounded-xl transition-shadow focus-visible:shadow-md"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2.5">
+                          <FormLabel className="font-medium">Last Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Dela Cruz"
+                              className="h-12 rounded-xl transition-shadow focus-visible:shadow-md"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </>
               )}
 
