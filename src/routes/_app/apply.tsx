@@ -53,9 +53,7 @@ const applySchema = z.object({
   religion: z.string().min(1, { message: "Please enter your Religion" }),
   citizenship: z.string().min(1, { message: "Please enter your Citizenship" }),
   contact_number: z.string()
-    .min(11, { message: "Contact number must be exactly 11 digits" })
-    .max(11, { message: "Contact number must be exactly 11 digits" })
-    .regex(/^09\d{9}$/, { message: "Please enter a valid 11-digit mobile number starting with 09" }),
+    .regex(/^\+639\d{9}$/, { message: "Please enter a valid 10-digit PH mobile number (e.g. 9XXXXXXXXX)" }),
   email: z.string().min(1, { message: "Please enter your Email Address" }).email({ message: "Please enter a valid email address" }),
   address: z.string().min(1, { message: "Please enter your Permanent Address" }),
   postal_code: z.string().min(1, { message: "Please enter your Postal Code" }),
@@ -738,16 +736,30 @@ function ApplyPage() {
                   <FormItem>
                     <FormLabel>Contact Number <span className="text-destructive ml-1">*</span></FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="09XXXXXXXXX"
-                        inputMode="numeric"
-                        maxLength={11}
-                        {...field}
-                        onChange={(e) => {
-                          const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 11);
-                          field.onChange(digitsOnly);
-                        }}
-                      />
+                      <div className="flex items-center rounded-md border border-input bg-background ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 h-10 px-3">
+                        <span className="text-sm text-muted-foreground select-none pr-1">+63</span>
+                        <input
+                          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                          inputMode="numeric"
+                          maxLength={10}
+                          placeholder="9XXXXXXXXX"
+                          value={field.value ? field.value.replace(/^\+63/, "") : ""}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                            field.onChange(digits ? "+63" + digits : "");
+                          }}
+                        />
+                        {field.value && (
+                          <button
+                            type="button"
+                            className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={() => field.onChange("")}
+                            tabIndex={-1}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
