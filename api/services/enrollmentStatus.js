@@ -44,7 +44,7 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
   try {
     // 1. Fetch enrollment and student info
     const enrollRes = await client.query(
-      `SELECT e.id, e.student_id, e.student_type, e.status, e.remarks, e.school_year, e.semester,
+      `SELECT e.id, e.student_id, e.student_type, e.status, e.remarks, e.school_year, e.semester, e.subjects,
               s.user_id, s.first_name, s.last_name,
               p.code AS program_code, p.name AS program_name
        FROM public.enrollments e
@@ -91,14 +91,16 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
     );
     const docs = docsRes.rows;
 
-    // 3. Determine required doc types
+    // 3. For old/existing students with no documents submitted:
+    // Do not apply automatic status updates; admin manually takes action below the student's application.
+    const isOldStudent = studentType === 'old' || studentType === 'returnee' || (!enrollment.student_type && Array.isArray(enrollment.subjects) && enrollment.subjects.length > 0);
     let requiredDocTypes;
-    if (studentType === 'old' || studentType === 'returnee') {
+    if (isOldStudent) {
       const hasRegForm = docs.some((d) => d.doc_type === 'registration_form');
       if (hasRegForm) {
         requiredDocTypes = ['registration_form'];
       } else {
-        // Old students who only have subjects and no document uploads
+        // Old students with no document uploads: do not apply automatic status updates
         return {
           enrollmentId,
           previousStatus,

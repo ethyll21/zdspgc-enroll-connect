@@ -91,6 +91,7 @@ function AdminReviewApplication() {
       toast.success("Enrollment status updated");
       queryClient.invalidateQueries({ queryKey: ["admin-enrollment", id] });
       queryClient.invalidateQueries({ queryKey: ["admin-history", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-enrollments-all"] });
     },
     onError: (err: any) => toast.error(err.message ?? "Failed to update status"),
   });
@@ -373,7 +374,7 @@ function AdminReviewApplication() {
                             <FileText className="h-6 w-6" />
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-800 text-base">{doc.doc_type.replace(/_/g, " ").replace(/\bpsa\b/gi, "PSA").replace(/\b\w/g, (c) => c.toUpperCase())}</p>
+                            <p className="font-semibold text-slate-800 text-base">{doc.doc_type.replace(/_/g, " ").replace(/\bpsa\b/gi, "PSA").replace(/\b\w/g, (c: string) => c.toUpperCase())}</p>
                             <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1.5">
                               <span className="truncate max-w-[200px] sm:max-w-[300px]">{doc.file_name}</span>
                               <span className="text-slate-300">•</span>
@@ -493,92 +494,207 @@ function AdminReviewApplication() {
           </div>
         )}
 
-        <div className="rounded-xl border bg-white p-5 shadow-sm border-blue-100">
-          <h2 className="font-semibold text-slate-800 border-b pb-3 mb-4">Application Status</h2>
-          {enrollment?.status === "approved" ? (
-            <div className="p-4 rounded-lg flex items-start gap-3 bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <CheckCircle2 className="w-5 h-5 mt-0.5 text-emerald-600 shrink-0" />
+        {isOldStudent ? (
+          <div className="rounded-xl border bg-white p-5 shadow-sm border-blue-100 space-y-4">
+            <div className="border-b pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="font-semibold text-base">Approved</h3>
-                {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+                <h2 className="font-semibold text-slate-800 text-base">Application Review & Status</h2>
+                <p className="text-xs text-slate-500">
+                  Existing student enrollment. Review the curriculum subjects and manually set the application status below.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 font-medium">Current Status:</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${meta.tone}`}>
+                  {meta.label}
+                </span>
               </div>
             </div>
-          ) : enrollment?.status === "rejected" ? (
-            <div className="p-4 rounded-lg flex items-start gap-3 bg-rose-50 text-rose-800 border border-rose-200">
-              <XCircle className="w-5 h-5 mt-0.5 text-rose-600 shrink-0" />
-              <div>
-                <h3 className="font-semibold text-base">Rejected</h3>
-                {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
-              </div>
-            </div>
-          ) : enrollment?.status === "under_review" ? (
-            <div className="p-4 rounded-lg flex items-start gap-3 bg-blue-50 text-blue-800 border border-blue-200">
-              <Clock className="w-5 h-5 mt-0.5 text-blue-600 shrink-0" />
-              <div>
-                <h3 className="font-semibold text-base">Under Review</h3>
-                {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
-              </div>
-            </div>
-          ) : (
-            <div className="p-4 rounded-lg flex items-start gap-3 bg-amber-50 text-amber-800 border border-amber-200">
-              <Clock className="w-5 h-5 mt-0.5 text-amber-600 shrink-0" />
-              <div>
-                <h3 className="font-semibold text-base">Pending</h3>
-                {enrollment?.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
-              </div>
-            </div>
-          )}
 
-          <div className="pt-4 flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={() => navigate({ to: "/admin/applications" })}>
-              Back
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-800 text-xs">
-                  Manual Override
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Manual Status Override</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Update the application status or edit remarks manually.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="space-y-3 py-2">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Status</label>
-                    <Select value={reviewStatus} onValueChange={setReviewStatus}>
-                      <SelectTrigger className="w-full bg-slate-50"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="under_review">Under Review</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Remarks</label>
-                    <Input
-                      value={reviewRemarks}
-                      onChange={(e) => setReviewRemarks(e.target.value)}
-                      placeholder="Remarks or reason..."
-                      className="bg-slate-50"
-                    />
-                  </div>
+            {/* Current overall status card */}
+            {enrollment?.status === "approved" ? (
+              <div className="p-4 rounded-lg flex items-start gap-3 bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <CheckCircle2 className="w-5 h-5 mt-0.5 text-emerald-600 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-base">Approved</h3>
+                  {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
                 </div>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => reviewMutation.mutate()}>
-                    Save Changes
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              </div>
+            ) : enrollment?.status === "rejected" ? (
+              <div className="p-4 rounded-lg flex items-start gap-3 bg-rose-50 text-rose-800 border border-rose-200">
+                <XCircle className="w-5 h-5 mt-0.5 text-rose-600 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-base">Rejected</h3>
+                  {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+                </div>
+              </div>
+            ) : enrollment?.status === "under_review" ? (
+              <div className="p-4 rounded-lg flex items-start gap-3 bg-blue-50 text-blue-800 border border-blue-200">
+                <Clock className="w-5 h-5 mt-0.5 text-blue-600 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-base">Under Review</h3>
+                  {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-lg flex items-start gap-3 bg-amber-50 text-amber-800 border border-amber-200">
+                <Clock className="w-5 h-5 mt-0.5 text-amber-600 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-base">Pending</h3>
+                  {enrollment?.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+                </div>
+              </div>
+            )}
+
+            {/* Direct Manual Review Controls */}
+            <div className="space-y-4 max-w-xl pt-2">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Set Application Status</label>
+                <Select value={reviewStatus} onValueChange={setReviewStatus}>
+                  <SelectTrigger className="w-full md:w-72 bg-slate-50 border-slate-200">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="under_review">Under Review</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Remarks / Feedback (Optional)</label>
+                <Input
+                  value={reviewRemarks}
+                  onChange={(e) => setReviewRemarks(e.target.value)}
+                  placeholder="e.g., Officially enrolled for 1st Semester 2026-2027."
+                  className="bg-slate-50 border-slate-200"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      disabled={reviewMutation.isPending}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                    >
+                      {reviewMutation.isPending ? "Saving..." : "Save Decision"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirm Status Update</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to update this application status to{" "}
+                        <strong className="capitalize">{reviewStatus.replace("_", " ")}</strong>? The student will be notified.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => reviewMutation.mutate()}>
+                        Confirm & Save
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                <Button variant="outline" size="sm" onClick={() => navigate({ to: "/admin/applications" })}>
+                  Back
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          /* For New Students with documents: display only current overall status + Back + Manual Override */
+          <div className="rounded-xl border bg-white p-5 shadow-sm border-blue-100">
+            <h2 className="font-semibold text-slate-800 border-b pb-3 mb-4">Application Status</h2>
+            {enrollment?.status === "approved" ? (
+              <div className="p-4 rounded-lg flex items-start gap-3 bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <CheckCircle2 className="w-5 h-5 mt-0.5 text-emerald-600 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-base">Approved</h3>
+                  {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+                </div>
+              </div>
+            ) : enrollment?.status === "rejected" ? (
+              <div className="p-4 rounded-lg flex items-start gap-3 bg-rose-50 text-rose-800 border border-rose-200">
+                <XCircle className="w-5 h-5 mt-0.5 text-rose-600 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-base">Rejected</h3>
+                  {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+                </div>
+              </div>
+            ) : enrollment?.status === "under_review" ? (
+              <div className="p-4 rounded-lg flex items-start gap-3 bg-blue-50 text-blue-800 border border-blue-200">
+                <Clock className="w-5 h-5 mt-0.5 text-blue-600 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-base">Under Review</h3>
+                  {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-lg flex items-start gap-3 bg-amber-50 text-amber-800 border border-amber-200">
+                <Clock className="w-5 h-5 mt-0.5 text-amber-600 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-base">Pending</h3>
+                  {enrollment?.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4 flex items-center justify-between">
+              <Button variant="outline" size="sm" onClick={() => navigate({ to: "/admin/applications" })}>
+                Back
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-800 text-xs">
+                    Manual Override
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Manual Status Override</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Update the application status or edit remarks manually.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="space-y-3 py-2">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Status</label>
+                      <Select value={reviewStatus} onValueChange={setReviewStatus}>
+                        <SelectTrigger className="w-full bg-slate-50"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="under_review">Under Review</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Remarks</label>
+                      <Input
+                        value={reviewRemarks}
+                        onChange={(e) => setReviewRemarks(e.target.value)}
+                        placeholder="Remarks or reason..."
+                        className="bg-slate-50"
+                      />
+                    </div>
+                  </div>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => reviewMutation.mutate()}>
+                      Save Changes
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+        )}
       </div>
       <AlertDialog open={!!rejectingDocId} onOpenChange={(open) => {
         if (!open) {
