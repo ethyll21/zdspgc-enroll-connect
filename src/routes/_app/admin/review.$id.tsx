@@ -98,14 +98,8 @@ function AdminReviewApplication() {
   const docReviewMutation = useMutation({
     mutationFn: ({ docId, status, remarks }: { docId: string, status: string, remarks?: string }) => 
       documentsApi.review(docId, { status, remarks }),
-    onSuccess: (data: any) => {
-      if (data?.all_required_approved || data?.enrollment_status === 'approved') {
-        toast.success("All required documents approved! Application automatically Approved.");
-      } else if (data?.enrollment_status === 'pending') {
-        toast.success("Document updated. Application status is Pending.");
-      } else {
-        toast.success("Document status updated");
-      }
+    onSuccess: () => {
+      toast.success("Document updated");
       queryClient.invalidateQueries({ queryKey: ["admin-documents", id] });
       queryClient.invalidateQueries({ queryKey: ["admin-enrollment", id] });
       queryClient.invalidateQueries({ queryKey: ["admin-history", id] });

@@ -318,8 +318,9 @@ function ApplicationDetail() {
     mutationFn: ({ id, status, remarks }: { id: string; status: string; remarks?: string }) =>
       docsApi.review(id, { status, remarks }),
     onSuccess: () => {
-      toast.success("Document status updated");
+      toast.success("Document updated");
       queryClient.invalidateQueries({ queryKey: ["enrollment-docs", appId] });
+      queryClient.invalidateQueries({ queryKey: ["enrollment", appId] });
     },
     onError: (err: any) => toast.error(err.message ?? "Failed to update document"),
   });
