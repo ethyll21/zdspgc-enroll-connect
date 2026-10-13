@@ -496,20 +496,7 @@ function AdminReviewApplication() {
 
         {isOldStudent ? (
           <div className="rounded-xl border bg-white p-5 shadow-sm border-blue-100 space-y-4">
-            <div className="border-b pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h2 className="font-semibold text-slate-800 text-base">Application Review & Status</h2>
-                <p className="text-xs text-slate-500">
-                  Existing student enrollment. Review the curriculum subjects and manually set the application status below.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 font-medium">Current Status:</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${meta.tone}`}>
-                  {meta.label}
-                </span>
-              </div>
-            </div>
+            <h2 className="font-semibold text-slate-800 border-b pb-3">Application Review & Status</h2>
 
             {/* Current overall status card */}
             {enrollment?.status === "approved" ? (
