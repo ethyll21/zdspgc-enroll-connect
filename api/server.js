@@ -15,6 +15,7 @@ const studentsRoutes     = require('./routes/students');
 const enrollmentsRoutes  = require('./routes/enrollments');
 const documentsRoutes    = require('./routes/documents');
 const notificationsRoutes = require('./routes/notifications');
+const backupRoutes       = require('./routes/backup');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -89,6 +90,7 @@ app.use('/api/students',      studentsRoutes);
 app.use('/api/enrollments',   enrollmentsRoutes);
 app.use('/api/documents',     documentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/backup',        backupRoutes);
 
 // ── SSR fallback — serve TanStack Start app for any non-API route ────────────
 app.use(async (req, res, next) => {
