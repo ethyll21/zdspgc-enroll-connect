@@ -149,7 +149,10 @@ app.use((err, req, res, _next) => {
 
 // ── Start ──────────────────────────────────────────────────────────────────────
 function startServer() {
-  app.listen(PORT, () => {
+  // Render (and most cloud platforms) require binding to 0.0.0.0, not just
+  // localhost/127.0.0.1. Without this the port scanner sees no open port and
+  // the deployment fails with "Port scan timeout reached".
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n╔══════════════════════════════════════════════╗`);
     console.log(`║   ZDSPGC Local API Server                  ║`);
     console.log(`║   Database : PRE-ENROLLMENT_DB             ║`);
