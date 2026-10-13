@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * ZDSPGC  –  Manual Backup CLI
  * Usage:  node backup-now.cjs [--db-only] [--files-only]
@@ -91,20 +91,21 @@ async function main() {
   console.log('dbOnly=' + dbOnly + '  filesOnly=' + filesOnly);
   console.log('Started at ' + new Date().toISOString() + '\n');
 
-  const { backupId, manifest } = await runBackup(db, progress);
+  const { backupId, manifest } = await runBackup(db, progress, { dbOnly, filesOnly, saveLocal: true });
 
   console.log('\n=== Backup Summary ===');
-  console.log('ID     : ' + backupId);
-  console.log('Tables : ' + Object.keys(manifest.tables).length);
+  console.log('ID          : ' + backupId);
+  console.log('Destination : ' + manifest.destination);
+  console.log('Tables      : ' + Object.keys(manifest.tables).length);
   for (const [t, info] of Object.entries(manifest.tables)) {
-    console.log('         ' + t + ' (' + info.rows + ' rows)');
+    console.log('              ' + t + ' (' + info.rows + ' rows)');
   }
-  console.log('Files  : ' + manifest.files.length);
-  console.log('Errors : ' + manifest.errors.length);
+  console.log('Files       : ' + manifest.files.length);
+  console.log('Errors      : ' + manifest.errors.length);
   if (manifest.errors.length > 0) {
     manifest.errors.forEach(function(e) { console.error('  !', e); });
   }
-  console.log('\n✓ Done. Backup stored in Supabase Storage → backups/' + backupId);
+  console.log('\n✓ Done. Backup stored (' + manifest.destination + ') → backups/' + backupId);
   process.exit(manifest.errors.length > 0 ? 2 : 0);
 }
 

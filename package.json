@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "backup": "node backup-now.cjs",
+    "backup:setup": "node backup-setup.cjs",
     "backup:db": "node backup-now.cjs --db-only",
     "backup:files": "node backup-now.cjs --files-only",
     "backup:list": "node backup-now.cjs --list",

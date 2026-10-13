@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 /**
  * ZDSPGC Backup API Routes  –  Admin only
  *
@@ -9,15 +9,18 @@
  * GET  /api/backup/status/:id   – get the manifest for a specific backup
  */
 
+const path    = require('path');
+const fs      = require('fs');
 const router  = require('express').Router();
 const db      = require('../db');
 const { requireAdmin } = require('../middleware/auth');
-const { runBackup, listBackups, restoreBackup } = require('../services/backup');
+const { runBackup, listBackups, restoreBackup, LOCAL_BACKUP_DIR, BACKUP_BUCKET } = require('../services/backup');
 
 // ── POST /api/backup/run ─────────────────────────────────────────────────────
 router.post('/run', requireAdmin, async (req, res) => {
   console.log('[Backup API] Backup triggered by admin:', req.user && req.user.email);
 
+  const { dbOnly, filesOnly, saveLocal } = req.body || {};
   const log = [];
   function onProgress(step, detail) {
     const line = '[' + step + '] ' + detail;
@@ -26,11 +29,12 @@ router.post('/run', requireAdmin, async (req, res) => {
   }
 
   try {
-    const { backupId, manifest } = await runBackup(db, onProgress);
+    const { backupId, manifest } = await runBackup(db, onProgress, { dbOnly, filesOnly, saveLocal });
     return res.json({
       success: true,
       backupId,
       createdAt: manifest.createdAt,
+      destination: manifest.destination,
       tables: manifest.tables,
       filesCount: manifest.files.length,
       errors: manifest.errors,
@@ -85,20 +89,29 @@ router.post('/restore', requireAdmin, async (req, res) => {
 
 // ── GET /api/backup/status/:id ───────────────────────────────────────────────
 router.get('/status/:id', requireAdmin, async (req, res) => {
-  const { createClient } = require('@supabase/supabase-js');
+  const { id } = req.params;
   try {
-    let url = (process.env.SUPABASE_URL || '').trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '');
-    const key = process.env.SUPABASE_SERVICE_KEY || '';
-    if (!url || !key) return res.status(503).json({ error: 'Supabase not configured' });
+    // 1. Check local disk
+    const localManifest = path.join(LOCAL_BACKUP_DIR, id, 'manifest.json');
+    if (fs.existsSync(localManifest)) {
+      const manifest = JSON.parse(fs.readFileSync(localManifest, 'utf8'));
+      return res.json({ success: true, manifest, source: 'local' });
+    }
 
+    // 2. Check Supabase Storage
+    let url = (process.env.SUPABASE_URL || '').trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '');
+    const key = (process.env.SUPABASE_SERVICE_KEY || '').trim();
+    if (!url || !key) return res.status(404).json({ error: 'Backup not found' });
+
+    const { createClient } = require('@supabase/supabase-js');
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const { data: blob, error } = await supabase.storage
-      .from('backups')
-      .download(req.params.id + '/manifest.json');
+      .from(BACKUP_BUCKET)
+      .download(id + '/manifest.json');
 
     if (error || !blob) return res.status(404).json({ error: 'Backup not found', detail: error && error.message });
     const manifest = JSON.parse(await blob.text());
-    return res.json({ success: true, manifest });
+    return res.json({ success: true, manifest, source: 'supabase' });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

@@ -40,3 +40,4 @@ dist-ssr
 
 # User-uploaded student documents and avatars (stored in Supabase Storage, not Git)
 uploads/
+backups/

@@ -556,6 +556,59 @@ export const users = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
+// 7. Backup & Restore (Admin only)
+// ══════════════════════════════════════════════════════════════════════════════
+export const backup = {
+  run(options?: { dbOnly?: boolean; filesOnly?: boolean; saveLocal?: boolean }) {
+    return apiFetch<{
+      success: boolean;
+      backupId: string;
+      createdAt: string;
+      destination: string;
+      tables: Record<string, { rows: number; storagePath?: string }>;
+      filesCount: number;
+      errors: string[];
+      log: string[];
+    }>('/api/backup/run', {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    });
+  },
+  list() {
+    return apiFetch<{
+      success: boolean;
+      count: number;
+      backups: Array<{
+        backupId: string;
+        createdAt: string;
+        destination?: string;
+        tables: Record<string, { rows: number }>;
+        files: Array<{ source: string; backup: string; bytes: number }>;
+        errors: string[];
+      }>;
+    }>('/api/backup/list');
+  },
+  restore(backupId: string, options?: { dbOnly?: boolean; filesOnly?: boolean }) {
+    return apiFetch<{
+      success: boolean;
+      backupId: string;
+      errors: string[];
+      log: string[];
+    }>('/api/backup/restore', {
+      method: 'POST',
+      body: JSON.stringify({ backupId, ...options }),
+    });
+  },
+  status(backupId: string) {
+    return apiFetch<{
+      success: boolean;
+      source: string;
+      manifest: any;
+    }>(`/api/backup/status/${backupId}`);
+  },
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
 // HEALTH CHECK
 // ══════════════════════════════════════════════════════════════════════════════
 export async function checkApiHealth(): Promise<boolean> {
@@ -568,5 +621,6 @@ export async function checkApiHealth(): Promise<boolean> {
 }
 
 // Default export for convenience
-const api = { auth, programs, profiles, students, enrollments, documents, notifications, checkApiHealth };
+const api = { auth, programs, profiles, students, enrollments, documents, notifications, users, backup, checkApiHealth };
 export default api;
+
