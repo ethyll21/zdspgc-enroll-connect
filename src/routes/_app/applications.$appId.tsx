@@ -38,8 +38,16 @@ const DOC_LABELS: Record<string, string> = {
 function ApplicationDetail() {
   const { appId } = Route.useParams();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
+
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["enrollment-detail", appId],
+    // Wait for auth to finish initialising before firing — prevents 401 on mobile
+    enabled: typeof window !== 'undefined' && !authLoading && !!user,
+    retry: 1,
+    queryFn: () => enrollmentsApi.getById(appId),
+  });
   const [remarks, setRemarks] = useState("");
   const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
   const [docRejectRemarks, setDocRejectRemarks] = useState("");
@@ -92,6 +100,10 @@ function ApplicationDetail() {
         window.print();
       }, 0);
     } else {
+      if (data?.enrollment?.status?.toLowerCase() !== "approved") {
+        toast.error("The pre-enrollment form is only available for download once your application is approved.");
+        return;
+      }
       const toastId = toast.loading("Generating PDF, please wait...");
       try {
         const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -276,17 +288,7 @@ function ApplicationDetail() {
         toast.error(`Failed to generate PDF: ${err?.message ?? "Unknown error"}`, { id: toastId });
       }
     }
-  }, [isAdmin, appId]);
-
-  const { user, loading: authLoading } = useAuth();
-
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["enrollment-detail", appId],
-    // Wait for auth to finish initialising before firing — prevents 401 on mobile
-    enabled: typeof window !== 'undefined' && !authLoading && !!user,
-    retry: 1,
-    queryFn: () => enrollmentsApi.getById(appId),
-  });
+  }, [isAdmin, appId, data?.enrollment?.status]);
 
   const { data: studentData } = useQuery({
     queryKey: ["student-detail", data?.enrollment.student_id],
@@ -464,17 +466,19 @@ function ApplicationDetail() {
         >
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
-        <Button type="button" onClick={handlePrint} variant="outline" className="shadow-sm font-semibold">
-          {isAdmin ? (
-            <>
-              <Printer className="mr-2 h-4 w-4" /> Print Pre-Enrollment Form
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" /> Download Form
-            </>
-          )}
-        </Button>
+        {(isAdmin || enrollment.status?.toLowerCase() === "approved") && (
+          <Button type="button" onClick={handlePrint} variant="outline" className="shadow-sm font-semibold">
+            {isAdmin ? (
+              <>
+                <Printer className="mr-2 h-4 w-4" /> Print Pre-Enrollment Form
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" /> Download Form
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════════
