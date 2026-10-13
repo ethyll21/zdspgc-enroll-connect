@@ -392,22 +392,6 @@ function ApplicationDetail() {
     return myDocs?.documents ?? [];
   }, [myDocs]);
 
-  useEffect(() => {
-    if (!isAdmin || !myDocs || !data) return;
-    if (activeDocs.length === 0) return;
-
-    const hasPending = activeDocs.some(d => d.status === "pending");
-    if (hasPending) return;
-
-    const allApproved = activeDocs.every(d => d.status === "approved");
-    const anyRejected = activeDocs.some(d => d.status === "rejected");
-
-    if (allApproved && data.enrollment.status !== "approved") {
-      reviewMutation.mutate({ status: "approved", remarks: "All documents automatically verified." });
-    } else if (anyRejected && data.enrollment.status !== "under_review" && data.enrollment.status !== "rejected") {
-      reviewMutation.mutate({ status: "under_review", remarks: "Some documents were rejected. Please review them." });
-    }
-  }, [myDocs, data, isAdmin]);
 
   useEffect(() => {
     if (data?.enrollment.status) {

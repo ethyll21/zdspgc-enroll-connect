@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { syncEnrollmentStatus } = require('../services/enrollmentStatus');
 
 const router = express.Router();
 
@@ -248,6 +249,13 @@ router.get('/stats/overview', requireAdmin, async (req, res) => {
 // ─── GET /api/enrollments/:id ─────────────────────────────────────────────────
 router.get('/:id', requireAuth, async (req, res) => {
   try {
+    // Ensure enrollment status accurately reflects required documents approval state
+    try {
+      await syncEnrollmentStatus(req.params.id, null);
+    } catch (syncErr) {
+      console.warn('[Enrollments/get] Status sync warning (non-fatal):', syncErr.message);
+    }
+
     const { rows } = await db.query(
       `SELECT e.*, 
               s.student_no, s.first_name, s.last_name, s.middle_name, s.suffix,

@@ -4,6 +4,7 @@ const path    = require('path');
 const db      = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { uploadFile, deleteFile, downloadFile, DOCS_BUCKET } = require('../storage');
+const { syncEnrollmentStatus } = require('../services/enrollmentStatus');
 
 const router = express.Router();
 
@@ -138,6 +139,15 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 
     console.log('[Documents/upload] Saved doc id=%s enrollment_id=%s', rows[0].id, rows[0].enrollment_id);
 
+    // Sync enrollment status (ensures status reflects newly uploaded pending document)
+    if (enrollment_id) {
+      try {
+        await syncEnrollmentStatus(enrollment_id, req.user.id);
+      } catch (syncErr) {
+        console.warn('[Documents/upload] Status sync error (non-fatal):', syncErr.message);
+      }
+    }
+
     // file_url is the Supabase public URL — attach it for the response
     res.status(201).json({ document: { ...rows[0], file_url: publicUrl } });
   } catch (err) {
@@ -170,6 +180,15 @@ router.delete('/:id', requireAuth, async (req, res) => {
     await deleteFile(DOCS_BUCKET, doc.file_path);
 
     await db.query('DELETE FROM public.documents WHERE id = $1', [req.params.id]);
+
+    // If doc was attached to an enrollment, sync status (reverts to pending if a required doc is now missing)
+    if (doc.enrollment_id) {
+      try {
+        await syncEnrollmentStatus(doc.enrollment_id, req.user.id);
+      } catch (syncErr) {
+        console.warn('[Documents/delete] Status sync error (non-fatal):', syncErr.message);
+      }
+    }
 
     // Notify the student if admin deletes their document (non-blocking)
     if (isAdmin && doc.user_id !== req.user.id) {
@@ -228,6 +247,12 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
 
     const doc = rows[0];
 
+    // Auto-update enrollment status based on required document review state
+    let syncResult = null;
+    if (doc.enrollment_id) {
+      syncResult = await syncEnrollmentStatus(doc.enrollment_id, req.user.id, client);
+    }
+
     // Notify the student about the document review
     const studentRes = await client.query(
       `SELECT s.user_id FROM public.documents d
@@ -271,7 +296,11 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ document: doc });
+    res.json({
+      document: doc,
+      enrollment_status: syncResult ? syncResult.newStatus : undefined,
+      all_required_approved: syncResult ? syncResult.allRequiredApproved : undefined,
+    });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('[Documents/review]', err.message);
