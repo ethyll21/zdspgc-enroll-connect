@@ -154,8 +154,6 @@ function AdminReviewApplication() {
   const studentTypeCategory = enrollment.student_type === "old" ? "old" : "new";
   const expectedDocs = REQUIRED_DOCUMENTS.filter((d: any) => !d.for || d.for.includes(studentTypeCategory));
   const missingDocs = isOldStudent ? [] : expectedDocs.filter((ed: any) => !documents.some((d: any) => d.doc_type === ed.key));
-  const requiredDocsList = expectedDocs.filter((d: any) => d.required);
-  const approvedRequiredDocs = requiredDocsList.filter((rd: any) => documents.some((d: any) => d.doc_type === rd.key && d.status === "approved"));
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-20 print:pb-0 print:max-w-none print:m-0">
@@ -502,180 +500,90 @@ function AdminReviewApplication() {
         )}
 
         <div className="rounded-xl border bg-white p-5 shadow-sm border-blue-100">
-          <div className="flex items-center justify-between border-b pb-3 mb-4">
-            <h2 className="font-semibold text-slate-800">Final Decision</h2>
-            {!isOldStudent && requiredDocsList.length > 0 && (
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                ⚡ Automatic Status Mechanism Active
-              </span>
-            )}
-          </div>
-          {(enrollment?.status === "approved" || enrollment?.status === "rejected") ? (
-            <div className={`p-4 rounded-lg flex items-start gap-3 ${enrollment.status === "approved" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"}`}>
-              {enrollment.status === "approved" ? <CheckCircle2 className="w-5 h-5 mt-0.5 text-emerald-600 shrink-0" /> : <XCircle className="w-5 h-5 mt-0.5 text-rose-600 shrink-0" />}
+          <h2 className="font-semibold text-slate-800 border-b pb-3 mb-4">Application Status</h2>
+          {enrollment?.status === "approved" ? (
+            <div className="p-4 rounded-lg flex items-start gap-3 bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <CheckCircle2 className="w-5 h-5 mt-0.5 text-emerald-600 shrink-0" />
               <div>
-                <h3 className="font-semibold">{enrollment.status === "approved" ? "Application Approved" : "Application Rejected"}</h3>
-                <p className="text-sm mt-1 opacity-90">
-                  {enrollment.remarks || (enrollment.status === "approved" ? "All required documents have been verified and approved." : "This application has been rejected.")}
-                </p>
-                {enrollment.status === "approved" && !isOldStudent && (
-                  <p className="text-xs text-emerald-700 font-medium mt-2">
-                    ✓ All {requiredDocsList.length} required documents ({requiredDocsList.map((d: any) => d.label).join(", ")}) were successfully approved.
-                  </p>
-                )}
+                <h3 className="font-semibold text-base">Approved</h3>
+                {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
               </div>
             </div>
-          ) : !isOldStudent && requiredDocsList.length > 0 ? (
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-900 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-amber-600 shrink-0" />
-                    <span className="font-semibold text-slate-900">Application Status: Pending</span>
-                  </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 w-fit">
-                    {approvedRequiredDocs.length} of {requiredDocsList.length} Required Documents Approved
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600">
-                  <strong className="text-slate-800">Automatic Application Approval:</strong> Once you approve all required documents in the section above, the system will automatically set the application status to <strong>“Approved”</strong> without requiring any additional approval action. If one or more required documents are pending, unapproved, rejected, or missing, the status is automatically retained as <strong>“Pending”</strong>.
-                </p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {requiredDocsList.map((rd: any) => {
-                    const doc = documents.find((d: any) => d.doc_type === rd.key);
-                    const isApproved = doc?.status === "approved";
-                    const isRejected = doc?.status === "rejected";
-                    const isMissing = !doc;
-                    return (
-                      <span
-                        key={rd.key}
-                        className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border shadow-xs ${
-                          isApproved
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                            : isRejected
-                            ? "bg-rose-50 text-rose-800 border-rose-200"
-                            : isMissing
-                            ? "bg-slate-100 text-slate-600 border-slate-200 border-dashed"
-                            : "bg-amber-50 text-amber-800 border-amber-200"
-                        }`}
-                      >
-                        {isApproved ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        ) : isRejected ? (
-                          <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                        ) : (
-                          <Clock className="w-3.5 h-3.5 text-amber-600" />
-                        )}
-                        {rd.label}: {isApproved ? "Approved" : isRejected ? "Rejected" : isMissing ? "Missing" : "Pending"}
-                      </span>
-                    );
-                  })}
-                </div>
+          ) : enrollment?.status === "rejected" ? (
+            <div className="p-4 rounded-lg flex items-start gap-3 bg-rose-50 text-rose-800 border border-rose-200">
+              <XCircle className="w-5 h-5 mt-0.5 text-rose-600 shrink-0" />
+              <div>
+                <h3 className="font-semibold text-base">Rejected</h3>
+                {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
               </div>
-
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <p className="text-xs text-slate-500 italic">
-                  To approve, click "Approve" on each document in the Uploaded Documents list above.
-                </p>
-                <div className="flex items-center gap-2">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200">
-                        Manual Override / Reject
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Manual Decision Override</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          You can manually reject this application or update remarks.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="space-y-3 py-2">
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">Status</label>
-                          <Select value={reviewStatus} onValueChange={setReviewStatus}>
-                            <SelectTrigger className="w-full bg-slate-50"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="rejected">Rejected</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">Remarks</label>
-                          <Input
-                            value={reviewRemarks}
-                            onChange={(e) => setReviewRemarks(e.target.value)}
-                            placeholder="Reason or notes..."
-                            className="bg-slate-50"
-                          />
-                        </div>
-                      </div>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => reviewMutation.mutate()}>
-                          Save Decision
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                  <Button variant="outline" size="sm" onClick={() => navigate({ to: "/admin/applications" })}>
-                    Back
-                  </Button>
-                </div>
+            </div>
+          ) : enrollment?.status === "under_review" ? (
+            <div className="p-4 rounded-lg flex items-start gap-3 bg-blue-50 text-blue-800 border border-blue-200">
+              <Clock className="w-5 h-5 mt-0.5 text-blue-600 shrink-0" />
+              <div>
+                <h3 className="font-semibold text-base">Under Review</h3>
+                {enrollment.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="p-4 rounded-lg flex items-start gap-3 bg-amber-50 text-amber-800 border border-amber-200">
+              <Clock className="w-5 h-5 mt-0.5 text-amber-600 shrink-0" />
               <div>
-                <label className="text-sm font-medium text-slate-700 mb-1 block">Update Enrollment Status</label>
-                <Select value={reviewStatus} onValueChange={setReviewStatus} disabled={enrollment?.status === "approved" || enrollment?.status === "rejected"}>
-                  <SelectTrigger className="w-full md:w-64 bg-slate-50"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {enrollment?.status !== "approved" && enrollment?.status !== "rejected" && (
-                      <>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="under_review">Under Review</SelectItem>
-                      </>
-                    )}
-                    {enrollment?.status !== "rejected" && <SelectItem value="approved">Approved</SelectItem>}
-                    {enrollment?.status !== "approved" && <SelectItem value="rejected">Rejected</SelectItem>}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1 block">Remarks</label>
-                <Input value={reviewRemarks} onChange={(e) => setReviewRemarks(e.target.value)} placeholder="e.g., Your documents have been verified and you are now officially enrolled." className="bg-slate-50" />
-              </div>
-              <div className="pt-2 flex items-center gap-3">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button disabled={reviewMutation.isPending}>
-                      {reviewMutation.isPending ? "Saving..." : "Save"}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action will update the student's enrollment status and send them a notification with your remarks.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => reviewMutation.mutate()}>
-                        Continue
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Button variant="outline" onClick={() => navigate({ to: "/admin/applications" })}>
-                  Back
-                </Button>
+                <h3 className="font-semibold text-base">Pending</h3>
+                {enrollment?.remarks && <p className="text-sm mt-1 opacity-90">{enrollment.remarks}</p>}
               </div>
             </div>
           )}
+
+          <div className="pt-4 flex items-center justify-between">
+            <Button variant="outline" size="sm" onClick={() => navigate({ to: "/admin/applications" })}>
+              Back
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-800 text-xs">
+                  Manual Override
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Manual Status Override</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Update the application status or edit remarks manually.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-3 py-2">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Status</label>
+                    <Select value={reviewStatus} onValueChange={setReviewStatus}>
+                      <SelectTrigger className="w-full bg-slate-50"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="under_review">Under Review</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Remarks</label>
+                    <Input
+                      value={reviewRemarks}
+                      onChange={(e) => setReviewRemarks(e.target.value)}
+                      placeholder="Remarks or reason..."
+                      className="bg-slate-50"
+                    />
+                  </div>
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => reviewMutation.mutate()}>
+                    Save Changes
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
       <AlertDialog open={!!rejectingDocId} onOpenChange={(open) => {
