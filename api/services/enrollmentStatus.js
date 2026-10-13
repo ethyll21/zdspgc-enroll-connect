@@ -62,12 +62,31 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
     const previousStatus = enrollment.status;
     const studentType = (enrollment.student_type || 'new').toLowerCase();
 
-    // 2. Fetch all documents for this enrollment
+    // 2. Fetch all documents for this enrollment (support both created_at and uploaded_at schemas)
+    let orderClause = 'id DESC';
+    try {
+      const colCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+          AND table_name = 'documents' 
+          AND column_name IN ('created_at', 'uploaded_at')
+      `);
+      const cols = colCheck.rows.map((r) => r.column_name);
+      if (cols.includes('created_at')) {
+        orderClause = 'created_at DESC';
+      } else if (cols.includes('uploaded_at')) {
+        orderClause = 'uploaded_at DESC';
+      }
+    } catch (colErr) {
+      orderClause = 'id DESC';
+    }
+
     const docsRes = await client.query(
-      `SELECT id, doc_type, status, uploaded_at
+      `SELECT id, doc_type, status
        FROM public.documents
        WHERE enrollment_id = $1 OR (enrollment_id IS NULL AND student_id = $2)
-       ORDER BY uploaded_at DESC`,
+       ORDER BY ${orderClause}`,
       [enrollmentId, enrollment.student_id]
     );
     const docs = docsRes.rows;
