@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useRef } from "react";
-import { Upload, X, FileText, User, GraduationCap, School, Paperclip, CheckCircle2, AlertCircle, ShieldCheck, Users, BookOpen, Calendar } from "lucide-react";
+import { Upload, X, FileText, User, GraduationCap, School, Paperclip, CheckCircle2, AlertCircle, ShieldCheck, Users, BookOpen } from "lucide-react";
 import { programs as programsApi, students, enrollments, documents as docsApi } from "@/integrations/localdb/client";
 import type { FamilyBackground, EducationalBackground } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
@@ -1497,233 +1497,206 @@ function OldStudentSubjectsSection({ form }: { form: any }) {
 
 function OldStudentPaperFormHeader({ form, programList, studentType }: { form: any; programList: any[]; studentType: string }) {
   return (
-    <div className="space-y-8 py-2">
-      {/* ── Section 1: Student Information ── */}
-      <div className="space-y-5">
-        <div className="flex items-center gap-2 border-b border-slate-200 pb-2.5">
-          <User className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold tracking-wide uppercase text-slate-700">
-            Student Information
-          </h3>
-        </div>
+    <div className="space-y-6 py-2">
+      {/* ── Student Information Fields ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <FormField control={form.control} name="last_name" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Last Name <span className="text-destructive">*</span></FormLabel>
+            <FormControl>
+              <Input placeholder="Enter last name" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FormField control={form.control} name="last_name" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Last Name <span className="text-destructive">*</span></FormLabel>
-              <FormControl>
-                <Input placeholder="Enter last name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+        <FormField control={form.control} name="first_name" render={({ field }) => (
+          <FormItem>
+            <FormLabel>First Name <span className="text-destructive">*</span></FormLabel>
+            <FormControl>
+              <Input placeholder="Enter first name" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
 
-          <FormField control={form.control} name="first_name" render={({ field }) => (
-            <FormItem>
-              <FormLabel>First Name <span className="text-destructive">*</span></FormLabel>
-              <FormControl>
-                <Input placeholder="Enter first name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          <FormField control={form.control} name="middle_name" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Middle Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter middle name (or N/A)" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField control={form.control} name="student_no" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Student Number <span className="text-destructive">*</span></FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. 2024-0001" className="font-mono uppercase" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          <FormField control={form.control} name="gender" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Sex <span className="text-destructive">*</span></FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || undefined}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select sex" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
-        </div>
+        <FormField control={form.control} name="middle_name" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Middle Name</FormLabel>
+            <FormControl>
+              <Input placeholder="Enter middle name (or N/A)" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
       </div>
 
-      {/* ── Section 2: Program of Study ── */}
-      <div className="space-y-5 pt-2">
-        <div className="flex items-center gap-2 border-b border-slate-200 pb-2.5">
-          <GraduationCap className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold tracking-wide uppercase text-slate-700">
-            Program of Study
-          </h3>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField control={form.control} name="student_no" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Student Number <span className="text-destructive">*</span></FormLabel>
+            <FormControl>
+              <Input placeholder="e.g. 2024-0001" className="font-mono uppercase" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField control={form.control} name="program_id" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Course / Program <span className="text-destructive">*</span></FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || undefined}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select course/program" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {programList.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name ? `${p.name} (${p.code})` : p.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          <FormField control={form.control} name="major" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Major / Specialization</FormLabel>
+        <FormField control={form.control} name="gender" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Sex <span className="text-destructive">*</span></FormLabel>
+            <Select onValueChange={field.onChange} value={field.value || undefined}>
               <FormControl>
-                <Input placeholder="Enter major or specialization (or N/A)" {...field} />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sex" />
+                </SelectTrigger>
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-        </div>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
       </div>
 
-      {/* ── Section 3: Enrollment Details & Term ── */}
-      <div className="space-y-5 pt-2">
-        <div className="flex items-center gap-2 border-b border-slate-200 pb-2.5">
-          <Calendar className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold tracking-wide uppercase text-slate-700">
-            Enrollment Details
-          </h3>
-        </div>
+      {/* ── Program of Study Fields ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField control={form.control} name="program_id" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Course / Program <span className="text-destructive">*</span></FormLabel>
+            <Select onValueChange={field.onChange} value={field.value || undefined}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select course/program" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {programList.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name ? `${p.name} (${p.code})` : p.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FormField control={form.control} name="semester" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Semester <span className="text-destructive">*</span></FormLabel>
-              <Select
+        <FormField control={form.control} name="major" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Major / Specialization</FormLabel>
+            <FormControl>
+              <Input placeholder="Enter major or specialization (or N/A)" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+      </div>
+
+      {/* ── Enrollment Details & Term Fields ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <FormField control={form.control} name="semester" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Semester <span className="text-destructive">*</span></FormLabel>
+            <Select
+              onValueChange={field.onChange}
+              value={field.value || undefined}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select semester" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="1st Semester">1st Semester</SelectItem>
+                <SelectItem value="2nd Semester">2nd Semester</SelectItem>
+                <SelectItem value="Summer">Summer Term</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="school_year" render={({ field }) => (
+          <FormItem>
+            <FormLabel>School Year (SY) <span className="text-destructive">*</span></FormLabel>
+            <FormControl>
+              <Input placeholder="e.g. 2026-2027" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="year_level" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Year Level <span className="text-destructive">*</span></FormLabel>
+            <Select onValueChange={field.onChange} value={field.value || undefined}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select year level" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {["1st Year", "2nd Year", "3rd Year", "4th Year"].map((y) => (
+                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField control={form.control} name="date_enrolled" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Date Enrolled</FormLabel>
+            <FormControl>
+              <Input type="date" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="student_type" render={({ field }) => (
+          <FormItem className="space-y-2">
+            <FormLabel>Status of Registration</FormLabel>
+            <FormControl>
+              <RadioGroup
+                value={field.value || "old"}
                 onValueChange={field.onChange}
-                value={field.value || undefined}
+                className="grid grid-cols-2 sm:grid-cols-4 gap-3"
               >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select semester" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="1st Semester">1st Semester</SelectItem>
-                  <SelectItem value="2nd Semester">2nd Semester</SelectItem>
-                  <SelectItem value="Summer">Summer Term</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          <FormField control={form.control} name="school_year" render={({ field }) => (
-            <FormItem>
-              <FormLabel>School Year (SY) <span className="text-destructive">*</span></FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. 2026-2027" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          <FormField control={form.control} name="year_level" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Year Level <span className="text-destructive">*</span></FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || undefined}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select year level" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {["1st Year", "2nd Year", "3rd Year", "4th Year"].map((y) => (
-                    <SelectItem key={y} value={y}>{y}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
-          <FormField control={form.control} name="date_enrolled" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date Enrolled</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          <FormField control={form.control} name="student_type" render={({ field }) => (
-            <FormItem className="space-y-2">
-              <FormLabel>Status of Registration</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  value={field.value || "old"}
-                  onValueChange={field.onChange}
-                  className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-                >
-                  {[
-                    { value: "old", label: "Old Student" },
-                    { value: "new", label: "New Student" },
-                    { value: "transferee", label: "Transferee" },
-                    { value: "returnee", label: "Returning" },
-                  ].map((item) => {
-                    const isSelected = (field.value || "old") === item.value;
-                    return (
-                      <label
-                        key={item.value}
-                        htmlFor={`reg-status-${item.value}`}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium cursor-pointer select-none transition-all",
-                          isSelected
-                            ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary shadow-xs"
-                            : "border-input bg-background text-slate-700 hover:bg-slate-50 hover:border-slate-300"
-                        )}
-                      >
-                        <RadioGroupItem value={item.value} id={`reg-status-${item.value}`} />
-                        <span className="truncate">{item.label}</span>
-                      </label>
-                    );
-                  })}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-        </div>
+                {[
+                  { value: "old", label: "Old Student" },
+                  { value: "new", label: "New Student" },
+                  { value: "transferee", label: "Transferee" },
+                  { value: "returnee", label: "Returning" },
+                ].map((item) => {
+                  const isSelected = (field.value || "old") === item.value;
+                  return (
+                    <label
+                      key={item.value}
+                      htmlFor={`reg-status-${item.value}`}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium cursor-pointer select-none transition-all",
+                        isSelected
+                          ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary shadow-xs"
+                          : "border-input bg-background text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                      )}
+                    >
+                      <RadioGroupItem value={item.value} id={`reg-status-${item.value}`} />
+                      <span className="truncate">{item.label}</span>
+                    </label>
+                  );
+                })}
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
       </div>
     </div>
   );
