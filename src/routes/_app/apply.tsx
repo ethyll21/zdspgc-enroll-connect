@@ -1686,38 +1686,43 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
             </FormItem>
           )} />
 
-          <div className="space-y-2">
-            <FormLabel>Status of Registration</FormLabel>
-            <RadioGroup
-              value={form.watch("student_type") || "old"}
-              onValueChange={(val) => form.setValue("student_type", val, { shouldValidate: true, shouldDirty: true })}
-              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-            >
-              {[
-                { value: "old", label: "Old Student" },
-                { value: "new", label: "New Student" },
-                { value: "transferee", label: "Transferee" },
-                { value: "returnee", label: "Returning" },
-              ].map((item) => {
-                const isSelected = (form.watch("student_type") || "old") === item.value;
-                return (
-                  <label
-                    key={item.value}
-                    htmlFor={`reg-status-${item.value}`}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium cursor-pointer select-none transition-all",
-                      isSelected
-                        ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary shadow-xs"
-                        : "border-input bg-background text-slate-700 hover:bg-slate-50 hover:border-slate-300"
-                    )}
-                  >
-                    <RadioGroupItem value={item.value} id={`reg-status-${item.value}`} />
-                    <span className="truncate">{item.label}</span>
-                  </label>
-                );
-              })}
-            </RadioGroup>
-          </div>
+          <FormField control={form.control} name="student_type" render={({ field }) => (
+            <FormItem className="space-y-2">
+              <FormLabel>Status of Registration</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  value={field.value || "old"}
+                  onValueChange={field.onChange}
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+                >
+                  {[
+                    { value: "old", label: "Old Student" },
+                    { value: "new", label: "New Student" },
+                    { value: "transferee", label: "Transferee" },
+                    { value: "returnee", label: "Returning" },
+                  ].map((item) => {
+                    const isSelected = (field.value || "old") === item.value;
+                    return (
+                      <label
+                        key={item.value}
+                        htmlFor={`reg-status-${item.value}`}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium cursor-pointer select-none transition-all",
+                          isSelected
+                            ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary shadow-xs"
+                            : "border-input bg-background text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                        )}
+                      >
+                        <RadioGroupItem value={item.value} id={`reg-status-${item.value}`} />
+                        <span className="truncate">{item.label}</span>
+                      </label>
+                    );
+                  })}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
         </div>
       </div>
     </div>
