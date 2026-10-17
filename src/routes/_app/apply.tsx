@@ -1565,11 +1565,11 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField control={form.control} name="program_id" render={({ field }) => (
           <FormItem>
-            <FormLabel>Course / Program <span className="text-destructive">*</span></FormLabel>
+            <FormLabel>Course <span className="text-destructive">*</span></FormLabel>
             <Select onValueChange={field.onChange} value={field.value || undefined}>
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select course/program" />
+                  <SelectValue placeholder="Select course" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
@@ -1586,9 +1586,9 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
 
         <FormField control={form.control} name="major" render={({ field }) => (
           <FormItem>
-            <FormLabel>Major / Specialization</FormLabel>
+            <FormLabel>Major</FormLabel>
             <FormControl>
-              <Input placeholder="Enter major or specialization (or N/A)" {...field} />
+              <Input placeholder="Enter major (or N/A)" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
