@@ -98,6 +98,7 @@ const applySchema = z.object({
   semester: z.string().min(1, { message: "Please select the Semester" }),
   student_type: z.string().optional(),
   date_enrolled: z.string().optional(),
+  summer: z.string().optional(),
 
   // Subjects for Old Students
   subjects: z.array(z.object({
@@ -172,6 +173,7 @@ function ApplyPage() {
       senior_high_school: "", senior_high_address: "", senior_high_years: "",
       school_year: CURRENT_SY,
       semester: SEMESTERS[0],
+      summer: "",
       student_type: "new",
       date_enrolled: new Date().toISOString().split("T")[0],
       pledge_accepted: false,
@@ -235,6 +237,7 @@ function ApplyPage() {
         senior_high_years: eb.senior_high_years || "",
         school_year:     CURRENT_SY,
         semester:        SEMESTERS[0],
+        summer:          "",
         pledge_accepted: studentRecord.pledge_accepted || false,
       });
     } else if (user) {
@@ -266,6 +269,7 @@ function ApplyPage() {
         senior_high_school: "", senior_high_address: "", senior_high_years: "",
         school_year: CURRENT_SY,
         semester: SEMESTERS[0],
+        summer: "",
         student_type: "new",
         date_enrolled: new Date().toISOString().split("T")[0],
         pledge_accepted: false,
@@ -1596,12 +1600,19 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
       </div>
 
       {/* ── Enrollment Details & Term Fields ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         <FormField control={form.control} name="semester" render={({ field }) => (
           <FormItem>
             <FormLabel>Semester <span className="text-destructive">*</span></FormLabel>
             <Select
-              onValueChange={field.onChange}
+              onValueChange={(val) => {
+                field.onChange(val);
+                if (val === "Summer") {
+                  form.setValue("summer", "Yes");
+                } else if (form.getValues("summer") === "Yes") {
+                  form.setValue("summer", "");
+                }
+              }}
               value={field.value || undefined}
             >
               <FormControl>
@@ -1615,6 +1626,26 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
                 <SelectItem value="Summer">Summer Term</SelectItem>
               </SelectContent>
             </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="summer" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Summer</FormLabel>
+            <FormControl>
+              <Input
+                placeholder="e.g. Yes / Year (or N/A)"
+                {...field}
+                onChange={(e) => {
+                  field.onChange(e);
+                  const val = e.target.value.trim().toLowerCase();
+                  if (val === "yes" || val === "summer" || val === "true") {
+                    form.setValue("semester", "Summer");
+                  }
+                }}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )} />
@@ -1664,11 +1695,11 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
         <FormItem className="space-y-2.5">
           <FormLabel>Status of Registration</FormLabel>
           <FormControl>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3 max-w-xl">
               {[
-                { value: "old", label: "Old Student" },
                 { value: "new", label: "New Student" },
                 { value: "transferee", label: "Transferee" },
+                { value: "old", label: "Old Student" },
                 { value: "returnee", label: "Returning" },
               ].map((item) => {
                 const isSelected = (field.value || "old") === item.value;
@@ -1789,7 +1820,7 @@ function OldStudentPaperReview({ vals, programList, copyTitle }: { vals: any; pr
         <div className="col-span-5 space-y-1 border-r border-black pr-2">
           <div className="flex justify-between">
             <span><strong>Semester:</strong> {vals.semester?.includes("1st") ? "[✔] 1st" : vals.semester?.includes("2nd") ? "[✔] 2nd" : vals.semester}</span>
-            <span><strong>Summer:</strong> {vals.semester === "Summer" ? "[✔]" : "____"}</span>
+            <span><strong>Summer:</strong> {vals.semester === "Summer" || vals.summer === "Yes" ? "[✔]" : vals.summer || "____"}</span>
           </div>
           <div className="flex justify-between">
             <span><strong>SY:</strong> {vals.school_year}</span>
