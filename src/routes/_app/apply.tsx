@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useRef } from "react";
-import { Upload, X, FileText, User, GraduationCap, School, Paperclip, CheckCircle2, AlertCircle, ShieldCheck, Users, BookOpen } from "lucide-react";
+import { Upload, X, FileText, User, GraduationCap, School, Paperclip, CheckCircle2, AlertCircle, ShieldCheck, Users, BookOpen, Check } from "lucide-react";
 import { programs as programsApi, students, enrollments, documents as docsApi } from "@/integrations/localdb/client";
 import type { FamilyBackground, EducationalBackground } from "@/integrations/localdb/client";
 import { useAuth } from "@/lib/auth-context";
@@ -1596,7 +1596,7 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
       </div>
 
       {/* ── Enrollment Details & Term Fields ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
         <FormField control={form.control} name="semester" render={({ field }) => (
           <FormItem>
             <FormLabel>Semester <span className="text-destructive">*</span></FormLabel>
@@ -1647,9 +1647,7 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
             <FormMessage />
           </FormItem>
         )} />
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField control={form.control} name="date_enrolled" render={({ field }) => (
           <FormItem>
             <FormLabel>Date Enrolled</FormLabel>
@@ -1659,45 +1657,52 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
             <FormMessage />
           </FormItem>
         )} />
+      </div>
 
-        <FormField control={form.control} name="student_type" render={({ field }) => (
-          <FormItem className="space-y-2">
-            <FormLabel>Status of Registration</FormLabel>
-            <FormControl>
-              <RadioGroup
-                value={field.value || "old"}
-                onValueChange={field.onChange}
-                className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-              >
-                {[
-                  { value: "old", label: "Old Student" },
-                  { value: "new", label: "New Student" },
-                  { value: "transferee", label: "Transferee" },
-                  { value: "returnee", label: "Returning" },
-                ].map((item) => {
-                  const isSelected = (field.value || "old") === item.value;
-                  return (
-                    <label
-                      key={item.value}
-                      htmlFor={`reg-status-${item.value}`}
+      {/* ── Status of Registration (Full text with checkmarks) ── */}
+      <FormField control={form.control} name="student_type" render={({ field }) => (
+        <FormItem className="space-y-2.5">
+          <FormLabel>Status of Registration</FormLabel>
+          <FormControl>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { value: "old", label: "Old Student" },
+                { value: "new", label: "New Student" },
+                { value: "transferee", label: "Transferee" },
+                { value: "returnee", label: "Returning" },
+              ].map((item) => {
+                const isSelected = (field.value || "old") === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => field.onChange(item.value)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all select-none cursor-pointer",
+                      isSelected
+                        ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary shadow-xs"
+                        : "border-input bg-background text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                    )}
+                  >
+                    <div
                       className={cn(
-                        "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium cursor-pointer select-none transition-all",
+                        "w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 transition-colors",
                         isSelected
-                          ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary shadow-xs"
-                          : "border-input bg-background text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "border-slate-400 bg-white"
                       )}
                     >
-                      <RadioGroupItem value={item.value} id={`reg-status-${item.value}`} />
-                      <span className="truncate">{item.label}</span>
-                    </label>
-                  );
-                })}
-              </RadioGroup>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-      </div>
+                      {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                    <span className="whitespace-nowrap">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
     </div>
   );
 }
