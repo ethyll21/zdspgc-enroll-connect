@@ -135,18 +135,30 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
       }
     }
 
+    // Check if any document is rejected
+    const hasAnyRejectedDoc = docs.some((d) => d.status === 'rejected');
+
+    // Check if ALL documents submitted by the student are approved
+    const allSubmittedDocsApproved = docs.length > 0 && docs.every((d) => d.status === 'approved');
+
     // Check if admin has reviewed at least one submitted document
     const hasAnyReviewedDoc = docs.some((d) => d.status === 'approved' || d.status === 'rejected');
 
+    // Can only be approved if:
+    // 1) All required documents are present and approved
+    // 2) Every document submitted by the student is approved
+    // 3) No document is rejected
+    const canApprove = allRequiredApproved && allSubmittedDocsApproved && !hasAnyRejectedDoc;
+
     // 5. Determine target status
     let targetStatus;
-    if (allRequiredApproved) {
+    if (canApprove) {
       targetStatus = 'approved';
-    } else if (hasAnyReviewedDoc) {
-      // Once the admin approves or rejects at least one document, automatically change to Under Review
+    } else if (hasAnyRejectedDoc || hasAnyReviewedDoc) {
+      // If at least one document is rejected or reviewed (and not all approved), status is Under Review
       targetStatus = 'under_review';
     } else {
-      // Keep Pending only when the admin has not reviewed any submitted document
+      // Keep Pending only when the admin has not reviewed any submitted document (all pending, none rejected)
       targetStatus = 'pending';
     }
 
@@ -163,17 +175,40 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
       }
     }
 
+    // Prepare review remarks for under_review state
+    const rejectedDocs = docs.filter((d) => d.status === 'rejected');
+    const rejectedReasons = rejectedDocs
+      .map((d) => (d.remarks ? `${(d.doc_type || 'Document').replace(/_/g, ' ')}: ${d.remarks}` : null))
+      .filter(Boolean);
+
+    let reviewRemark;
+    if (hasAnyRejectedDoc) {
+      if (rejectedReasons.length > 0) {
+        reviewRemark = `One or more documents were rejected (${rejectedReasons.join('; ')}). Please re-upload.`;
+      } else {
+        reviewRemark = 'One or more submitted documents were rejected and require revision.';
+      }
+    } else {
+      reviewRemark = 'Your submitted documents are currently under review.';
+    }
+
     if (targetStatus === 'approved' && previousStatus !== 'approved') {
       const autoRemark = 'All required documents have been verified and approved.';
+      const isAutoRemark =
+        !enrollment.remarks ||
+        enrollment.remarks === 'Your submitted documents are currently under review.' ||
+        enrollment.remarks.startsWith('One or more');
+      const nextApprovedRemarks = isAutoRemark ? autoRemark : enrollment.remarks;
+
       await client.query(
         `UPDATE public.enrollments
          SET status = 'approved',
              reviewed_at = NOW(),
              reviewed_by = COALESCE($1, reviewed_by),
-             remarks = COALESCE(NULLIF(remarks, ''), $2),
+             remarks = $2,
              updated_at = NOW()
          WHERE id = $3`,
-        [adminId, autoRemark, enrollmentId]
+        [adminId, nextApprovedRemarks, enrollmentId]
       );
       newStatus = 'approved';
 
@@ -182,7 +217,7 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
         try {
           await client.query(
             `INSERT INTO public.validation_records (enrollment_id, validated_by, result, notes)
-             VALUES ($1, $2, 'approved', 'Automatic approval: all required documents verified.')`,
+             VALUES ($1, $2, 'approved', 'Automatic approval: all submitted documents verified and approved.')`,
             [enrollmentId, adminId]
           );
         } catch (vErr) {
@@ -217,77 +252,109 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
       } catch (notifErr) {
         console.warn('[syncEnrollmentStatus] Notification failed (non-fatal):', notifErr.message);
       }
-    } else if (targetStatus === 'under_review' && previousStatus !== 'under_review' && previousStatus !== 'rejected') {
+    } else if (
+      targetStatus === 'under_review' &&
+      (previousStatus !== 'under_review' || enrollment.remarks === 'All required documents have been verified and approved.' || (hasAnyRejectedDoc && enrollment.remarks === 'Your submitted documents are currently under review.')) &&
+      previousStatus !== 'rejected'
+    ) {
+      const isAutoOrApprovalRemark =
+        !enrollment.remarks ||
+        enrollment.remarks === 'All required documents have been verified and approved.' ||
+        enrollment.remarks === 'Your submitted documents are currently under review.' ||
+        enrollment.remarks.startsWith('One or more');
+
+      const nextRemarks = isAutoOrApprovalRemark ? reviewRemark : enrollment.remarks;
+
       await client.query(
         `UPDATE public.enrollments
          SET status = 'under_review',
+             remarks = $1,
              updated_at = NOW()
-         WHERE id = $1`,
-        [enrollmentId]
+         WHERE id = $2`,
+        [nextRemarks, enrollmentId]
       );
       newStatus = 'under_review';
 
-      // Record validation history
-      if (adminId) {
+      if (previousStatus !== 'under_review') {
+        // Record validation history
+        if (adminId) {
+          try {
+            await client.query(
+              `INSERT INTO public.validation_records (enrollment_id, validated_by, result, notes)
+               VALUES ($1, $2, 'under_review', $3)`,
+              [enrollmentId, adminId, hasAnyRejectedDoc ? 'Document rejected: application status updated to Under Review.' : 'Document reviewed: application status automatically updated to Under Review.']
+            );
+          } catch (vErr) {
+            console.warn('[syncEnrollmentStatus] Validation record error (non-fatal):', vErr.message);
+          }
+        }
+
+        // Notify the student
+        const richMessage = JSON.stringify({
+          isRichCard: true,
+          type: 'under_review',
+          studentName: `${enrollment.first_name} ${enrollment.last_name}`.trim(),
+          appNo: `APP-${enrollmentId.split('-')[0].toUpperCase()}`,
+          program: enrollment.program_name || enrollment.program_code || 'N/A',
+          reviewedBy: 'Registrar',
+          date: new Date().toISOString(),
+          remarks: reviewRemark,
+          fallbackMessage: hasAnyRejectedDoc
+            ? 'One or more submitted documents were rejected and require revision.'
+            : 'Your application status is now Under Review.',
+        });
+
         try {
           await client.query(
-            `INSERT INTO public.validation_records (enrollment_id, validated_by, result, notes)
-             VALUES ($1, $2, 'under_review', 'Document reviewed: application status automatically updated to Under Review.')`,
-            [enrollmentId, adminId]
+            `INSERT INTO public.notifications (user_id, title, message, link)
+             VALUES ($1, $2, $3, $4)`,
+            [
+              enrollment.user_id,
+              hasAnyRejectedDoc ? 'Document Rejected - Action Required' : 'Enrollment Under Review',
+              richMessage,
+              `/applications/${enrollmentId}`,
+            ]
           );
-        } catch (vErr) {
-          console.warn('[syncEnrollmentStatus] Validation record error (non-fatal):', vErr.message);
+        } catch (notifErr) {
+          console.warn('[syncEnrollmentStatus] Notification failed (non-fatal):', notifErr.message);
         }
       }
+    } else if (
+      targetStatus === 'pending' &&
+      (previousStatus !== 'pending' || enrollment.remarks === 'All required documents have been verified and approved.') &&
+      previousStatus !== 'rejected'
+    ) {
+      const isAutoOrApprovalRemark =
+        !enrollment.remarks ||
+        enrollment.remarks === 'All required documents have been verified and approved.' ||
+        enrollment.remarks === 'Your submitted documents are currently under review.' ||
+        enrollment.remarks.startsWith('One or more');
 
-      // Notify the student
-      const richMessage = JSON.stringify({
-        isRichCard: true,
-        type: 'under_review',
-        studentName: `${enrollment.first_name} ${enrollment.last_name}`.trim(),
-        appNo: `APP-${enrollmentId.split('-')[0].toUpperCase()}`,
-        program: enrollment.program_name || enrollment.program_code || 'N/A',
-        reviewedBy: 'Registrar',
-        date: new Date().toISOString(),
-        remarks: 'Your submitted documents are currently under review.',
-        fallbackMessage: 'Your application status is now Under Review.',
-      });
+      const nextRemarks = isAutoOrApprovalRemark ? null : enrollment.remarks;
 
-      try {
-        await client.query(
-          `INSERT INTO public.notifications (user_id, title, message, link)
-           VALUES ($1, $2, $3, $4)`,
-          [
-            enrollment.user_id,
-            'Enrollment Under Review',
-            richMessage,
-            `/applications/${enrollmentId}`,
-          ]
-        );
-      } catch (notifErr) {
-        console.warn('[syncEnrollmentStatus] Notification failed (non-fatal):', notifErr.message);
-      }
-    } else if (targetStatus === 'pending' && previousStatus !== 'pending' && previousStatus !== 'rejected') {
       // Revert to pending because no documents have been reviewed
       await client.query(
         `UPDATE public.enrollments
          SET status = 'pending',
+             remarks = $1,
              updated_at = NOW()
-         WHERE id = $1`,
-        [enrollmentId]
+         WHERE id = $2`,
+        [nextRemarks, enrollmentId]
       );
       newStatus = 'pending';
 
-      // Record validation history
-      if (adminId) {
-        try {
-          await client.query(
-            `INSERT INTO public.validation_records (enrollment_id, validated_by, result, notes)
-             VALUES ($1, $2, 'pending', 'No documents reviewed: application status set to Pending.')`,
-            [enrollmentId, adminId]
-          );
-        } catch (vErr) {
-          console.warn('[syncEnrollmentStatus] Validation record error (non-fatal):', vErr.message);
+      if (previousStatus !== 'pending') {
+        // Record validation history
+        if (adminId) {
+          try {
+            await client.query(
+              `INSERT INTO public.validation_records (enrollment_id, validated_by, result, notes)
+               VALUES ($1, $2, 'pending', 'No documents reviewed: application status set to Pending.')`,
+              [enrollmentId, adminId]
+            );
+          } catch (vErr) {
+            console.warn('[syncEnrollmentStatus] Validation record error (non-fatal):', vErr.message);
+          }
         }
       }
     }
@@ -296,7 +363,7 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
       enrollmentId,
       previousStatus,
       newStatus,
-      allRequiredApproved,
+      allRequiredApproved: canApprove,
       requiredDocTypes,
       details,
     };

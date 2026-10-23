@@ -182,9 +182,17 @@ router.delete('/:id', requireAuth, async (req, res) => {
     await db.query('DELETE FROM public.documents WHERE id = $1', [req.params.id]);
 
     // If doc was attached to an enrollment, sync status (reverts to pending if a required doc is now missing)
-    if (doc.enrollment_id) {
+    let targetEnrollmentId = doc.enrollment_id;
+    if (!targetEnrollmentId && doc.student_id) {
+      const enrRes = await db.query(
+        'SELECT id FROM public.enrollments WHERE student_id = $1 ORDER BY created_at DESC LIMIT 1',
+        [doc.student_id]
+      );
+      if (enrRes.rows.length > 0) targetEnrollmentId = enrRes.rows[0].id;
+    }
+    if (targetEnrollmentId) {
       try {
-        await syncEnrollmentStatus(doc.enrollment_id, req.user.id);
+        await syncEnrollmentStatus(targetEnrollmentId, req.user.id);
       } catch (syncErr) {
         console.warn('[Documents/delete] Status sync error (non-fatal):', syncErr.message);
       }
@@ -208,7 +216,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
         await db.query(
           `INSERT INTO public.notifications (user_id, title, message, link)
            VALUES ($1, $2, $3, $4)`,
-          [doc.user_id, title, message, doc.enrollment_id ? `/applications/${doc.enrollment_id}` : null]
+          [doc.user_id, title, message, targetEnrollmentId ? `/applications/${targetEnrollmentId}` : null]
         );
       } catch (notifErr) {
         console.warn('[Documents/delete] Notification failed (non-fatal):', notifErr.message);
@@ -247,10 +255,24 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
 
     const doc = rows[0];
 
-    // Auto-update enrollment status based on required document review state
+    // Auto-update enrollment status based on document review state
     let syncResult = null;
-    if (doc.enrollment_id) {
-      syncResult = await syncEnrollmentStatus(doc.enrollment_id, req.user.id, client);
+    let targetEnrollmentId = doc.enrollment_id;
+    if (!targetEnrollmentId && doc.student_id) {
+      const enrRes = await client.query(
+        'SELECT id FROM public.enrollments WHERE student_id = $1 ORDER BY created_at DESC LIMIT 1',
+        [doc.student_id]
+      );
+      if (enrRes.rows.length > 0) {
+        targetEnrollmentId = enrRes.rows[0].id;
+        await client.query(
+          'UPDATE public.documents SET enrollment_id = $1 WHERE id = $2',
+          [targetEnrollmentId, doc.id]
+        );
+      }
+    }
+    if (targetEnrollmentId) {
+      syncResult = await syncEnrollmentStatus(targetEnrollmentId, req.user.id, client);
     }
 
     // Notify the student about the document review
