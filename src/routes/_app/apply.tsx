@@ -67,19 +67,19 @@ const applySchema = z.object({
   father_occupation: z.string().min(1, { message: "Please enter Father's Occupation" }),
   father_company: z.string().min(1, { message: "Please enter Father's Company (or 'N/A')" }),
   father_address: z.string().min(1, { message: "Please enter Father's Address" }),
-  father_contact: z.string().regex(/^\d{11}$/, { message: "Contact number must be exactly 11 digits" }),
+  father_contact: z.string().regex(/^\+639\d{9}$/, { message: "Please enter a valid 10-digit PH mobile number (e.g. 9XXXXXXXXX)" }),
   mother_name: z.string().min(1, { message: "Please enter Mother's Name" }),
   mother_occupation: z.string().min(1, { message: "Please enter Mother's Occupation" }),
   mother_company: z.string().min(1, { message: "Please enter Mother's Company (or 'N/A')" }),
   mother_address: z.string().min(1, { message: "Please enter Mother's Address" }),
-  mother_contact: z.string().regex(/^\d{11}$/, { message: "Contact number must be exactly 11 digits" }),
+  mother_contact: z.string().regex(/^\+639\d{9}$/, { message: "Please enter a valid 10-digit PH mobile number (e.g. 9XXXXXXXXX)" }),
   guardian_name: z.string().min(1, { message: "Please enter Guardian's Name" }),
   guardian_relationship: z.string().min(1, { message: "Please enter Guardian's Relationship" }),
   guardian_address: z.string().min(1, { message: "Please enter Guardian's Address" }),
-  guardian_contact: z.string().regex(/^\d{11}$/, { message: "Contact number must be exactly 11 digits" }),
+  guardian_contact: z.string().regex(/^\+639\d{9}$/, { message: "Please enter a valid 10-digit PH mobile number (e.g. 9XXXXXXXXX)" }),
   emergency_contact_person: z.string().min(1, { message: "Please enter Emergency Contact Person" }),
   emergency_contact_address: z.string().min(1, { message: "Please enter Emergency Contact Address" }),
-  emergency_contact_number: z.string().regex(/^\d{11}$/, { message: "Contact number must be exactly 11 digits" }),
+  emergency_contact_number: z.string().regex(/^\+639\d{9}$/, { message: "Please enter a valid 10-digit PH mobile number (e.g. 9XXXXXXXXX)" }),
 
   // Educational Background
   elementary_school: z.string().min(1, { message: "Please enter Elementary School" }),
@@ -895,17 +895,27 @@ function ApplyPage() {
                   <FormField control={form.control} name="father_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="father_contact" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Number</FormLabel>
+                      <FormLabel>Contact Number <span className="text-destructive ml-1">*</span></FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          type="tel"
-                          inputMode="numeric"
-                          maxLength={11}
-                          placeholder="e.g. 09XXXXXXXXX"
-                          onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault(); }}
-                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                        />
+                        <div className="flex items-center rounded-md border border-input bg-background ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 h-10 px-3">
+                          <span className="text-sm text-muted-foreground select-none pr-1">+63</span>
+                          <input
+                            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            inputMode="numeric"
+                            maxLength={10}
+                            placeholder="9XXXXXXXXX"
+                            value={field.value ? field.value.replace(/^\+63/, "") : ""}
+                            onChange={(e) => {
+                              const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                              field.onChange(digits ? "+63" + digits : "");
+                            }}
+                          />
+                          {field.value && (
+                            <button type="button" className="ml-1 text-muted-foreground hover:text-foreground transition-colors" onClick={() => field.onChange("")} tabIndex={-1}>
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -919,17 +929,27 @@ function ApplyPage() {
                   <FormField control={form.control} name="mother_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="mother_contact" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Number</FormLabel>
+                      <FormLabel>Contact Number <span className="text-destructive ml-1">*</span></FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          type="tel"
-                          inputMode="numeric"
-                          maxLength={11}
-                          placeholder="e.g. 09XXXXXXXXX"
-                          onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault(); }}
-                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                        />
+                        <div className="flex items-center rounded-md border border-input bg-background ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 h-10 px-3">
+                          <span className="text-sm text-muted-foreground select-none pr-1">+63</span>
+                          <input
+                            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            inputMode="numeric"
+                            maxLength={10}
+                            placeholder="9XXXXXXXXX"
+                            value={field.value ? field.value.replace(/^\+63/, "") : ""}
+                            onChange={(e) => {
+                              const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                              field.onChange(digits ? "+63" + digits : "");
+                            }}
+                          />
+                          {field.value && (
+                            <button type="button" className="ml-1 text-muted-foreground hover:text-foreground transition-colors" onClick={() => field.onChange("")} tabIndex={-1}>
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -946,17 +966,27 @@ function ApplyPage() {
                   <FormField control={form.control} name="guardian_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="guardian_contact" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Number</FormLabel>
+                      <FormLabel>Contact Number <span className="text-destructive ml-1">*</span></FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          type="tel"
-                          inputMode="numeric"
-                          maxLength={11}
-                          placeholder="e.g. 09XXXXXXXXX"
-                          onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault(); }}
-                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                        />
+                        <div className="flex items-center rounded-md border border-input bg-background ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 h-10 px-3">
+                          <span className="text-sm text-muted-foreground select-none pr-1">+63</span>
+                          <input
+                            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            inputMode="numeric"
+                            maxLength={10}
+                            placeholder="9XXXXXXXXX"
+                            value={field.value ? field.value.replace(/^\+63/, "") : ""}
+                            onChange={(e) => {
+                              const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                              field.onChange(digits ? "+63" + digits : "");
+                            }}
+                          />
+                          {field.value && (
+                            <button type="button" className="ml-1 text-muted-foreground hover:text-foreground transition-colors" onClick={() => field.onChange("")} tabIndex={-1}>
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -968,17 +998,27 @@ function ApplyPage() {
                   <FormField control={form.control} name="emergency_contact_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="emergency_contact_number" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Number</FormLabel>
+                      <FormLabel>Contact Number <span className="text-destructive ml-1">*</span></FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          type="tel"
-                          inputMode="numeric"
-                          maxLength={11}
-                          placeholder="e.g. 09XXXXXXXXX"
-                          onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault(); }}
-                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                        />
+                        <div className="flex items-center rounded-md border border-input bg-background ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 h-10 px-3">
+                          <span className="text-sm text-muted-foreground select-none pr-1">+63</span>
+                          <input
+                            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            inputMode="numeric"
+                            maxLength={10}
+                            placeholder="9XXXXXXXXX"
+                            value={field.value ? field.value.replace(/^\+63/, "") : ""}
+                            onChange={(e) => {
+                              const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                              field.onChange(digits ? "+63" + digits : "");
+                            }}
+                          />
+                          {field.value && (
+                            <button type="button" className="ml-1 text-muted-foreground hover:text-foreground transition-colors" onClick={() => field.onChange("")} tabIndex={-1}>
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
