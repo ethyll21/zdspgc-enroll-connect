@@ -12,9 +12,9 @@ const db = require('../db');
  * - registration_form
  */
 const REQUIRED_DOCS_BY_TYPE = {
-  new: ['psa_birth_certificate', 'form_138', 'good_moral'],
-  transferee: ['psa_birth_certificate', 'form_138', 'good_moral'],
-  default: ['psa_birth_certificate', 'form_138', 'good_moral'],
+  new: ['psa_front', 'psa_back', 'form_138', 'good_moral'],
+  transferee: ['psa_front', 'psa_back', 'form_138', 'good_moral'],
+  default: ['psa_front', 'psa_back', 'form_138', 'good_moral'],
 };
 
 /**
@@ -111,7 +111,15 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
         };
       }
     } else {
-      requiredDocTypes = REQUIRED_DOCS_BY_TYPE[studentType] || REQUIRED_DOCS_BY_TYPE.default;
+      const baseReqs = ['form_138', 'good_moral'];
+      const hasFrontOrBack = docs.some((d) => d.doc_type === 'psa_front' || d.doc_type === 'psa_back' || d.doc_type === 'psa_birth_certificate_front' || d.doc_type === 'psa_birth_certificate_back');
+      const hasLegacyPsa = docs.some((d) => d.doc_type === 'psa_birth_certificate');
+
+      if (hasLegacyPsa && !hasFrontOrBack) {
+        requiredDocTypes = ['psa_birth_certificate', ...baseReqs];
+      } else {
+        requiredDocTypes = ['psa_front', 'psa_back', ...baseReqs];
+      }
     }
 
     // 4. Check each required document
@@ -119,7 +127,11 @@ async function syncEnrollmentStatus(enrollmentId, reviewerId = null, existingCli
     let allRequiredApproved = true;
 
     for (const reqType of requiredDocTypes) {
-      const matchingDocs = docs.filter((d) => d.doc_type === reqType);
+      const matchingDocs = docs.filter((d) => 
+        d.doc_type === reqType ||
+        (reqType === 'psa_front' && d.doc_type === 'psa_birth_certificate_front') ||
+        (reqType === 'psa_back' && d.doc_type === 'psa_birth_certificate_back')
+      );
       if (matchingDocs.length === 0) {
         // Missing required document
         allRequiredApproved = false;

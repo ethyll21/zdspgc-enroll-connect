@@ -29,6 +29,10 @@ const STATUS_META: Record<string, { label: string; tone: string }> = {
 const DOC_LABELS: Record<string, string> = {
   registration_form: "Registration Form / Evaluation Slip",
   psa_birth_certificate: "PSA Birth Certificate",
+  psa_front: "PSA – Front",
+  psa_back: "PSA – Back",
+  psa_birth_certificate_front: "PSA – Front",
+  psa_birth_certificate_back: "PSA – Back",
   form_138: "Form 138 (Report Card)",
   good_moral: "Good Moral Certificate",
   transfer_certificate: "Transfer Credentials",
@@ -442,7 +446,11 @@ function ApplicationDetail() {
   // If enrollment.student_type is not fully reliable, we default to "new" if no subjects
   const studentTypeCategory = (enrollment.student_type === "old" || enrollment.student_type === "returnee") ? "old" : "new";
   const expectedDocs = REQUIRED_DOCUMENTS.filter(d => d.for.includes(studentTypeCategory as any));
-  const missingDocs = expectedDocs.filter(ed => !docs.some(d => d.doc_type === ed.key));
+  const hasLegacyPsa = docs.some(d => d.doc_type === 'psa_birth_certificate');
+  const missingDocs = expectedDocs.filter(ed => {
+    if (hasLegacyPsa && (ed.key === 'psa_front' || ed.key === 'psa_back')) return false;
+    return !docs.some(d => d.doc_type === ed.key || (ed.key === 'psa_front' && d.doc_type === 'psa_birth_certificate_front') || (ed.key === 'psa_back' && d.doc_type === 'psa_birth_certificate_back'));
+  });
 
   const isOldStudent = enrollment.student_type === "old" || enrollment.student_type === "returnee" || (!enrollment.student_type && enrollment.subjects && enrollment.subjects.length > 0);
   const subjectsList: SubjectScheduleItem[] = enrollment.subjects || [];

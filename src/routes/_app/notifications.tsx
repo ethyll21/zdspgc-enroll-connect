@@ -20,6 +20,12 @@ function parseRichPayload(title: string, message: string, createdAt: string) {
 
   // Document-level detection: check if title contains a known doc type keyword
   const docTypeMap: Record<string, string> = {
+    'psa – front': 'PSA – Front',
+    'psa - front': 'PSA – Front',
+    'psa front': 'PSA – Front',
+    'psa – back': 'PSA – Back',
+    'psa - back': 'PSA – Back',
+    'psa back': 'PSA – Back',
     'psa birth certificate': 'PSA Birth Certificate',
     'form 138': 'Form 138',
     'good moral certificate': 'Good Moral Certificate',

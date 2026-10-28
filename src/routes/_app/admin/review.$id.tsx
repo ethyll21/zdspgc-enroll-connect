@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ArrowLeft, FileText, Download, CheckCircle, XCircle, Printer, CheckCircle2, AlertCircle, Clock, ExternalLink } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { REQUIRED_DOCUMENTS } from "@/lib/enrollment-constants";
+import { REQUIRED_DOCUMENTS, DOC_LABELS } from "@/lib/enrollment-constants";
 
 export const Route = createFileRoute("/_app/admin/review/$id")({
   component: AdminReviewApplication,
@@ -148,7 +148,11 @@ function AdminReviewApplication() {
   // Determine which required docs are missing for this enrollment
   const studentTypeCategory = enrollment.student_type === "old" ? "old" : "new";
   const expectedDocs = REQUIRED_DOCUMENTS.filter((d: any) => !d.for || d.for.includes(studentTypeCategory));
-  const missingDocs = isOldStudent ? [] : expectedDocs.filter((ed: any) => !documents.some((d: any) => d.doc_type === ed.key));
+  const hasLegacyPsa = documents.some((d: any) => d.doc_type === 'psa_birth_certificate');
+  const missingDocs = isOldStudent ? [] : expectedDocs.filter((ed: any) => {
+    if (hasLegacyPsa && (ed.key === 'psa_front' || ed.key === 'psa_back')) return false;
+    return !documents.some((d: any) => d.doc_type === ed.key || (ed.key === 'psa_front' && d.doc_type === 'psa_birth_certificate_front') || (ed.key === 'psa_back' && d.doc_type === 'psa_birth_certificate_back'));
+  });
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-20 print:pb-0 print:max-w-none print:m-0">
@@ -374,7 +378,7 @@ function AdminReviewApplication() {
                             <FileText className="h-6 w-6" />
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-800 text-base">{doc.doc_type.replace(/_/g, " ").replace(/\bpsa\b/gi, "PSA").replace(/\b\w/g, (c: string) => c.toUpperCase())}</p>
+                            <p className="font-semibold text-slate-800 text-base">{DOC_LABELS[doc.doc_type] || doc.doc_type.replace(/_/g, " ").replace(/\bpsa\b/gi, "PSA").replace(/\b\w/g, (c: string) => c.toUpperCase())}</p>
                             <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1.5">
                               <span className="truncate max-w-[200px] sm:max-w-[300px]">{doc.file_name}</span>
                               <span className="text-slate-300">•</span>
@@ -461,7 +465,7 @@ function AdminReviewApplication() {
                           <FileText className="h-6 w-6" />
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-600 capitalize text-base">{md.label}</p>
+                          <p className="font-semibold text-slate-600 text-base">{DOC_LABELS[md.key] || md.label}</p>
                           <p className="text-xs text-rose-500 font-medium mt-0.5 flex items-center gap-1.5">
                             {md.required ? "Missing Required Document" : "Missing Optional Document"}
                           </p>

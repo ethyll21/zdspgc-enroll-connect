@@ -11,7 +11,18 @@ const router = express.Router();
 // TEMPORARY: Route to fix the enum in the production database
 router.get('/fix-enum', async (req, res) => {
   try {
-    const values = ['psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate', 'other', 'registration_form'];
+    const values = [
+      'psa_birth_certificate',
+      'psa_front',
+      'psa_back',
+      'psa_birth_certificate_front',
+      'psa_birth_certificate_back',
+      'form_138',
+      'good_moral',
+      'transfer_certificate',
+      'other',
+      'registration_form'
+    ];
     const results = [];
     
     // Check if it's an enum
@@ -90,8 +101,16 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 
   const { doc_type } = req.body;
   const validDocTypes = [
-    'psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate',
-    'registration_form', 'other',
+    'psa_birth_certificate',
+    'psa_front',
+    'psa_back',
+    'psa_birth_certificate_front',
+    'psa_birth_certificate_back',
+    'form_138',
+    'good_moral',
+    'transfer_certificate',
+    'registration_form',
+    'other',
   ];
   if (!doc_type || !validDocTypes.includes(doc_type)) {
     return res.status(400).json({ error: `doc_type must be one of: ${validDocTypes.join(', ')}` });
@@ -203,6 +222,10 @@ router.delete('/:id', requireAuth, async (req, res) => {
       const docTypeLabels = {
         registration_form: 'Registration Form',
         psa_birth_certificate: 'PSA Birth Certificate',
+        psa_front: 'PSA – Front',
+        psa_back: 'PSA – Back',
+        psa_birth_certificate_front: 'PSA – Front',
+        psa_birth_certificate_back: 'PSA – Back',
         form_138: 'Form 138',
         good_moral: 'Good Moral Certificate',
         transfer_certificate: 'Transfer Certificate',
@@ -287,6 +310,10 @@ router.patch('/:id/review', requireAdmin, async (req, res) => {
       const docTypeLabels = {
         registration_form: 'Registration Form',
         psa_birth_certificate: 'PSA Birth Certificate',
+        psa_front: 'PSA – Front',
+        psa_back: 'PSA – Back',
+        psa_birth_certificate_front: 'PSA – Front',
+        psa_birth_certificate_back: 'PSA – Back',
         form_138: 'Form 138',
         good_moral: 'Good Moral Certificate',
         transfer_certificate: 'Transfer Certificate',

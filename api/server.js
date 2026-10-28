@@ -167,7 +167,18 @@ function startServer() {
 // Try migrations with a timeout; always start the server regardless
 async function fixEnums(db) {
   try {
-    const values = ['psa_birth_certificate', 'form_138', 'good_moral', 'transfer_certificate', 'other', 'registration_form'];
+    const values = [
+      'psa_birth_certificate',
+      'psa_front',
+      'psa_back',
+      'psa_birth_certificate_front',
+      'psa_birth_certificate_back',
+      'form_138',
+      'good_moral',
+      'transfer_certificate',
+      'other',
+      'registration_form'
+    ];
     const colCheck = await db.query(`SELECT udt_name FROM information_schema.columns WHERE table_schema='public' AND table_name='documents' AND column_name='doc_type'`);
     if (colCheck.rows.length > 0 && colCheck.rows[0].udt_name === 'document_type') {
       console.log('[Startup] Checking document_type enum values...');

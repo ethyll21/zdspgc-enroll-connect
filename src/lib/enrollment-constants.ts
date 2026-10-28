@@ -1,7 +1,8 @@
 // Document types must match the PostgreSQL document_type enum in PRE-ENROLLMENT_DB
 export const REQUIRED_DOCUMENTS = [
   { key: "registration_form",     label: "Registration Form",            required: true, for: ["old"] },
-  { key: "psa_birth_certificate", label: "PSA Birth Certificate",        required: true, for: ["new"] },
+  { key: "psa_front",             label: "PSA – Front",                  required: true, for: ["new"] },
+  { key: "psa_back",              label: "PSA – Back",                   required: true, for: ["new"] },
   { key: "form_138",              label: "Form 138 (Report Card)",        required: true, for: ["new"] },
   { key: "good_moral",            label: "Good Moral Certificate",        required: true, for: ["new"] },
   { key: "transfer_certificate",  label: "Transfer Credentials",          required: false, for: ["new"] },
@@ -9,6 +10,19 @@ export const REQUIRED_DOCUMENTS = [
 ] as const;
 
 export type DocumentKey = (typeof REQUIRED_DOCUMENTS)[number]["key"];
+
+export const DOC_LABELS: Record<string, string> = {
+  registration_form: "Registration Form / Evaluation Slip",
+  psa_birth_certificate: "PSA Birth Certificate",
+  psa_front: "PSA – Front",
+  psa_back: "PSA – Back",
+  psa_birth_certificate_front: "PSA – Front",
+  psa_birth_certificate_back: "PSA – Back",
+  form_138: "Form 138 (Report Card)",
+  good_moral: "Good Moral Certificate",
+  transfer_certificate: "Transfer Credentials",
+  other: "Other Supporting Documents",
+};
 
 export const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 export const STUDENT_TYPES = [
