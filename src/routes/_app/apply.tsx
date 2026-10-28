@@ -27,6 +27,7 @@ const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 const SEMESTERS   = ["1st Semester", "2nd Semester", "Summer"];
 const CURRENT_SY  = "2026-2027";
 const CIVIL_STATUSES = ["Single", "Married", "Widower"];
+const MAJORS = ["Service Management", "Web Development", "Physical Education"] as const;
 
 const REQUIRED_DOCUMENTS = [
   { key: "psa_birth_certificate", label: "PSA Birth Certificate",       required: true },
@@ -42,7 +43,7 @@ const applySchema = z.object({
   // Course & Major
   student_no: z.string().min(1, { message: "Please enter Student No. (or 'N/A')" }),
   program_id: z.string().min(1, { message: "Please select a Course/Program" }),
-  major: z.string().min(1, { message: "Please enter Major (or 'N/A')" }),
+  major: z.enum(["Service Management", "Web Development", "Physical Education"], { required_error: "Please select a Major" }),
 
   // Personal Information
   last_name: z.string().min(1, { message: "Please enter your Last Name" }),
@@ -636,7 +637,12 @@ function ApplyPage() {
                 <FormField control={form.control} name="major" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Major</FormLabel>
-                    <FormControl><Input maxLength={150} placeholder="If applicable" {...field} /></FormControl>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select major" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {MAJORS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -1591,9 +1597,12 @@ function OldStudentPaperFormHeader({ form, programList, studentType }: { form: a
         <FormField control={form.control} name="major" render={({ field }) => (
           <FormItem>
             <FormLabel>Major</FormLabel>
-            <FormControl>
-              <Input placeholder="Enter major (or N/A)" {...field} />
-            </FormControl>
+            <Select onValueChange={field.onChange} value={field.value || undefined}>
+              <FormControl><SelectTrigger><SelectValue placeholder="Select major" /></SelectTrigger></FormControl>
+              <SelectContent>
+                {MAJORS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )} />
