@@ -889,7 +889,7 @@ function ApplyPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-primary border-b pb-2">Father's Information:</h3>
-                  <FormField control={form.control} name="father_name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                  <FormField control={form.control} name="father_name" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="father_occupation" render={({ field }) => (<FormItem><FormLabel>Occupation</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="father_company" render={({ field }) => (<FormItem><FormLabel>Monthly Income</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="father_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
@@ -897,7 +897,7 @@ function ApplyPage() {
                 </div>
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-primary border-b pb-2">Mother's Information:</h3>
-                  <FormField control={form.control} name="mother_name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                  <FormField control={form.control} name="mother_name" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="mother_occupation" render={({ field }) => (<FormItem><FormLabel>Occupation</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="mother_company" render={({ field }) => (<FormItem><FormLabel>Monthly Income</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="mother_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
