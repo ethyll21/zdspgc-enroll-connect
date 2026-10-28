@@ -67,19 +67,19 @@ const applySchema = z.object({
   father_occupation: z.string().min(1, { message: "Please enter Father's Occupation" }),
   father_company: z.string().min(1, { message: "Please enter Father's Company (or 'N/A')" }),
   father_address: z.string().min(1, { message: "Please enter Father's Address" }),
-  father_contact: z.string().min(1, { message: "Please enter Father's Contact Number" }),
+  father_contact: z.string().regex(/^\d{11}$/, { message: "Contact number must be exactly 11 digits" }),
   mother_name: z.string().min(1, { message: "Please enter Mother's Name" }),
   mother_occupation: z.string().min(1, { message: "Please enter Mother's Occupation" }),
   mother_company: z.string().min(1, { message: "Please enter Mother's Company (or 'N/A')" }),
   mother_address: z.string().min(1, { message: "Please enter Mother's Address" }),
-  mother_contact: z.string().min(1, { message: "Please enter Mother's Contact Number" }),
+  mother_contact: z.string().regex(/^\d{11}$/, { message: "Contact number must be exactly 11 digits" }),
   guardian_name: z.string().min(1, { message: "Please enter Guardian's Name" }),
   guardian_relationship: z.string().min(1, { message: "Please enter Guardian's Relationship" }),
   guardian_address: z.string().min(1, { message: "Please enter Guardian's Address" }),
-  guardian_contact: z.string().min(1, { message: "Please enter Guardian's Contact Number" }),
+  guardian_contact: z.string().regex(/^\d{11}$/, { message: "Contact number must be exactly 11 digits" }),
   emergency_contact_person: z.string().min(1, { message: "Please enter Emergency Contact Person" }),
   emergency_contact_address: z.string().min(1, { message: "Please enter Emergency Contact Address" }),
-  emergency_contact_number: z.string().min(1, { message: "Please enter Emergency Contact Number" }),
+  emergency_contact_number: z.string().regex(/^\d{11}$/, { message: "Contact number must be exactly 11 digits" }),
 
   // Educational Background
   elementary_school: z.string().min(1, { message: "Please enter Elementary School" }),
@@ -893,7 +893,23 @@ function ApplyPage() {
                   <FormField control={form.control} name="father_occupation" render={({ field }) => (<FormItem><FormLabel>Occupation</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="father_company" render={({ field }) => (<FormItem><FormLabel>Monthly Income</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="father_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                  <FormField control={form.control} name="father_contact" render={({ field }) => (<FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                  <FormField control={form.control} name="father_contact" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="tel"
+                          inputMode="numeric"
+                          maxLength={11}
+                          placeholder="e.g. 09XXXXXXXXX"
+                          onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault(); }}
+                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-primary border-b pb-2">Mother's Information:</h3>
@@ -901,7 +917,23 @@ function ApplyPage() {
                   <FormField control={form.control} name="mother_occupation" render={({ field }) => (<FormItem><FormLabel>Occupation</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="mother_company" render={({ field }) => (<FormItem><FormLabel>Monthly Income</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="mother_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                  <FormField control={form.control} name="mother_contact" render={({ field }) => (<FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                  <FormField control={form.control} name="mother_contact" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="tel"
+                          inputMode="numeric"
+                          maxLength={11}
+                          placeholder="e.g. 09XXXXXXXXX"
+                          onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault(); }}
+                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </div>
 
@@ -912,13 +944,45 @@ function ApplyPage() {
                   <FormField control={form.control} name="guardian_name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="guardian_relationship" render={({ field }) => (<FormItem><FormLabel>Relationship</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="guardian_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                  <FormField control={form.control} name="guardian_contact" render={({ field }) => (<FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                  <FormField control={form.control} name="guardian_contact" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="tel"
+                          inputMode="numeric"
+                          maxLength={11}
+                          placeholder="e.g. 09XXXXXXXXX"
+                          onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault(); }}
+                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-primary border-b pb-2">In Case of Emergency</h3>
                   <FormField control={form.control} name="emergency_contact_person" render={({ field }) => (<FormItem><FormLabel>Contact Person</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name="emergency_contact_address" render={({ field }) => (<FormItem><FormLabel>Home Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                  <FormField control={form.control} name="emergency_contact_number" render={({ field }) => (<FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                  <FormField control={form.control} name="emergency_contact_number" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="tel"
+                          inputMode="numeric"
+                          maxLength={11}
+                          placeholder="e.g. 09XXXXXXXXX"
+                          onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault(); }}
+                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </div>
             </Section>
